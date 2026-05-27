@@ -9,976 +9,593 @@
 <meta name="theme-color" content="#1a3a8f">
 <title>Check-in Sales TT</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 <style>
 :root {
-  --brand: #1a3a8f; --brand-mid: #2351c9; --brand-light: #e8eefb;
-  --accent: #e03131; --success: #2f9e44; --success-light: #ebfbee;
-  --warning: #f08c00; --warning-light: #fff9db;
-  --surface: #ffffff; --surface2: #f7f8fc; --surface3: #eef0f8;
-  --border: #dde2f0; --text: #1a1f36; --text2: #4a5070; --text3: #8890b0;
-  --radius: 14px; --radius-sm: 8px;
-  --shadow: 0 2px 12px rgba(26,58,143,0.10);
-  --shadow-lg: 0 8px 32px rgba(26,58,143,0.16);
+  --brand:#1a3a8f; --brand-mid:#2351c9; --brand-light:#e8eefb;
+  --accent:#e03131; --success:#2f9e44; --success-light:#ebfbee;
+  --warning:#f08c00; --warning-light:#fff9db;
+  --surface:#fff; --surface2:#f7f8fc; --surface3:#eef0f8;
+  --border:#dde2f0; --text:#1a1f36; --text2:#4a5070; --text3:#8890b0;
+  --radius:14px; --radius-sm:8px;
+  --shadow:0 2px 12px rgba(26,58,143,.10);
+  --shadow-lg:0 8px 32px rgba(26,58,143,.16);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html { height: 100%; overflow: hidden; }
-body { height: 100%; overflow: hidden; background: var(--surface2); font-family: 'Sarabun', sans-serif; color: var(--text); position: fixed; width: 100%; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--surface2);font-family:'Sarabun',sans-serif;color:var(--text);position:fixed;width:100%}
+.app-header{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--brand);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+.header-logo{display:flex;align-items:center;gap:10px}
+.header-logo-icon{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center}
+.app-header h1{color:#fff;font-size:15px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif}
+.header-user{display:flex;align-items:center;gap:8px}
+.user-name-short{color:rgba(255,255,255,.85);font-size:12px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid var(--border);display:flex;height:62px;box-shadow:0 -4px 16px rgba(26,58,143,.08)}
+.nav-btn{flex:1;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--text3);font-size:10px;font-family:'Sarabun',sans-serif;transition:color .2s}
+.nav-btn svg{width:22px;height:22px;stroke-width:1.8}
+.nav-btn.active{color:var(--brand)}
+.nav-btn.active svg{stroke-width:2.5}
+.main{padding-top:56px;padding-bottom:62px;height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
+.screen{display:none;animation:fadeUp .25s ease}
+.screen.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.home-hero{background:linear-gradient(150deg,var(--brand) 0%,var(--brand-mid) 100%);padding:24px 20px 32px;position:relative;overflow:hidden}
+.home-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero-greeting{color:rgba(255,255,255,.7);font-size:13px}
+.hero-name{color:#fff;font-size:21px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;margin:2px 0}
+.hero-date{color:rgba(255,255,255,.6);font-size:12px}
+.hero-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:20px;position:relative;z-index:1}
+.hero-stat{background:rgba(255,255,255,.14);border-radius:10px;padding:12px 8px;text-align:center}
+.hero-stat-val{color:#fff;font-size:22px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif}
+.hero-stat-lbl{color:rgba(255,255,255,.65);font-size:10px;margin-top:2px}
+.home-section{padding:18px 16px 0}
+.section-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.action-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s,box-shadow .15s}
+.action-card:active{transform:scale(.98)}
+.action-card-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.action-card-title{font-size:14px;font-weight:700;color:var(--text)}
+.action-card-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.notif-item{background:#fff;border-radius:var(--radius-sm);border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px}
+.notif-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.notif-text{font-size:13px;color:var(--text2);line-height:1.5}
+.notif-time{font-size:11px;color:var(--text3);margin-top:2px}
+.sync-bar{background:var(--brand-light);border-bottom:1px solid #c5d5f5;padding:7px 16px;font-size:12px;color:var(--brand);display:flex;align-items:center;gap:7px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--success);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.form-progress{background:#fff;border-bottom:1px solid var(--border);padding:12px 16px 0}
+.progress-steps{display:flex}
+.progress-step{flex:1;text-align:center;padding-bottom:10px;font-size:10px;color:var(--text3);border-bottom:3px solid var(--border);transition:all .2s;font-weight:500;cursor:pointer}
+.progress-step.done{color:var(--success);border-color:var(--success)}
+.progress-step.active{color:var(--brand);border-color:var(--brand);font-weight:700}
+.progress-step-num{width:20px;height:20px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:10px;background:var(--surface3);color:var(--text3);font-weight:700}
+.progress-step.done .progress-step-num{background:var(--success);color:#fff}
+.progress-step.active .progress-step-num{background:var(--brand);color:#fff}
+.form-body{padding:18px 16px}
+.form-section-header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.form-section-badge{width:30px;height:30px;border-radius:8px;background:var(--brand-light);display:flex;align-items:center;justify-content:center}
+.form-section-badge svg{width:16px;height:16px;stroke:var(--brand)}
+.form-section-title{font-size:15px;font-weight:700;color:var(--text);font-family:'IBM Plex Sans Thai',sans-serif}
+.field-group{margin-bottom:14px}
+label.field-label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px}
+label.field-label .req{color:var(--accent)}
+.field-input,.field-select,.field-textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:'Sarabun',sans-serif;color:var(--text);background:#fff;outline:none;transition:border-color .2s,box-shadow .2s}
+.field-input:focus,.field-select:focus,.field-textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(26,58,143,.10)}
+.field-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238890b0' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px}
+.field-textarea{resize:vertical;min-height:84px;line-height:1.6}
+.field-input.readonly{background:var(--surface2);color:var(--text2)}
+.multi-select-group{display:flex;flex-wrap:wrap;gap:7px}
+.multi-chip{padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);font-size:13px;cursor:pointer;transition:all .15s;user-select:none;background:#fff;color:var(--text2);font-family:'Sarabun',sans-serif}
+.multi-chip.selected{background:var(--brand-light);border-color:var(--brand);color:var(--brand);font-weight:600}
+.number-input{display:flex;align-items:center}
+.number-btn{width:40px;height:42px;border:1.5px solid var(--border);background:var(--surface2);font-size:18px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:background .15s}
+.number-btn:first-child{border-radius:var(--radius-sm) 0 0 var(--radius-sm);border-right:none}
+.number-btn:last-child{border-radius:0 var(--radius-sm) var(--radius-sm) 0;border-left:none}
+.number-btn:active{background:var(--brand-light);color:var(--brand)}
+.number-input .field-input{border-radius:0;text-align:center}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.photo-upload{aspect-ratio:1;border:2px dashed var(--border);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;background:var(--surface2);position:relative;overflow:hidden}
+.photo-upload svg{width:26px;height:26px;stroke:var(--text3)}
+.photo-upload span{font-size:11px;color:var(--text3);font-weight:500}
+.photo-upload.has-photo{border-style:solid;border-color:var(--success);background:var(--success-light)}
+.photo-upload.has-photo svg{stroke:var(--success)}
+.photo-upload.has-photo span{color:var(--success)}
+.photo-check{position:absolute;top:6px;right:6px;background:var(--success);color:#fff;border-radius:50%;width:18px;height:18px;display:none;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.photo-upload.has-photo .photo-check{display:flex}
+.gps-field{border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.gps-bar{padding:10px 13px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.gps-coords{font-size:12px;color:var(--text2);font-family:monospace;flex:1}
+.gps-btn{padding:6px 13px;border-radius:20px;border:1.5px solid var(--brand);background:var(--brand-light);color:var(--brand);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:'Sarabun',sans-serif;white-space:nowrap}
+.gps-btn:active{background:var(--brand);color:#fff}
+.map-preview{height:130px;background:#dce9f7;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(#b8d0ee 1px,transparent 1px),linear-gradient(90deg,#b8d0ee 1px,transparent 1px);background-size:28px 28px;opacity:.5}
+.map-dot{width:16px;height:16px;border-radius:50%;background:var(--brand);border:3px solid #fff;box-shadow:0 2px 8px rgba(26,58,143,.5);position:relative;z-index:1;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 2px 8px rgba(26,58,143,.4)}50%{box-shadow:0 0 0 8px rgba(26,58,143,.15)}}
+.form-nav{display:flex;gap:10px;margin-top:20px;padding-bottom:6px}
+.btn{padding:12px 18px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:'Sarabun',sans-serif;transition:all .18s;flex:1}
+.btn-secondary{background:var(--surface2);color:var(--text2);border:1.5px solid var(--border)}
+.btn-primary{background:var(--brand);color:#fff;box-shadow:0 3px 10px rgba(26,58,143,.25)}
+.btn-primary:active{background:var(--brand-mid)}
+.btn-success{background:var(--success);color:#fff}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.history-header{padding:14px 16px;background:#fff;border-bottom:1px solid var(--border);display:flex;gap:10px}
+.history-filter{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'Sarabun',sans-serif;color:var(--text);background:#fff;outline:none}
+.history-list{padding:12px 16px}
+.history-item{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.history-item-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.history-item-shop{font-size:14px;font-weight:700;color:var(--text)}
+.history-item-date{font-size:11px;color:var(--text3);margin-top:2px}
+.history-status{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;flex-shrink:0}
+.status-done{background:var(--success-light);color:var(--success)}
+.status-pending{background:var(--warning-light);color:var(--warning)}
+.history-tags{display:flex;gap:6px;flex-wrap:wrap}
+.htag{background:var(--surface2);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text2)}
+.dash-body{padding:16px}
+.dash-period{display:flex;gap:6px;margin-bottom:16px}
+.period-btn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12px;cursor:pointer;font-family:'Sarabun',sans-serif;color:var(--text2)}
+.period-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.kpi-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px 16px;box-shadow:var(--shadow)}
+.kpi-label{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.kpi-val{font-size:24px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;margin:4px 0 2px}
+.kpi-change{font-size:11px}
+.chart-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.chart-title{font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px}
+.bar-chart{display:flex;align-items:flex-end;gap:7px;height:90px}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+.bar{width:100%;border-radius:4px 4px 0 0;min-height:4px}
+.bar-lbl{font-size:10px;color:var(--text3)}
+.bar-val{font-size:10px;color:var(--text2);font-weight:700}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-card{background:#fff;border-radius:20px;padding:32px 24px;text-align:center;max-width:320px;width:100%;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-icon{width:68px;height:68px;border-radius:50%;background:var(--success-light);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.modal-icon svg{width:34px;height:34px;stroke:var(--success)}
+.modal-title{font-size:19px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:18px}
+.modal-ref{background:var(--surface2);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--text3);margin-bottom:18px;font-family:monospace}
+.toast{position:fixed;top:68px;left:16px;right:16px;z-index:300;background:var(--text);color:#fff;border-radius:var(--radius-sm);padding:11px 15px;display:flex;align-items:center;gap:9px;font-size:13px;transform:translateY(-80px);opacity:0;transition:all .28s;box-shadow:var(--shadow-lg)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{background:var(--accent)}
 
-/* ── LOGIN SCREEN ── */
-
-
-/* ── LOADING ── */
-.loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 500; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
-.loading-overlay.show { display: flex; }
-.spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--brand); border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-text { font-size: 14px; color: var(--text2); }
-
-/* ── APP HEADER ── */
-.app-header {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  background: var(--brand); display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px; height: 56px; box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-}
-.header-logo { display: flex; align-items: center; gap: 10px; }
-.header-logo-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; }
-.app-header h1 { color: white; font-size: 15px; font-weight: 700; font-family: 'IBM Plex Sans Thai', sans-serif; }
-.header-user { display: flex; align-items: center; gap: 8px; }
-.user-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; }
-.user-name-short { color: rgba(255,255,255,0.85); font-size: 12px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.btn-logout { background: rgba(255,255,255,0.15); border: none; color: white; border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; font-family: 'Sarabun', sans-serif; }
-
-/* ── BOTTOM NAV ── */
-.bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-  background: white; border-top: 1px solid var(--border);
-  display: flex; height: 62px; box-shadow: 0 -4px 16px rgba(26,58,143,0.08);
-}
-.nav-btn { flex: 1; border: none; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; color: var(--text3); font-size: 10px; font-family: 'Sarabun', sans-serif; transition: color 0.2s; }
-.nav-btn svg { width: 22px; height: 22px; stroke-width: 1.8; }
-.nav-btn.active { color: var(--brand); }
-.nav-btn.active svg { stroke-width: 2.5; }
-
-/* ── MAIN ── */
-.main { padding-top: 56px; padding-bottom: 62px; height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: none; }
-.screen { display: none; animation: fadeUp 0.25s ease; }
-.screen.active { display: block; }
-@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-
-/* ── HOME ── */
-.home-hero { background: linear-gradient(150deg, var(--brand) 0%, var(--brand-mid) 100%); padding: 24px 20px 32px; position: relative; overflow: hidden; }
-.home-hero::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.06); }
-.hero-greeting { color:rgba(255,255,255,0.7); font-size:13px; }
-.hero-name { color:white; font-size:21px; font-weight:700; font-family:'IBM Plex Sans Thai',sans-serif; margin: 2px 0; }
-.hero-date { color:rgba(255,255,255,0.6); font-size:12px; }
-.hero-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:20px; position:relative; z-index:1; }
-.hero-stat { background:rgba(255,255,255,0.14); border-radius:10px; padding:12px 8px; text-align:center; }
-.hero-stat-val { color:white; font-size:22px; font-weight:700; font-family:'IBM Plex Sans Thai',sans-serif; }
-.hero-stat-lbl { color:rgba(255,255,255,0.65); font-size:10px; margin-top:2px; }
-
-.home-section { padding: 18px 16px 0; }
-.section-title { font-size:11px; font-weight:700; color:var(--text3); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px; }
-.action-card { background:white; border-radius:var(--radius); border:1px solid var(--border); padding:16px 18px; display:flex; align-items:center; gap:14px; margin-bottom:10px; box-shadow:var(--shadow); cursor:pointer; transition:transform 0.15s, box-shadow 0.15s; }
-.action-card:hover { transform:translateY(-1px); box-shadow:var(--shadow-lg); }
-.action-card-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.action-card-icon svg { width:22px; height:22px; }
-.action-card-title { font-size:14px; font-weight:700; color:var(--text); }
-.action-card-sub { font-size:12px; color:var(--text3); margin-top:2px; }
-.notif-item { background:white; border-radius:var(--radius-sm); border:1px solid var(--border); padding:12px 14px; margin-bottom:8px; display:flex; align-items:flex-start; gap:10px; }
-.notif-dot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
-.notif-text { font-size:13px; color:var(--text2); line-height:1.5; }
-.notif-time { font-size:11px; color:var(--text3); margin-top:2px; }
-
-/* ── FORM ── */
-.form-progress { background:white; border-bottom:1px solid var(--border); padding:12px 16px 0; }
-.progress-steps { display:flex; }
-.progress-step { flex:1; text-align:center; padding-bottom:10px; font-size:10px; color:var(--text3); border-bottom:3px solid var(--border); transition:all 0.2s; font-weight:500; }
-.progress-step.done { color:var(--success); border-color:var(--success); }
-.progress-step.active { color:var(--brand); border-color:var(--brand); font-weight:700; }
-.progress-step-num { width:20px; height:20px; border-radius:50%; margin:0 auto 4px; display:flex; align-items:center; justify-content:center; font-size:10px; background:var(--surface3); color:var(--text3); font-weight:700; }
-.progress-step.done .progress-step-num { background:var(--success); color:white; }
-.progress-step.active .progress-step-num { background:var(--brand); color:white; }
-
-.form-body { padding: 18px 16px; }
-.form-section-header { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
-.form-section-badge { width:30px; height:30px; border-radius:8px; background:var(--brand-light); display:flex; align-items:center; justify-content:center; }
-.form-section-badge svg { width:16px; height:16px; stroke:var(--brand); }
-.form-section-title { font-size:15px; font-weight:700; color:var(--text); font-family:'IBM Plex Sans Thai',sans-serif; }
-
-.field-group { margin-bottom:14px; }
-label.field-label { display:block; font-size:12px; font-weight:700; color:var(--text2); margin-bottom:5px; }
-label.field-label .req { color:var(--accent); }
-.field-input, .field-select, .field-textarea { width:100%; padding:10px 13px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14px; font-family:'Sarabun',sans-serif; color:var(--text); background:white; outline:none; transition:border-color 0.2s, box-shadow 0.2s; }
-.field-input:focus, .field-select:focus, .field-textarea:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(26,58,143,0.10); }
-.field-select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238890b0' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:32px; }
-.field-textarea { resize:vertical; min-height:84px; line-height:1.6; }
-.field-input.readonly { background:var(--surface2); color:var(--text2); }
-
-.multi-select-group { display:flex; flex-wrap:wrap; gap:7px; }
-.multi-chip { padding:6px 13px; border-radius:20px; border:1.5px solid var(--border); font-size:13px; cursor:pointer; transition:all 0.15s; user-select:none; background:white; color:var(--text2); font-family:'Sarabun',sans-serif; }
-.multi-chip.selected { background:var(--brand-light); border-color:var(--brand); color:var(--brand); font-weight:600; }
-
-.number-input { display:flex; align-items:center; }
-.number-btn { width:40px; height:42px; border:1.5px solid var(--border); background:var(--surface2); font-size:18px; cursor:pointer; color:var(--text2); display:flex; align-items:center; justify-content:center; transition:background 0.15s; }
-.number-btn:first-child { border-radius:var(--radius-sm) 0 0 var(--radius-sm); border-right:none; }
-.number-btn:last-child { border-radius:0 var(--radius-sm) var(--radius-sm) 0; border-left:none; }
-.number-btn:hover { background:var(--brand-light); color:var(--brand); }
-.number-input .field-input { border-radius:0; text-align:center; }
-
-.photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.photo-upload { aspect-ratio:1; border:2px dashed var(--border); border-radius:var(--radius); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; cursor:pointer; transition:all 0.2s; background:var(--surface2); position:relative; overflow:hidden; }
-.photo-upload:hover { border-color:var(--brand); background:var(--brand-light); }
-.photo-upload svg { width:26px; height:26px; stroke:var(--text3); }
-.photo-upload span { font-size:11px; color:var(--text3); font-weight:500; }
-.photo-upload.has-photo { border-style:solid; border-color:var(--success); background:var(--success-light); }
-.photo-upload.has-photo svg { stroke:var(--success); }
-.photo-upload.has-photo span { color:var(--success); }
-.photo-check { position:absolute; top:6px; right:6px; background:var(--success); color:white; border-radius:50%; width:18px; height:18px; display:none; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
-.photo-upload.has-photo .photo-check { display:flex; }
-
-.gps-field { border:1.5px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
-.gps-bar { padding:10px 13px; background:var(--surface2); display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.gps-coords { font-size:12px; color:var(--text2); font-family:monospace; flex:1; }
-.gps-btn { padding:6px 13px; border-radius:20px; border:1.5px solid var(--brand); background:var(--brand-light); color:var(--brand); font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; font-family:'Sarabun',sans-serif; white-space:nowrap; }
-.gps-btn:hover { background:var(--brand); color:white; }
-.map-preview { height:130px; background:#dce9f7; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-.map-grid { position:absolute; inset:0; background-image:linear-gradient(#b8d0ee 1px,transparent 1px), linear-gradient(90deg,#b8d0ee 1px,transparent 1px); background-size:28px 28px; opacity:0.5; }
-.map-dot { width:16px; height:16px; border-radius:50%; background:var(--brand); border:3px solid white; box-shadow:0 2px 8px rgba(26,58,143,0.5); position:relative; z-index:1; animation:pulse 2s infinite; }
-@keyframes pulse { 0%,100%{box-shadow:0 2px 8px rgba(26,58,143,0.4)} 50%{box-shadow:0 0 0 8px rgba(26,58,143,0.15)} }
-
-.form-nav { display:flex; gap:10px; margin-top:20px; padding-bottom:6px; }
-.btn { padding:12px 18px; border-radius:var(--radius-sm); font-size:14px; font-weight:600; cursor:pointer; border:none; font-family:'Sarabun',sans-serif; transition:all 0.18s; flex:1; }
-.btn-secondary { background:var(--surface2); color:var(--text2); border:1.5px solid var(--border); }
-.btn-primary { background:var(--brand); color:white; box-shadow:0 3px 10px rgba(26,58,143,0.25); }
-.btn-primary:hover { background:var(--brand-mid); }
-.btn-success { background:var(--success); color:white; box-shadow:0 3px 10px rgba(47,158,68,0.3); }
-.btn-primary:disabled { opacity:0.6; cursor:not-allowed; }
-
-/* ── HISTORY ── */
-.history-header { padding:14px 16px; background:white; border-bottom:1px solid var(--border); display:flex; gap:10px; }
-.history-filter { flex:1; padding:9px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-family:'Sarabun',sans-serif; color:var(--text); background:white; outline:none; }
-.history-filter:focus { border-color:var(--brand); }
-.history-list { padding:12px 16px; }
-.history-item { background:white; border-radius:var(--radius); border:1px solid var(--border); padding:14px 16px; margin-bottom:10px; box-shadow:var(--shadow); }
-.history-item-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px; }
-.history-item-shop { font-size:14px; font-weight:700; color:var(--text); }
-.history-item-date { font-size:11px; color:var(--text3); margin-top:2px; }
-.history-status { padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; flex-shrink:0; }
-.status-done { background:var(--success-light); color:var(--success); }
-.status-pending { background:var(--warning-light); color:var(--warning); }
-.history-tags { display:flex; gap:6px; flex-wrap:wrap; }
-.tag { background:var(--surface2); border-radius:4px; padding:3px 7px; font-size:11px; color:var(--text2); }
-
-/* ── DASHBOARD ── */
-.dash-body { padding:16px; }
-.dash-period { display:flex; gap:6px; margin-bottom:16px; }
-.period-btn { padding:6px 14px; border-radius:20px; border:1.5px solid var(--border); background:white; font-size:12px; cursor:pointer; font-family:'Sarabun',sans-serif; color:var(--text2); }
-.period-btn.active { background:var(--brand); color:white; border-color:var(--brand); font-weight:600; }
-.kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
-.kpi-card { background:white; border-radius:var(--radius); border:1px solid var(--border); padding:14px 16px; box-shadow:var(--shadow); }
-.kpi-label { font-size:10px; color:var(--text3); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; }
-.kpi-val { font-size:24px; font-weight:700; font-family:'IBM Plex Sans Thai',sans-serif; margin:4px 0 2px; }
-.kpi-change { font-size:11px; }
-.kpi-up { color:var(--success); }
-.kpi-down { color:var(--accent); }
-.chart-card { background:white; border-radius:var(--radius); border:1px solid var(--border); padding:16px; margin-bottom:12px; box-shadow:var(--shadow); }
-.chart-title { font-size:13px; font-weight:700; color:var(--text2); margin-bottom:14px; }
-.bar-chart { display:flex; align-items:flex-end; gap:7px; height:90px; }
-.bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end; }
-.bar { width:100%; border-radius:4px 4px 0 0; min-height:4px; }
-.bar-lbl { font-size:10px; color:var(--text3); }
-.bar-val { font-size:10px; color:var(--text2); font-weight:700; }
-
-/* ── MODAL ── */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; padding:20px; }
-.modal-overlay.show { display:flex; animation:fadeIn 0.2s ease; }
-@keyframes fadeIn { from{opacity:0} to{opacity:1} }
-.modal-card { background:white; border-radius:20px; padding:32px 24px; text-align:center; max-width:320px; width:100%; animation:slideUp 0.25s ease; }
-@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
-.modal-icon { width:68px; height:68px; border-radius:50%; background:var(--success-light); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
-.modal-icon svg { width:34px; height:34px; stroke:var(--success); }
-.modal-title { font-size:19px; font-weight:700; font-family:'IBM Plex Sans Thai',sans-serif; margin-bottom:6px; }
-.modal-sub { font-size:13px; color:var(--text2); line-height:1.7; margin-bottom:18px; }
-.modal-ref { background:var(--surface2); border-radius:8px; padding:8px 14px; font-size:12px; color:var(--text3); margin-bottom:18px; font-family:monospace; }
-
-/* ── TOAST ── */
-.toast { position:fixed; top:68px; left:16px; right:16px; z-index:300; background:var(--text); color:white; border-radius:var(--radius-sm); padding:11px 15px; display:flex; align-items:center; gap:9px; font-size:13px; transform:translateY(-80px); opacity:0; transition:all 0.28s; box-shadow:var(--shadow-lg); }
-.toast.show { transform:translateY(0); opacity:1; }
-.toast svg { width:16px; height:16px; flex-shrink:0; }
-.toast.error { background:var(--accent); }
-
-/* ── SYNC STATUS ── */
-.sync-bar { background:var(--brand-light); border-bottom:1px solid #c5d5f5; padding:7px 16px; font-size:12px; color:var(--brand); display:flex; align-items:center; gap:7px; }
-.sync-dot { width:7px; height:7px; border-radius:50%; background:var(--success); animation:blink 2s infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+/* ── PLAN CALENDAR ── */
+.cal-wrap{padding:0 16px 16px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:18px}
+.cal-title{font-size:15px;font-weight:700;color:var(--text);font-family:'IBM Plex Sans Thai',sans-serif}
+.cal-nav{display:flex;gap:6px}
+.cal-nav-btn{width:30px;height:30px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:14px}
+.cal-nav-btn:active{background:var(--brand-light)}
+.cal-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.cal-sum-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center;box-shadow:var(--shadow)}
+.cal-sum-val{font-size:20px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif}
+.cal-sum-lbl{font-size:10px;color:var(--text3);margin-top:2px}
+.cal-grid-head{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+.cal-day-name{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-cell{min-height:52px;border-radius:8px;padding:4px;cursor:pointer;position:relative;border:1px solid transparent;transition:border-color .15s,background .15s;background:#fff}
+.cal-cell:active{background:var(--brand-light)}
+.cal-cell.other-month{background:transparent;border-color:transparent}
+.cal-cell.today{border-color:var(--brand)!important;background:var(--brand-light)}
+.cal-cell.has-plan.status-done{background:#ebfbee;border-color:#b2ddc0}
+.cal-cell.has-plan.status-warn{background:#fff9db;border-color:#f3d076}
+.cal-cell.has-plan.status-miss{background:#fff0f0;border-color:#f5c1c1}
+.cal-cell.has-plan.status-future{background:#f7f8fc;border-color:var(--border)}
+.cal-date{font-size:11px;font-weight:700;color:var(--text2)}
+.cal-cell.today .cal-date{color:var(--brand)}
+.cal-cell.other-month .cal-date{color:var(--text3);opacity:.5}
+.cal-shops{margin-top:2px}
+.cal-shop-dot{font-size:9px;line-height:1.4;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-status-icon{position:absolute;top:3px;right:4px;font-size:11px}
+.cal-more{font-size:9px;color:var(--text3);margin-top:1px}
+.day-detail-panel{background:#fff;border-radius:14px 14px 0 0;border-top:1px solid var(--border);padding:16px;margin-top:10px;box-shadow:0 -4px 16px rgba(26,58,143,.08)}
+.day-detail-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.plan-item{background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--border)}
+.plan-item.done{border-left-color:var(--success)}
+.plan-item.warn{border-left-color:var(--warning)}
+.plan-item.miss{border-left-color:var(--accent)}
+.plan-item.future{border-left-color:var(--border)}
+.plan-shop{font-size:13px;font-weight:700;color:var(--text)}
+.plan-meta{font-size:11px;color:var(--text3);margin-top:3px}
+.plan-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-top:5px}
+.badge-done{background:var(--success-light);color:var(--success)}
+.badge-warn{background:var(--warning-light);color:var(--warning)}
+.badge-miss{background:#fff0f0;color:var(--accent)}
+.badge-future{background:var(--surface3);color:var(--text3)}
 </style>
 </head>
 <body>
 
-<!-- no splash -->
-
-<!-- ────────────────────── LOADING ────────────────────── -->
-<div class="loading-overlay" id="loading">
-  <div class="spinner"></div>
-  <div class="loading-text" id="loading-text">กำลังโหลดข้อมูล...</div>
-</div>
-
-<!-- ────────────────────── TOAST ────────────────────── -->
+<!-- TOAST -->
 <div class="toast" id="toast">
-  <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
   <span id="toast-text"></span>
 </div>
 
-<!-- ────────────────────── MAIN APP ────────────────────── -->
-<div id="main-app" style="display:block;">
-
-  <header class="app-header">
-    <div class="header-logo">
-      <div class="header-logo-icon">
-        <svg fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><path d="M12 2L3 7l9 5 9-5-9-5zM3 17l9 5 9-5M3 12l9 5 9-5"/></svg>
-      </div>
-      <h1>Check-in Sales TT</h1>
+<!-- MAIN APP -->
+<header class="app-header">
+  <div class="header-logo">
+    <div class="header-logo-icon">
+      <svg fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><path d="M12 2L3 7l9 5 9-5-9-5zM3 17l9 5 9-5M3 12l9 5 9-5"/></svg>
     </div>
-    <div class="header-user">
-      <span class="user-name-short" id="user-name-short" style="font-size:13px;"></span>
+    <h1>Check-in Sales TT</h1>
+  </div>
+  <div class="header-user">
+    <span class="user-name-short" id="user-name-short"></span>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="home-hero">
+      <div class="hero-greeting">สวัสดี,</div>
+      <div class="hero-name" id="hero-name">Sales TT</div>
+      <div class="hero-date" id="hero-date"></div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="hero-stat-val" id="stat-today">—</div><div class="hero-stat-lbl">วันนี้</div></div>
+        <div class="hero-stat"><div class="hero-stat-val" id="stat-month">—</div><div class="hero-stat-lbl">เดือนนี้</div></div>
+        <div class="hero-stat"><div class="hero-stat-val" id="stat-rate">—</div><div class="hero-stat-lbl">สำเร็จ</div></div>
+      </div>
     </div>
-  </header>
-
-  <main class="main">
-
-    <!-- HOME -->
-    <div class="screen active" id="screen-home">
-      <div class="home-hero">
-        <div class="hero-greeting">สวัสดี,</div>
-        <div class="hero-name" id="hero-name">กำลังโหลด...</div>
-        <div class="hero-date" id="hero-date"></div>
-        <div class="hero-stats">
-          <div class="hero-stat">
-            <div class="hero-stat-val" id="stat-today">—</div>
-            <div class="hero-stat-lbl">วันนี้</div>
-          </div>
-          <div class="hero-stat">
-            <div class="hero-stat-val" id="stat-month">—</div>
-            <div class="hero-stat-lbl">เดือนนี้</div>
-          </div>
-          <div class="hero-stat">
-            <div class="hero-stat-val" id="stat-rate">—</div>
-            <div class="hero-stat-lbl">สำเร็จ</div>
-          </div>
-        </div>
+    <div class="sync-bar">
+      <div class="sync-dot"></div>
+      <span>เชื่อมต่อ Google Sheets · <span id="last-sync">กำลังโหลด...</span></span>
+    </div>
+    <!-- QUICK ACTIONS -->
+    <div style="display:flex;gap:10px;padding:14px 16px 0">
+      <div class="action-card" onclick="goToForm()" style="flex:1;margin-bottom:0">
+        <div class="action-card-icon" style="background:#e8eefb;width:36px;height:36px"><svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+        <div><div class="action-card-title" style="font-size:13px">Check-in ใหม่</div></div>
       </div>
-
-      <div class="sync-bar">
-        <div class="sync-dot"></div>
-        <span>เชื่อมต่อ Google Sheets · อัพเดตล่าสุด <span id="last-sync">—</span></span>
-      </div>
-
-      <div class="home-section">
-        <div class="section-title">เริ่มต้น</div>
-        <div class="action-card" data-action="checkin">
-          <div class="action-card-icon" style="background:#e8eefb;">
-            <svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-          <div>
-            <div class="action-card-title">บันทึก Check-in ใหม่</div>
-            <div class="action-card-sub">ลงทะเบียนการเยี่ยมลูกค้า</div>
-          </div>
-          <svg fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24" width="18" height="18" style="margin-left:auto;flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-        <div class="action-card" data-action="history">
-          <div class="action-card-icon" style="background:#ebfbee;">
-            <svg fill="none" stroke="#2f9e44" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-          </div>
-          <div>
-            <div class="action-card-title">ประวัติการ Check-in</div>
-            <div class="action-card-sub" id="history-sub">ดูรายการทั้งหมด</div>
-          </div>
-          <svg fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24" width="18" height="18" style="margin-left:auto;flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-      </div>
-
-      <div class="home-section">
-        <div class="section-title">การแจ้งเตือน</div>
-        <div id="notif-list">
-          <div class="notif-item">
-            <div class="notif-dot" style="background:var(--warning);"></div>
-            <div>
-              <div class="notif-text">กำลังโหลดการแจ้งเตือน...</div>
-              <div class="notif-time"></div>
-            </div>
-          </div>
-        </div>
+      <div class="action-card" onclick="switchScreen('history'); loadHistory();" style="flex:1;margin-bottom:0">
+        <div class="action-card-icon" style="background:#ebfbee;width:36px;height:36px"><svg fill="none" stroke="#2f9e44" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+        <div><div class="action-card-title" style="font-size:13px">ประวัติ</div></div>
       </div>
     </div>
 
-    <!-- FORM -->
-    <div class="screen" id="screen-form">
-      <div class="form-progress">
-        <div class="progress-steps" id="progress-steps">
-          <div class="progress-step active"><div class="progress-step-num">1</div>ร้านค้า</div>
-          <div class="progress-step"><div class="progress-step-num">2</div>รูปถ่าย</div>
-          <div class="progress-step"><div class="progress-step-num">3</div>การซื้อ</div>
-          <div class="progress-step"><div class="progress-step-num">4</div>คู่แข่ง</div>
-          <div class="progress-step"><div class="progress-step-num">5</div>สรุป</div>
+    <!-- PLAN CALENDAR -->
+    <div class="cal-wrap">
+      <!-- Summary -->
+      <div class="cal-header">
+        <div class="cal-title" id="cal-month-title">พ.ค. 2569</div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="changeCalMonth(-1)">‹</button>
+          <button class="cal-nav-btn" onclick="changeCalMonth(0)" style="font-size:11px;width:auto;padding:0 8px">วันนี้</button>
+          <button class="cal-nav-btn" onclick="changeCalMonth(1)">›</button>
         </div>
       </div>
-      <div class="form-body" id="form-body"></div>
-    </div>
-
-    <!-- HISTORY -->
-    <div class="screen" id="screen-history">
-      <div class="history-header">
-        <input class="history-filter" type="text" placeholder="🔍 ค้นหาร้านค้า..." id="search-input" oninput="filterHistory()">
-        <select class="history-filter" style="max-width:120px;" id="filter-select" onchange="filterHistory()">
-          <option>ทั้งหมด</option>
-          <option>วันนี้</option>
-          <option>สัปดาห์นี้</option>
-          <option>เดือนนี้</option>
-        </select>
+      <div class="cal-summary">
+        <div class="cal-sum-card"><div class="cal-sum-val" id="sum-total" style="color:var(--brand)">0</div><div class="cal-sum-lbl">แผนทั้งหมด</div></div>
+        <div class="cal-sum-card"><div class="cal-sum-val" id="sum-done" style="color:var(--success)">0</div><div class="cal-sum-lbl">✅ พบแล้ว</div></div>
+        <div class="cal-sum-card"><div class="cal-sum-val" id="sum-miss" style="color:var(--accent)">0</div><div class="cal-sum-lbl">❌ ยังไม่พบ</div></div>
       </div>
-      <div class="history-list" id="history-list">
-        <div style="text-align:center; padding:40px 20px; color:var(--text3); font-size:14px;">กำลังโหลด...</div>
+      <!-- Calendar grid -->
+      <div class="cal-grid-head">
+        <div class="cal-day-name">อา</div><div class="cal-day-name">จ</div><div class="cal-day-name">อ</div>
+        <div class="cal-day-name">พ</div><div class="cal-day-name">พฤ</div><div class="cal-day-name">ศ</div><div class="cal-day-name">ส</div>
       </div>
-    </div>
-
-    <!-- DASHBOARD -->
-    <div class="screen" id="screen-dashboard">
-      <div class="dash-body">
-        <div class="dash-period">
-          <button class="period-btn active" data-action="period">สัปดาห์</button>
-          <button class="period-btn" data-action="period">เดือนนี้</button>
-          <button class="period-btn" data-action="period">ทั้งหมด</button>
+      <div class="cal-grid" id="cal-grid"></div>
+      <!-- Day detail panel -->
+      <div class="day-detail-panel" id="day-detail" style="display:none">
+        <div class="day-detail-title">
+          <span id="day-detail-title">แผนวันที่ —</span>
+          <span style="font-size:12px;color:var(--text3);cursor:pointer" onclick="document.getElementById('day-detail').style.display='none'">✕ ปิด</span>
         </div>
-        <div class="kpi-grid">
-          <div class="kpi-card"><div class="kpi-label">Check-in</div><div class="kpi-val" style="color:var(--brand);" id="kpi-total">—</div><div class="kpi-change kpi-up" id="kpi-total-ch"></div></div>
-          <div class="kpi-card"><div class="kpi-label">มูลค่ารวม</div><div class="kpi-val" style="color:var(--success);" id="kpi-value">—</div><div class="kpi-change kpi-up" id="kpi-value-ch"></div></div>
-          <div class="kpi-card"><div class="kpi-label">ร้านที่เยี่ยม</div><div class="kpi-val" style="color:var(--warning);" id="kpi-shops">—</div><div class="kpi-change" id="kpi-shops-ch"></div></div>
-          <div class="kpi-card"><div class="kpi-label">อัตราสำเร็จ</div><div class="kpi-val" style="color:var(--success);" id="kpi-rate">—</div><div class="kpi-change kpi-up" id="kpi-rate-ch"></div></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">Check-in รายวัน (7 วันล่าสุด)</div>
-          <div class="bar-chart" id="bar-chart"></div>
-        </div>
+        <div id="day-detail-list"></div>
       </div>
     </div>
+  </div>
 
-  </main>
+  <!-- FORM -->
+  <div class="screen" id="screen-form">
+    <div class="form-progress">
+      <div class="progress-steps" id="progress-steps">
+        <div class="progress-step active"><div class="progress-step-num">1</div>ร้านค้า</div>
+        <div class="progress-step"><div class="progress-step-num">2</div>รูปถ่าย</div>
+        <div class="progress-step"><div class="progress-step-num">3</div>การซื้อ</div>
+        <div class="progress-step"><div class="progress-step-num">4</div>คู่แข่ง</div>
+        <div class="progress-step"><div class="progress-step-num">5</div>สรุป</div>
+      </div>
+    </div>
+    <div class="form-body" id="form-body"></div>
+  </div>
 
-  <nav class="bottom-nav">
-    <button class="nav-btn active" id="nav-home" data-action="home">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <span>หน้าหลัก</span>
-    </button>
-    <button class="nav-btn" id="nav-form" data-action="checkin">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      <span>Check-in</span>
-    </button>
-    <button class="nav-btn" id="nav-history" data-action="history">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-      <span>ประวัติ</span>
-    </button>
-    <button class="nav-btn" id="nav-dashboard" data-action="dashboard">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      <span>Dashboard</span>
-    </button>
-  </nav>
+  <!-- HISTORY -->
+  <div class="screen" id="screen-history">
+    <div class="history-header">
+      <input class="history-filter" type="text" placeholder="🔍 ค้นหาร้านค้า..." id="search-input" oninput="filterHistory()">
+      <select class="history-filter" style="max-width:120px" id="filter-select" onchange="filterHistory()">
+        <option>ทั้งหมด</option><option>วันนี้</option><option>สัปดาห์นี้</option><option>เดือนนี้</option>
+      </select>
+    </div>
+    <div class="history-list" id="history-list"><div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div></div>
+  </div>
 
-</div>
+  <!-- DASHBOARD -->
+  <div class="screen" id="screen-dashboard">
+    <div class="dash-body">
+      <div class="dash-period">
+        <button class="period-btn active" onclick="setPeriod(this)">สัปดาห์</button>
+        <button class="period-btn" onclick="setPeriod(this)">เดือนนี้</button>
+        <button class="period-btn" onclick="setPeriod(this)">ทั้งหมด</button>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Check-in</div><div class="kpi-val" style="color:var(--brand)" id="kpi-total">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">มูลค่ารวม</div><div class="kpi-val" style="color:var(--success)" id="kpi-value">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">ร้านที่เยี่ยม</div><div class="kpi-val" style="color:var(--warning)" id="kpi-shops">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">อัตราสำเร็จ</div><div class="kpi-val" style="color:var(--success)" id="kpi-rate">—</div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Check-in รายวัน (7 วันล่าสุด)</div>
+        <div class="bar-chart" id="bar-chart"></div>
+      </div>
+    </div>
+  </div>
 
-<!-- SUCCESS MODAL -->
+</main>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-home" onclick="switchScreen('home')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>หน้าหลัก</span>
+  </button>
+  <button class="nav-btn" id="nav-form" onclick="goToForm()">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    <span>Check-in</span>
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="switchScreen('history'); loadHistory();">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    <span>ประวัติ</span>
+  </button>
+  <button class="nav-btn" id="nav-dashboard" onclick="switchScreen('dashboard'); loadDashboard();">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Dashboard</span>
+  </button>
+</nav>
+
+<!-- MODAL -->
 <div class="modal-overlay" id="modal">
   <div class="modal-card">
-    <div class="modal-icon">
-      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-    </div>
+    <div class="modal-icon"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
     <div class="modal-title">บันทึกสำเร็จ!</div>
     <div class="modal-sub">ข้อมูลถูกบันทึกลง Google Sheets แล้ว<br>ระบบส่ง Email แจ้งเตือนทีมเรียบร้อย ✅</div>
     <div class="modal-ref" id="modal-ref">REF: —</div>
-    <button class="btn btn-primary" data-action="close-modal" style="margin-bottom:8px;">กลับหน้าหลัก</button>
-    <button class="btn btn-secondary" data-action="close-modal-new">Check-in ร้านถัดไป</button>
+    <button class="btn btn-primary" onclick="closeModal()" style="margin-bottom:8px">กลับหน้าหลัก</button>
+    <button class="btn btn-secondary" onclick="closeModal(); goToForm();">Check-in ร้านถัดไป</button>
   </div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════
-//  CONFIG — ใช้ google.script.run (Apps Script Host)
-// ══════════════════════════════════════════════
-const IS_GAS_HOST = (typeof google !== 'undefined' && google.script);
+// ══ CONFIG ══
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3A95DLm6Tj77xkDoqF_kTSDZ6qPznDSqH4KXcA3xjvqG8KRdlgNEJtlw1Kp84rgqa/exec';
 
-// ══════════════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════════════
-let currentUser = null;
+// ══ STATE ══
 let allHistory = [];
 let currentStep = 0;
 let photoStates = [false, false, false];
-let photoData = [null, null, null];
-let gpsData = { lat: null, lng: null, acquired: false };
-let formData = {};
-let orderValue = 0;
-
-// masterData — ใส่ค่า default ทันที ปุ่มกดได้เลยไม่รอ API
-let masterData = {
-  employees: ['สมชาย ใจดี', 'วิชัย รักงาน', 'นภา มีสุข'],
-  shops: [
-    { name:'ท็อปส์ สาขาสีลม', province:'กรุงเทพมหานคร', type:'Supermarket' },
-    { name:'บิ๊กซี สาขาลาดพร้าว', province:'กรุงเทพมหานคร', type:'Hypermarket' },
-    { name:'โลตัส สาขานครปฐม', province:'นครปฐม', type:'Hypermarket' },
-    { name:'แม็คโคร สาขาบางนา', province:'กรุงเทพมหานคร', type:'Wholesale' },
-    { name:'เทสโก้ สาขารังสิต', province:'ปทุมธานี', type:'Hypermarket' },
+let photoData   = [null, null, null];
+let gpsData     = { lat: null, lng: null, acquired: false };
+let formData    = {};
+let orderValue  = 0;
+let masterData  = {
+  employees:      ['สมชาย ใจดี','วิชัย รักงาน','นภา มีสุข'],
+  shops:          [
+    {name:'ท็อปส์ สาขาสีลม',province:'กรุงเทพมหานคร',type:'Supermarket'},
+    {name:'บิ๊กซี สาขาลาดพร้าว',province:'กรุงเทพมหานคร',type:'Hypermarket'},
+    {name:'โลตัส สาขานครปฐม',province:'นครปฐม',type:'Hypermarket'},
+    {name:'แม็คโคร สาขาบางนา',province:'กรุงเทพมหานคร',type:'Wholesale'},
+    {name:'เทสโก้ สาขารังสิต',province:'ปทุมธานี',type:'Hypermarket'},
   ],
-  provinces: ['กรุงเทพมหานคร','นครปฐม','ปทุมธานี','นนทบุรี','สมุทรปราการ','เชียงใหม่','ขอนแก่น','เชียงราย'],
+  provinces:      ['กรุงเทพมหานคร','นครปฐม','ปทุมธานี','นนทบุรี','สมุทรปราการ','เชียงใหม่'],
   customerGroups: ['Modern Trade','Traditional Trade','Wholesale','Hypermart'],
-  shopTypes: ['Supermarket','Hypermarket','Convenience Store','Wholesale','Department Store'],
-  tasks: ['ตรวจเยี่ยมลูกค้า','ติดตามงานขาย','เสนอสินค้า','อัพเดทโปรโมชั่น'],
-  orderStatuses: ['สั่งซื้อปกติ','สั่งซื้อเพิ่มพิเศษ','ลดการสั่งซื้อ','ไม่สั่งซื้อ'],
+  shopTypes:      ['Supermarket','Hypermarket','Convenience Store','Wholesale','Department Store'],
+  tasks:          ['ตรวจเยี่ยมลูกค้า','ติดตามงานขาย','เสนอสินค้า','อัพเดทโปรโมชั่น'],
+  orderStatuses:  ['สั่งซื้อปกติ','สั่งซื้อเพิ่มพิเศษ','ลดการสั่งซื้อ','ไม่สั่งซื้อ'],
 };
 
-// ══════════════════════════════════════════════
-//  AUTH — เข้าแอปได้เลยโดยไม่ต้อง Login
-// ══════════════════════════════════════════════
-function autoLogin() {
-  currentUser = { name: 'Sales TT', email: '', picture: '', given_name: 'Sales' };
-  onLoginSuccess();
-}
-
-function onLoginSuccess() {
+// ══ INIT ══
+(function init() {
   const now = new Date();
-  const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const days   = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
   const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   document.getElementById('hero-date').textContent = `วัน${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()+543}`;
-  // load แบบ non-blocking — เข้าแอปได้เลย ข้อมูลโหลดหลัง
-  loadMasterData();   // runs in background, updates dropdowns when ready
-  loadDashboard();    // runs in background, updates KPI when ready
-}
+  renderNotifications();
+  loadMasterData();
+  loadDashboard();
+  loadVisitPlan();
+})();
 
-// logout removed — no login required
-
-// ══════════════════════════════════════════════
-//  API CALLS — fetch() ไป Apps Script URL โดยตรง
-// ══════════════════════════════════════════════
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3A95DLm6Tj77xkDoqF_kTSDZ6qPznDSqH4KXcA3xjvqG8KRdlgNEJtlw1Kp84rgqa/exec';
-
+// ══ API ══
 async function apiGet(params) {
   try {
     const url = GAS_URL + '?' + new URLSearchParams(params).toString();
-    const res = await fetch(url, { redirect: 'follow' });
-    const text = await res.text();
-    return JSON.parse(text);
-  } catch(e) {
-    console.warn('apiGet failed:', e.message);
-    return null;
-  }
-}
-
-async function apiPost(data) {
-  try {
-    // Apps Script POST ต้องใช้ no-cors — ใช้ GET แทนสำหรับ checkin
-    const params = new URLSearchParams({ action: 'checkin_post' });
-    const url = GAS_URL + '?' + params.toString();
-    // encode data ใน URL เพราะ POST body อาจ block โดย CORS
-    const postData = encodeURIComponent(JSON.stringify(data.data));
-    const getUrl = GAS_URL + '?action=checkin&data=' + postData;
-    const res = await fetch(getUrl, { redirect: 'follow' });
-    const text = await res.text();
-    return JSON.parse(text);
-  } catch(e) {
-    console.warn('apiPost failed, trying no-cors:', e.message);
-    // fallback: no-cors (ไม่อ่าน response แต่ข้อมูลส่งถึง)
-    try {
-      await fetch(GAS_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(data),
-      });
-      return { ok: true, ref: 'CHK-' + Date.now() };
-    } catch(e2) { return null; }
-  }
+    const res  = await fetch(url, { redirect:'follow' });
+    return await res.json();
+  } catch(e) { return null; }
 }
 
 async function loadMasterData() {
-  // masterData มีค่า default แล้ว — โหลด Sheets ใน background แล้ว update
-  renderNotifications();
-  const data = await apiGet({ action: 'masterdata' });
+  const data = await apiGet({ action:'masterdata' });
   if (data && data.employees && data.employees.length) {
-    masterData = data; // update จาก Sheets จริง
-    const heroEl = document.getElementById('hero-name');
-    if (heroEl) heroEl.textContent = data.employees[0].split(' ')[0] || 'Sales';
-    document.getElementById('last-sync').textContent =
-      new Date().toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+    masterData = data;
+    document.getElementById('hero-name').textContent = data.employees[0].split(' ')[0] || 'Sales';
     showToast('✓ โหลดข้อมูลจาก Sheets สำเร็จ');
   }
-  // ถ้า API ไม่ตอบ — ใช้ default masterData ที่มีอยู่แล้ว ปุ่มกดได้ปกติ
+  document.getElementById('last-sync').textContent = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadDashboard() {
+  renderDashKPI(42, 486000, 18, 96);
+  buildBarChart(null);
+  const data = await apiGet({ action:'dashboard' });
+  if (data && data.totalMonth) {
+    renderDashKPI(data.totalMonth, data.totalValue, data.uniqueShops, data.successRate);
+    buildBarChart(data.daily);
+  }
+}
+
+function renderDashKPI(total, value, shops, rate) {
+  const s = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  s('kpi-total', total);
+  s('kpi-value', '฿'+(value/1000).toFixed(0)+'K');
+  s('kpi-shops', shops);
+  s('kpi-rate',  rate+'%');
+  s('stat-today', 8);
+  s('stat-month', total);
+  s('stat-rate',  rate+'%');
 }
 
 async function loadHistory() {
-  document.getElementById('history-list').innerHTML = '<div style="text-align:center; padding:40px; color:var(--text3);">กำลังโหลด...</div>';
-  const data = await apiGet({ action: 'history', email: currentUser?.email || '' });
+  document.getElementById('history-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
+  const data = await apiGet({ action:'history' });
   if (data && data.rows && data.rows.length) {
     allHistory = data.rows;
   } else {
-    // Demo data
     allHistory = [
-      { ref:'CHK-20260527-1234', date:'27/05/2569 14:32', shop:'ท็อปส์ สาขาสีลม', province:'กรุงเทพฯ', tasks:'ตรวจเยี่ยมลูกค้า', orderValue:12500, status:'สำเร็จ' },
-      { ref:'CHK-20260527-1235', date:'27/05/2569 11:15', shop:'บิ๊กซี สาขาลาดพร้าว', province:'กรุงเทพฯ', tasks:'เสนอสินค้า', orderValue:8200, status:'สำเร็จ' },
-      { ref:'CHK-20260526-1180', date:'26/05/2569 09:45', shop:'โลตัส สาขานครปฐม', province:'นครปฐม', tasks:'อัพเดทโปรโมชั่น', orderValue:0, status:'รอตรวจ' },
-      { ref:'CHK-20260526-1181', date:'26/05/2569 14:00', shop:'แม็คโคร สาขาบางนา', province:'กรุงเทพฯ', tasks:'ติดตามงานขาย', orderValue:24000, status:'สำเร็จ' },
+      {ref:'CHK-20260527-1234',date:'27/05/2569 14:32',shop:'ท็อปส์ สาขาสีลม',province:'กรุงเทพฯ',tasks:'ตรวจเยี่ยมลูกค้า',orderValue:12500,status:'สำเร็จ'},
+      {ref:'CHK-20260527-1235',date:'27/05/2569 11:15',shop:'บิ๊กซี สาขาลาดพร้าว',province:'กรุงเทพฯ',tasks:'เสนอสินค้า',orderValue:8200,status:'สำเร็จ'},
     ];
   }
   filterHistory();
   document.getElementById('history-sub').textContent = `${allHistory.length} รายการ`;
 }
 
-async function loadDashboard() {
-  // แสดง demo data ก่อนเลย แล้วอัพเดตเมื่อ API ตอบ
-  let total=42, value=486000, shops=18, rate=96;
-  renderDashKPI(total, value, shops, rate);
-  buildBarChart(null);
-  const data = await apiGet({ action: 'dashboard', email: currentUser?.email || '' });
-  if (data && data.totalMonth) {
-    total = data.totalMonth; value = data.totalValue; shops = data.uniqueShops; rate = data.successRate;
-    renderDashKPI(total, value, shops, rate);
-    buildBarChart(data.daily);
-  }
-  // KPI already rendered above
-}
+// ══ PLAN CALENDAR ══
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-based
+let planData = []; // [{date:'2026-05-15', shopName:'...', employeeName:'...', status:'done'|'miss'|'future'}]
+let checkinDates = {}; // {'2026-05-15': ['ร้าน A','ร้าน B']}
 
-// ══════════════════════════════════════════════
-//  FORM
-// ══════════════════════════════════════════════
-const stepDefs = [
-  { icon: `<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`, title:'ส่วนที่ 1: ข้อมูลร้านค้า' },
-  { icon: `<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>`, title:'อัปโหลดรูปถ่าย' },
-  { icon: `<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>`, title:'ส่วนที่ 2: ข้อมูลการซื้อและการจำหน่าย' },
-  { icon: `<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`, title:'ส่วนที่ 3: ข้อมูลคู่แข่ง' },
-  { icon: `<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`, title:'ส่วนที่ 4: สรุปผลและ Action Plan' },
-];
-
-function goToForm() {
-  currentStep = 0; photoStates = [false,false,false];
-  gpsData = { lat:null, lng:null, acquired:false };
-  formData = {}; orderValue = 0;
-  renderStep(); switchScreen('form');
-}
-
-function renderStep() {
-  const steps = document.querySelectorAll('.progress-step');
-  steps.forEach((s,i) => {
-    s.classList.remove('active','done');
-    if (i < currentStep) s.classList.add('done');
-    if (i === currentStep) s.classList.add('active');
-    const num = s.querySelector('.progress-step-num');
-    num.innerHTML = i < currentStep
-      ? `<svg width="11" height="11" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`
-      : i+1;
-  });
-
-  const def = stepDefs[currentStep];
-  let html = `<div class="form-section-header">
-    <div class="form-section-badge">${def.icon}</div>
-    <div class="form-section-title">${def.title}</div>
-  </div>`;
-
-  const renders = [renderStep0, renderStep1, renderStep2, renderStep3, renderStep4];
-  html += renders[currentStep]();
-
-  html += `<div class="form-nav">
-    ${currentStep > 0
-      ? `<button class="btn btn-secondary" data-action="prev-step">← ก่อนหน้า</button>`
-      : `<button class="btn btn-secondary" data-action="cancel-form">ยกเลิก</button>`}
-    ${currentStep < 4
-      ? `<button class="btn btn-primary" data-action="next-step">ถัดไป →</button>`
-      : `<button class="btn btn-success" id="submit-btn" data-action="submit-form">✓ บันทึก Check-in</button>`}
-  </div>`;
-
-  document.getElementById('form-body').innerHTML = html;
-  window.scrollTo(0,56);
-
-  if (currentStep === 0) initStep0();
-}
-
-function makeOptions(arr, placeholder='— เลือก —') {
-  return `<option value="">${placeholder}</option>` + arr.map(v => `<option>${v}</option>`).join('');
-}
-function makeShopOptions() {
-  if (!masterData) return '<option>กำลังโหลด...</option>';
-  return `<option value="">— เลือกร้านค้า —</option>` +
-    masterData.shops.map(s => `<option value="${s.name}" data-prov="${s.province}" data-type="${s.type}">${s.name}</option>`).join('');
-}
-
-function renderStep0() {
-  const now = new Date();
-  const ts = `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()+543}  ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-  const emp = masterData ? masterData.employees : [];
-  const prov = masterData ? masterData.provinces : [];
-  const cg = masterData ? masterData.customerGroups : [];
-  const st = masterData ? masterData.shopTypes : [];
-  const tasks = masterData ? masterData.tasks : ['ตรวจเยี่ยมลูกค้า','ติดตามงานขาย','เสนอสินค้า','อัพเดทโปรโมชั่น'];
-  return `
-  <div class="field-group"><label class="field-label">วันที่ เวลา</label><input class="field-input readonly" value="${ts}" readonly></div>
-  <div class="field-group"><label class="field-label">ชื่อ นามสกุล <span class="req">*</span></label>
-    <select class="field-select" id="f-employee"><option value="">${currentUser?.name || '— เลือก —'}</option>${emp.map(e=>`<option ${e===currentUser?.name?'selected':''}>${e}</option>`).join('')}</select></div>
-  <div class="field-group"><label class="field-label">ชื่อร้านค้า <span class="req">*</span></label>
-    <select class="field-select" id="f-shop" onchange="onShopChange(this)">${makeShopOptions()}</select></div>
-  <div class="field-group"><label class="field-label">จังหวัด <span class="req">*</span></label>
-    <select class="field-select" id="f-province">${makeOptions(prov)}</select></div>
-  <div class="field-group"><label class="field-label">กลุ่มลูกค้า <span class="req">*</span></label>
-    <select class="field-select" id="f-cgroup">${makeOptions(cg)}</select></div>
-  <div class="field-group"><label class="field-label">ประเภทของร้านค้า <span class="req">*</span></label>
-    <select class="field-select" id="f-stype">${makeOptions(st)}</select></div>
-  <div class="field-group"><label class="field-label">รายละเอียดงาน <span class="req">*</span></label>
-    <div class="multi-select-group" id="task-chips">
-      ${tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}
-    </div></div>
-  <div class="field-group"><label class="field-label">ชื่อลูกค้า <span class="req">*</span></label><input class="field-input" id="f-custname" type="text" placeholder="ชื่อผู้ติดต่อ"></div>
-  <div class="field-group"><label class="field-label">อื่นๆ ระบุ</label><input class="field-input" id="f-other" type="text" placeholder="หมายเหตุเพิ่มเติม"></div>`;
-}
-
-function initStep0() {
-  document.querySelectorAll('#task-chips .multi-chip').forEach(chip => {
-    if ((formData.tasks||[]).includes(chip.dataset.val)) chip.classList.add('selected');
-    chip.addEventListener('click', () => chip.classList.toggle('selected'));
-  });
-}
-
-function onShopChange(sel) {
-  const opt = sel.options[sel.selectedIndex];
-  if (opt.dataset.prov) document.getElementById('f-province').value = opt.dataset.prov;
-  if (opt.dataset.type) document.getElementById('f-stype').value = opt.dataset.type;
-}
-
-function renderStep1() {
-  const p = photoStates;
-  return `
-  <p style="font-size:13px; color:var(--text2); margin-bottom:16px; line-height:1.6;">ถ่ายรูปหน้าร้านและสินค้า รูปถ่าย 1-2 จำเป็นต้องมี</p>
-  <div class="photo-grid">
-    <div class="photo-upload ${p[0]?'has-photo':''}" id="photo0" data-action="photo0">
-      <div class="photo-check">✓</div>
-      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
-      <span>${p[0]?'อัปโหลดแล้ว':'รูปถ่าย 1 *'}</span>
-    </div>
-    <div class="photo-upload ${p[1]?'has-photo':''}" id="photo1" data-action="photo1">
-      <div class="photo-check">✓</div>
-      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
-      <span>${p[1]?'อัปโหลดแล้ว':'รูปถ่าย 2 *'}</span>
-    </div>
-  </div>
-  <div style="margin-top:10px;">
-    <div class="photo-upload ${p[2]?'has-photo':''}" id="photo2" data-action="photo2" style="aspect-ratio:2.5/1; flex-direction:row; gap:12px; padding:16px;">
-      <div class="photo-check">✓</div>
-      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
-      <span>${p[2]?'อัปโหลดแล้ว':'รูปถ่ายเพิ่มเติม (ไม่บังคับ)'}</span>
-    </div>
-  </div>
-  <p style="font-size:11px; color:var(--text3); margin-top:12px; text-align:center;">กดที่กล่องเพื่อถ่ายรูป / เลือกจากคลัง</p>`;
-}
-
-function renderStep2() {
-  const os = masterData ? masterData.orderStatuses : ['สั่งซื้อปกติ','สั่งซื้อเพิ่มพิเศษ','ลดการสั่งซื้อ','ไม่สั่งซื้อ'];
-  const now = new Date();
-  return `
-  <div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด <span class="req">*</span></label>
-    <select class="field-select" id="f-orderstatus">${makeOptions(os)}</select></div>
-  <div class="field-group"><label class="field-label">ระบุเดือน ปี <span class="req">*</span></label>
-    <input class="field-input" type="date" id="f-orderdate" value="${now.toISOString().slice(0,10)}"></div>
-  <div class="field-group"><label class="field-label">มูลค่า (บาท)</label>
-    <div class="number-input">
-      <button class="number-btn" type="button" data-action="minus">−</button>
-      <input class="field-input" type="number" id="order-val" value="${orderValue}" min="0" oninput="orderValue=parseInt(this.value)||0">
-      <button class="number-btn" type="button" data-action="plus">+</button>
-    </div></div>
-  <div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label>
-    <input class="field-input" type="text" id="f-noreason" placeholder="กรณีไม่สั่งซื้อ"></div>
-  <div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี <span class="req">*</span></label>
-    <textarea class="field-textarea" id="f-gracz" placeholder="ระบุรุ่นที่ขายดีในร้านนี้..."></textarea></div>`;
-}
-
-function renderStep3() {
-  return `
-  <div class="field-group"><label class="field-label">แบรนด์คู่แข่งในร้าน (เลือกได้มากกว่า 1) <span class="req">*</span></label>
-    <div class="multi-select-group">
-      ${['Brand A','Brand B','Brand C','Brand D','Brand E','อื่นๆ'].map(b=>`<div class="multi-chip" data-action="toggle-chip">${b}</div>`).join('')}
-    </div></div>
-  <div class="field-group"><label class="field-label">แบรนด์สินค้าที่ขายดีในร้าน <span class="req">*</span></label>
-    <div class="multi-select-group">
-      ${['Brand A','Brand B','Brand C','Gracz'].map(b=>`<div class="multi-chip ${b==='Gracz'?'selected':''}" data-action="toggle-chip">${b}</div>`).join('')}
-    </div></div>
-  <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง <span class="req">*</span></label>
-    <textarea class="field-textarea" id="f-comppromo" placeholder="อธิบายโปรโมชั่นของคู่แข่งที่พบ..."></textarea></div>`;
-}
-
-function renderStep4() {
-  return `
-  <div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ โอกาสหรืออุปสรรค <span class="req">*</span></label>
-    <textarea class="field-textarea" id="f-findings" placeholder="สรุปสิ่งที่พบระหว่างการเยี่ยม..."></textarea></div>
-  <div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ <span class="req">*</span></label>
-    <textarea class="field-textarea" id="f-action" placeholder="Action Plan..."></textarea></div>
-  <div class="field-group"><label class="field-label">Check-in Location <span class="req">*</span></label>
-    <div class="gps-field">
-      <div class="gps-bar">
-        <span class="gps-coords" id="gps-coords">${gpsData.acquired ? `${gpsData.lat.toFixed(6)}, ${gpsData.lng.toFixed(6)}` : 'กดปุ่มเพื่อรับตำแหน่ง GPS'}</span>
-        <button class="gps-btn" data-action="gps" type="button">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-          ${gpsData.acquired ? 'รีเฟรช' : 'รับตำแหน่ง'}
-        </button>
-      </div>
-      <div class="map-preview" id="map-preview">
-        <div class="map-grid"></div>
-        ${gpsData.acquired
-          ? '<div class="map-dot"></div>'
-          : '<span style="font-size:12px; color:var(--text3); position:relative; z-index:1;">กด "รับตำแหน่ง" เพื่อแสดงแผนที่</span>'}
-      </div>
-    </div></div>`;
-}
-
-function nextStep() {
-  if (currentStep === 0) {
-    const shop = document.getElementById('f-shop')?.value;
-    const custname = document.getElementById('f-custname')?.value;
-    const tasks = [...document.querySelectorAll('#task-chips .multi-chip.selected')].map(c=>c.dataset.val);
-    if (!shop || !custname || !tasks.length) {
-      showToast('กรุณากรอกข้อมูลที่จำเป็น (*)', 'error'); return;
-    }
-    formData.shopName = shop;
-    formData.employeeName = document.getElementById('f-employee')?.value || currentUser?.name;
-    formData.province = document.getElementById('f-province')?.value;
-    formData.customerGroup = document.getElementById('f-cgroup')?.value;
-    formData.shopType = document.getElementById('f-stype')?.value;
-    formData.tasks = tasks;
-    formData.customerName = custname;
-    formData.otherNote = document.getElementById('f-other')?.value;
-  }
-  if (currentStep === 1 && (!photoStates[0] || !photoStates[1])) {
-    showToast('กรุณาถ่ายรูปถ่าย 1 และ 2 ก่อน', 'error'); return;
-  }
-  if (currentStep < 4) { currentStep++; renderStep(); }
-}
-function prevStep() { if (currentStep > 0) { currentStep--; renderStep(); } }
-
-function togglePhoto(idx) {
-  // สร้าง hidden input เปิดกล้องโดยตรง (capture=environment = กล้องหลัง)
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.capture = 'environment'; // กล้องหลังทันที ไม่เปิด gallery
-  input.style.display = 'none';
-  document.body.appendChild(input);
-
-  input.onchange = function() {
-    if (!input.files || !input.files[0]) { document.body.removeChild(input); return; }
-    const file = input.files[0];
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      photoStates[idx] = true;
-      photoData[idx] = e.target.result; // base64 เก็บไว้ส่ง
-      const el = document.getElementById('photo' + idx);
-      if (el) {
-        el.classList.add('has-photo');
-        // แสดง thumbnail
-        let img = el.querySelector('img.thumb');
-        if (!img) {
-          img = document.createElement('img');
-          img.className = 'thumb';
-          img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;';
-          el.prepend(img);
-        }
-        img.src = e.target.result;
-        const sp = el.querySelector('span');
-        if (sp) sp.style.display = 'none';
-        const sv = el.querySelector('svg');
-        if (sv) sv.style.display = 'none';
-      }
-      showToast('✓ ถ่ายรูปสำเร็จ');
-    };
-    reader.readAsDataURL(file);
-    document.body.removeChild(input);
-  };
-
-  input.click();
-}
-
-function changeVal(delta) {
-  orderValue = Math.max(0, orderValue + delta);
-  const el = document.getElementById('order-val');
-  if (el) el.value = orderValue;
-}
-
-function getGPS() {
-  const btn = document.querySelector('.gps-btn');
-  if (btn) { btn.textContent = '⏳ กำลังระบุ...'; btn.disabled = true; }
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(pos => {
-      gpsData = { lat: pos.coords.latitude, lng: pos.coords.longitude, acquired: true };
-      updateGPSUI();
-    }, () => {
-      // Demo fallback
-      gpsData = { lat: 13.756331, lng: 100.501762, acquired: true };
-      updateGPSUI();
-    }, { timeout: 8000 });
+async function loadVisitPlan() {
+  const data = await apiGet({ action: 'visitplan' });
+  if (data && data.plans) {
+    planData = data.plans;
   } else {
-    gpsData = { lat: 13.756331, lng: 100.501762, acquired: true };
-    updateGPSUI();
+    // Demo data
+    const now  = new Date();
+    const y    = now.getFullYear();
+    const m    = (now.getMonth()+1).toString().padStart(2,'0');
+    planData = [
+      {date:`${y}-${m}-05`, shopName:'ท็อปส์ สาขาสีลม',    status:'done'},
+      {date:`${y}-${m}-05`, shopName:'บิ๊กซี สาขาลาดพร้าว', status:'done'},
+      {date:`${y}-${m}-10`, shopName:'โลตัส สาขานครปฐม',    status:'miss'},
+      {date:`${y}-${m}-12`, shopName:'แม็คโคร สาขาบางนา',   status:'done'},
+      {date:`${y}-${m}-15`, shopName:'เทสโก้ สาขารังสิต',   status:'warn'},
+      {date:`${y}-${m}-18`, shopName:'ท็อปส์ สาขาสีลม',    status:'future'},
+      {date:`${y}-${m}-20`, shopName:'บิ๊กซี สาขาลาดพร้าว', status:'future'},
+      {date:`${y}-${m}-22`, shopName:'โลตัส สาขานครปฐม',    status:'future'},
+      {date:`${y}-${m}-25`, shopName:'แม็คโคร สาขาบางนา',   status:'future'},
+      {date:`${y}-${m}-27`, shopName:'เทสโก้ สาขารังสิต',   status:'future'},
+    ];
   }
+  renderCalendar();
 }
 
-function updateGPSUI() {
-  const coords = document.getElementById('gps-coords');
-  const map = document.getElementById('map-preview');
-  const btn = document.querySelector('.gps-btn');
-  if (coords) coords.textContent = `${gpsData.lat.toFixed(6)}, ${gpsData.lng.toFixed(6)}`;
-  if (map) map.innerHTML = '<div class="map-grid"></div><div class="map-dot"></div>';
-  if (btn) { btn.innerHTML = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83"/></svg> รีเฟรช`; btn.disabled = false; }
-  showToast('✓ รับตำแหน่ง GPS สำเร็จ');
+function changeCalMonth(dir) {
+  if (dir === 0) { calYear = new Date().getFullYear(); calMonth = new Date().getMonth(); }
+  else { calMonth += dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} }
+  document.getElementById('day-detail').style.display = 'none';
+  renderCalendar();
 }
 
-async function submitForm() {
-  const findings = document.getElementById('f-findings')?.value;
-  const action = document.getElementById('f-action')?.value;
-  if (!findings || !action) { showToast('กรุณากรอกประเด็นสำคัญและ Action Plan', 'error'); return; }
-  if (!gpsData.acquired) { showToast('กรุณารับตำแหน่ง GPS ก่อน', 'error'); return; }
+function renderCalendar() {
+  const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  document.getElementById('cal-month-title').textContent = `${thMonths[calMonth]} ${calYear+543}`;
 
-  const btn = document.getElementById('submit-btn');
-  if (btn) { btn.textContent = '⏳ กำลังบันทึก...'; btn.disabled = true; }
+  const now      = new Date();
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInM  = new Date(calYear, calMonth+1, 0).getDate();
+  const daysInP  = new Date(calYear, calMonth, 0).getDate();
 
-  const payload = {
-    action: 'checkin',
-    data: {
-      ...formData,
-      employeeEmail: currentUser?.email || '',
-      lastOrder: document.getElementById('f-orderstatus')?.value,
-      orderMonth: document.getElementById('f-orderdate')?.value,
-      orderValue: orderValue,
-      noOrderReason: document.getElementById('f-noreason')?.value,
-      bestSellingGracz: document.getElementById('f-gracz')?.value,
-      competitorBrands: [...document.querySelectorAll('#f-compbrands .multi-chip.selected')].map(c=>c.textContent),
-      bestSellingBrands: [...document.querySelectorAll('#f-bestbrands .multi-chip.selected')].map(c=>c.textContent),
-      competitorPromo: document.getElementById('f-comppromo')?.value,
-      keyFindings: findings,
-      actionPlan: action,
-      gpsLat: gpsData.lat,
-      gpsLng: gpsData.lng,
-      photo1: photoData[0] || '',
-      photo2: photoData[1] || '',
-      photo3: photoData[2] || '',
+  // group plans by date
+  const byDate = {};
+  planData.forEach(p => {
+    const [py, pm] = p.date.split('-').map(Number);
+    if (py === calYear && pm === calMonth+1) {
+      if (!byDate[p.date]) byDate[p.date] = [];
+      byDate[p.date].push(p);
     }
-  };
-
-  const result = await apiPost(payload);
-  const now = new Date();
-  const ref = (result && result.ref)
-    ? result.ref
-    : 'CHK-' + now.getFullYear() + (now.getMonth()+1).toString().padStart(2,'0') + now.getDate().toString().padStart(2,'0') + '-' + Math.floor(Math.random()*9000+1000);
-  document.getElementById('modal-ref').textContent = 'REF: ' + ref;
-  document.getElementById('modal').classList.add('show');
-  showToast('✓ บันทึกลง Google Sheets สำเร็จ');
-}
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('show');
-  switchScreen('home');
-  loadDashboard();
-}
-
-// ══════════════════════════════════════════════
-//  HISTORY
-// ══════════════════════════════════════════════
-function filterHistory() {
-  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
-  const filter = document.getElementById('filter-select')?.value || 'ทั้งหมด';
-  const now = new Date();
-
-  const filtered = allHistory.filter(r => {
-    const matchQ = !q || r.shop.toLowerCase().includes(q);
-    return matchQ;
   });
 
-  const list = document.getElementById('history-list');
-  if (!filtered.length) {
-    list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text3); font-size:14px;">ไม่พบข้อมูล</div>';
-    return;
-  }
-  list.innerHTML = filtered.map(r => `
-    <div class="history-item">
-      <div class="history-item-head">
-        <div>
-          <div class="history-item-shop">${r.shop}</div>
-          <div class="history-item-date">${r.date}</div>
-        </div>
-        <span class="history-status ${r.status==='สำเร็จ'?'status-done':'status-pending'}">${r.status}</span>
-      </div>
-      <div class="history-tags">
-        <span class="tag">${r.province}</span>
-        <span class="tag">${r.tasks}</span>
-        ${r.orderValue ? `<span class="tag">฿${Number(r.orderValue).toLocaleString()}</span>` : ''}
-        <span class="tag" style="color:var(--text3); font-size:10px;">${r.ref}</span>
-      </div>
-    </div>`).join('');
-}
+  // summary
+  const monthPlans = planData.filter(p => {
+    const [py,pm] = p.date.split('-').map(Number);
+    return py===calYear && pm===calMonth+1;
+  });
+  const done   = monthPlans.filter(p=>p.status==='done').length;
+  const miss   = monthPlans.filter(p=>p.status==='miss').length;
+  const warn   = monthPlans.filter(p=>p.status==='warn').length;
+  document.getElementById('sum-total').textContent = monthPlans.length;
+  document.getElementById('sum-done').textContent  = done;
+  document.getElementById('sum-miss').textContent  = miss + warn;
 
-// ══════════════════════════════════════════════
-//  DASHBOARD
-// ══════════════════════════════════════════════
-function renderDashKPI(total, value, shops, rate) {
-  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-  set('kpi-total', total);
-  set('kpi-value', '฿' + (value/1000).toFixed(0) + 'K');
-  set('kpi-shops', shops);
-  set('kpi-rate', rate + '%');
-  set('stat-today', 8);
-  set('stat-month', total);
-  set('stat-rate', rate + '%');
-}
-
-function buildBarChart(daily) {
-  const now = new Date();
-  const days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
-  const data = [];
-  for (let i=6; i>=0; i--) {
-    const d = new Date(now); d.setDate(d.getDate()-i);
-    const key = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
-    data.push({ d: days[d.getDay()], v: (daily && daily[key]) || Math.floor(Math.random()*8+2) });
+  let cells = '';
+  // prev month padding
+  for (let i=0; i<firstDay; i++) {
+    const d = daysInP - firstDay + i + 1;
+    cells += `<div class="cal-cell other-month"><div class="cal-date">${d}</div></div>`;
   }
-  const max = Math.max(...data.map(x=>x.v));
-  const c = document.getElementById('bar-chart');
-  if (!c) return;
-  c.innerHTML = data.map(({d,v}) => {
-    const h = Math.round((v/max)*80);
-    const isToday = d === days[now.getDay()];
-    return `<div class="bar-wrap">
-      <div class="bar-val">${v}</div>
-      <div class="bar" style="height:${h}px; background:${isToday?'var(--brand)':'var(--brand-light)'}; border:${isToday?'none':'1px solid var(--border)'}"></div>
-      <div class="bar-lbl">${d}</div>
+  // current month
+  for (let d=1; d<=daysInM; d++) {
+    const mm   = (calMonth+1).toString().padStart(2,'0');
+    const dd   = d.toString().padStart(2,'0');
+    const key  = `${calYear}-${mm}-${dd}`;
+    const plans= byDate[key] || [];
+    const isToday = (d===now.getDate() && calMonth===now.getMonth() && calYear===now.getFullYear());
+
+    let statusClass = '';
+    let icon = '';
+    if (plans.length) {
+      const statuses = plans.map(p=>p.status);
+      if (statuses.includes('miss'))        { statusClass='has-plan status-miss';   icon='❌'; }
+      else if (statuses.includes('warn'))   { statusClass='has-plan status-warn';   icon='⚠️'; }
+      else if (statuses.every(s=>s==='done')){ statusClass='has-plan status-done'; icon='✅'; }
+      else                                  { statusClass='has-plan status-future'; icon='📅'; }
+    }
+
+    const shopLines = plans.slice(0,2).map(p=>`<div class="cal-shop-dot">${p.shopName.replace(/สาขา.*/,'').trim()}</div>`).join('');
+    const more = plans.length>2 ? `<div class="cal-more">+${plans.length-2} อื่นๆ</div>` : '';
+
+    cells += `<div class="cal-cell ${isToday?'today':''} ${statusClass}" onclick="showDayDetail('${key}',${d})">
+      <div class="cal-date">${d}</div>
+      ${icon ? `<div class="cal-status-icon">${icon}</div>` : ''}
+      <div class="cal-shops">${shopLines}${more}</div>
     </div>`;
-  }).join('');
+  }
+  // next month padding
+  const total = firstDay + daysInM;
+  const remain = total%7 === 0 ? 0 : 7-(total%7);
+  for (let d=1; d<=remain; d++) {
+    cells += `<div class="cal-cell other-month"><div class="cal-date">${d}</div></div>`;
+  }
+  document.getElementById('cal-grid').innerHTML = cells;
 }
 
-function setPeriod(btn) {
-  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  loadDashboard();
+function showDayDetail(dateKey, dayNum) {
+  const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const plans = planData.filter(p => p.date === dateKey);
+  const panel = document.getElementById('day-detail');
+  const title = document.getElementById('day-detail-title');
+  title.textContent = `แผนวันที่ ${dayNum} ${thMonths[calMonth]} ${calYear+543}`;
+
+  if (!plans.length) {
+    document.getElementById('day-detail-list').innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">ไม่มีแผนวันนี้</div>`;
+  } else {
+    const statusMap = { done:{cls:'done',badge:'badge-done',label:'✅ เข้าพบแล้ว'}, warn:{cls:'warn',badge:'badge-warn',label:'⚠️ ไม่ครบ/สาย'}, miss:{cls:'miss',badge:'badge-miss',label:'❌ ยังไม่พบ'}, future:{cls:'future',badge:'badge-future',label:'📅 ยังไม่ถึงกำหนด'} };
+    document.getElementById('day-detail-list').innerHTML = plans.map(p => {
+      const s = statusMap[p.status] || statusMap.future;
+      return `<div class="plan-item ${s.cls}">
+        <div class="plan-shop">${p.shopName}</div>
+        <div class="plan-meta">${p.employeeName||'—'} ${p.note?'· '+p.note:''}</div>
+        <span class="plan-badge ${s.badge}">${s.label}</span>
+      </div>`;
+    }).join('');
+  }
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
-// ══════════════════════════════════════════════
-//  NOTIFICATIONS
-// ══════════════════════════════════════════════
-function renderNotifications() {
-  const notifs = [
-    { color:'var(--accent)', text:'บิ๊กซี ลาดพร้าว ยังไม่ได้รับการเยี่ยม 7 วัน', time:'2 ชม.ที่แล้ว' },
-    { color:'var(--warning)', text:'ยอด Check-in สัปดาห์นี้ต่ำกว่าเป้า (8/15 ร้าน)', time:'เมื่อวาน 09:00' },
-    { color:'var(--success)', text:'บันทึก Check-in ท็อปส์ สีลม สำเร็จแล้ว', time:'เมื่อวาน 14:32' },
-  ];
-  document.getElementById('notif-list').innerHTML = notifs.map(n=>`
-    <div class="notif-item">
-      <div class="notif-dot" style="background:${n.color};"></div>
-      <div><div class="notif-text">${n.text}</div><div class="notif-time">${n.time}</div></div>
-    </div>`).join('');
-}
-
-// ══════════════════════════════════════════════
-//  UTILS
-// ══════════════════════════════════════════════
+// ══ NAV ══
 function switchScreen(name) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -986,54 +603,270 @@ function switchScreen(name) {
   document.getElementById('nav-'+name)?.classList.add('active');
 }
 
+// ══ FORM ══
+const stepDefs = [
+  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`,title:'ส่วนที่ 1: ข้อมูลร้านค้า'},
+  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>`,title:'อัปโหลดรูปถ่าย'},
+  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>`,title:'ส่วนที่ 2: ข้อมูลการซื้อและการจำหน่าย'},
+  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,title:'ส่วนที่ 3: ข้อมูลคู่แข่ง'},
+  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`,title:'ส่วนที่ 4: สรุปผลและ Action Plan'},
+];
+
+function goToForm() {
+  currentStep=0; photoStates=[false,false,false]; photoData=[null,null,null];
+  gpsData={lat:null,lng:null,acquired:false}; formData={}; orderValue=0;
+  renderStep(); switchScreen('form');
+}
+
+function renderStep() {
+  document.querySelectorAll('.progress-step').forEach((s,i) => {
+    s.classList.remove('active','done');
+    if (i<currentStep) s.classList.add('done');
+    if (i===currentStep) s.classList.add('active');
+    const n = s.querySelector('.progress-step-num');
+    n.innerHTML = i<currentStep ? `<svg width="11" height="11" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>` : i+1;
+  });
+  const def = stepDefs[currentStep];
+  let html = `<div class="form-section-header"><div class="form-section-badge">${def.icon}</div><div class="form-section-title">${def.title}</div></div>`;
+  const renders = [renderStep0,renderStep1,renderStep2,renderStep3,renderStep4];
+  html += renders[currentStep]();
+  html += `<div class="form-nav">
+    ${currentStep>0 ? `<button class="btn btn-secondary" onclick="prevStep()">← ก่อนหน้า</button>` : `<button class="btn btn-secondary" onclick="switchScreen('home')">ยกเลิก</button>`}
+    ${currentStep<4  ? `<button class="btn btn-primary" onclick="nextStep()">ถัดไป →</button>` : `<button class="btn btn-success" id="submit-btn" onclick="submitForm()">✓ บันทึก Check-in</button>`}
+  </div>`;
+  document.getElementById('form-body').innerHTML = html;
+  window.scrollTo(0,56);
+  if (currentStep===0) initStep0();
+}
+
+function mkOpts(arr,ph='— เลือก —'){return`<option value="">${ph}</option>`+arr.map(v=>`<option>${v}</option>`).join('')}
+function mkShopOpts(){return`<option value="">— เลือกร้านค้า —</option>`+masterData.shops.map(s=>`<option value="${s.name}" data-prov="${s.province}" data-type="${s.type}">${s.name}</option>`).join('')}
+
+function renderStep0(){
+  const now=new Date();
+  const ts=`${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()+543}  ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  return`
+  <div class="field-group"><label class="field-label">วันที่ เวลา</label><input class="field-input readonly" value="${ts}" readonly></div>
+  <div class="field-group"><label class="field-label">ชื่อ นามสกุล <span class="req">*</span></label><select class="field-select" id="f-employee">${mkOpts(masterData.employees)}</select></div>
+  <div class="field-group"><label class="field-label">ชื่อร้านค้า <span class="req">*</span></label><select class="field-select" id="f-shop" onchange="onShopChange(this)">${mkShopOpts()}</select></div>
+  <div class="field-group"><label class="field-label">จังหวัด <span class="req">*</span></label><select class="field-select" id="f-province">${mkOpts(masterData.provinces)}</select></div>
+  <div class="field-group"><label class="field-label">กลุ่มลูกค้า <span class="req">*</span></label><select class="field-select" id="f-cgroup">${mkOpts(masterData.customerGroups)}</select></div>
+  <div class="field-group"><label class="field-label">ประเภทของร้านค้า <span class="req">*</span></label><select class="field-select" id="f-stype">${mkOpts(masterData.shopTypes)}</select></div>
+  <div class="field-group"><label class="field-label">รายละเอียดงาน <span class="req">*</span></label><div class="multi-select-group" id="task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}</div></div>
+  <div class="field-group"><label class="field-label">ชื่อลูกค้า <span class="req">*</span></label><input class="field-input" id="f-custname" type="text" placeholder="ชื่อผู้ติดต่อ"></div>
+  <div class="field-group"><label class="field-label">อื่นๆ ระบุ</label><input class="field-input" id="f-other" type="text" placeholder="หมายเหตุเพิ่มเติม"></div>`;}
+
+function initStep0(){
+  document.querySelectorAll('#task-chips .multi-chip').forEach(c=>{
+    c.addEventListener('click',()=>c.classList.toggle('selected'));
+  });
+}
+function onShopChange(sel){
+  const o=sel.options[sel.selectedIndex];
+  if(o.dataset.prov){const p=document.getElementById('f-province');if(p)p.value=o.dataset.prov;}
+  if(o.dataset.type){const t=document.getElementById('f-stype');if(t)t.value=o.dataset.type;}
+}
+
+function renderStep1(){
+  const p=photoStates;
+  return`
+  <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">ถ่ายรูปหน้าร้านและสินค้า รูปถ่าย 1-2 จำเป็นต้องมี</p>
+  <div class="photo-grid">
+    <div class="photo-upload ${p[0]?'has-photo':''}" id="photo0" onclick="takePhoto(0)"><div class="photo-check">✓</div><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg><span>${p[0]?'อัปโหลดแล้ว':'รูปถ่าย 1 *'}</span></div>
+    <div class="photo-upload ${p[1]?'has-photo':''}" id="photo1" onclick="takePhoto(1)"><div class="photo-check">✓</div><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg><span>${p[1]?'อัปโหลดแล้ว':'รูปถ่าย 2 *'}</span></div>
+  </div>
+  <div style="margin-top:10px">
+    <div class="photo-upload ${p[2]?'has-photo':''}" id="photo2" onclick="takePhoto(2)" style="aspect-ratio:2.5/1;flex-direction:row;gap:12px;padding:16px"><div class="photo-check">✓</div><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg><span>${p[2]?'อัปโหลดแล้ว':'รูปถ่ายเพิ่มเติม (ไม่บังคับ)'}</span></div>
+  </div>`;}
+
+function renderStep2(){
+  return`
+  <div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด <span class="req">*</span></label><select class="field-select" id="f-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div>
+  <div class="field-group"><label class="field-label">ระบุเดือน ปี <span class="req">*</span></label><input class="field-input" type="date" id="f-orderdate" value="${new Date().toISOString().slice(0,10)}"></div>
+  <div class="field-group"><label class="field-label">มูลค่า (บาท)</label>
+    <div class="number-input">
+      <button class="number-btn" type="button" onclick="changeVal(-1000)">−</button>
+      <input class="field-input" type="number" id="order-val" value="0" min="0" oninput="orderValue=parseInt(this.value)||0">
+      <button class="number-btn" type="button" onclick="changeVal(1000)">+</button>
+    </div></div>
+  <div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" type="text" id="f-noreason" placeholder="กรณีไม่สั่งซื้อ"></div>
+  <div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี <span class="req">*</span></label><textarea class="field-textarea" id="f-gracz" placeholder="ระบุรุ่นที่ขายดีในร้านนี้..."></textarea></div>`;}
+
+function renderStep3(){
+  return`
+  <div class="field-group"><label class="field-label">แบรนด์คู่แข่งในร้าน <span class="req">*</span></label>
+    <div class="multi-select-group" id="f-compbrands">${['Brand A','Brand B','Brand C','Brand D','Brand E','อื่นๆ'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}</div></div>
+  <div class="field-group"><label class="field-label">แบรนด์สินค้าที่ขายดีในร้าน <span class="req">*</span></label>
+    <div class="multi-select-group" id="f-bestbrands">${['Brand A','Brand B','Brand C','Gracz'].map(b=>`<div class="multi-chip ${b==='Gracz'?'selected':''}" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}</div></div>
+  <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง <span class="req">*</span></label><textarea class="field-textarea" id="f-comppromo" placeholder="อธิบายโปรโมชั่นของคู่แข่งที่พบ..."></textarea></div>`;}
+
+function renderStep4(){
+  return`
+  <div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ <span class="req">*</span></label><textarea class="field-textarea" id="f-findings" placeholder="สรุปสิ่งที่พบระหว่างการเยี่ยม..."></textarea></div>
+  <div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ <span class="req">*</span></label><textarea class="field-textarea" id="f-action" placeholder="Action Plan..."></textarea></div>
+  <div class="field-group"><label class="field-label">Check-in Location <span class="req">*</span></label>
+    <div class="gps-field">
+      <div class="gps-bar">
+        <span class="gps-coords" id="gps-coords">${gpsData.acquired?`${gpsData.lat.toFixed(6)}, ${gpsData.lng.toFixed(6)}`:'กดปุ่มเพื่อรับตำแหน่ง GPS'}</span>
+        <button class="gps-btn" onclick="getGPS()" type="button"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>${gpsData.acquired?'รีเฟรช':'รับตำแหน่ง'}</button>
+      </div>
+      <div class="map-preview" id="map-preview"><div class="map-grid"></div>${gpsData.acquired?'<div class="map-dot"></div>':'<span style="font-size:12px;color:var(--text3);position:relative;z-index:1">กด รับตำแหน่ง เพื่อแสดงแผนที่</span>'}</div>
+    </div></div>`;}
+
+function nextStep(){
+  if(currentStep===0){
+    const shop=document.getElementById('f-shop')?.value;
+    const custname=document.getElementById('f-custname')?.value;
+    const tasks=[...document.querySelectorAll('#task-chips .multi-chip.selected')].map(c=>c.dataset.val);
+    if(!shop||!custname||!tasks.length){showToast('กรุณากรอกข้อมูลที่จำเป็น (*)','error');return;}
+    formData.shopName=shop; formData.employeeName=document.getElementById('f-employee')?.value;
+    formData.province=document.getElementById('f-province')?.value;
+    formData.customerGroup=document.getElementById('f-cgroup')?.value;
+    formData.shopType=document.getElementById('f-stype')?.value;
+    formData.tasks=tasks; formData.customerName=custname;
+    formData.otherNote=document.getElementById('f-other')?.value;
+  }
+  if(currentStep===1&&(!photoStates[0]||!photoStates[1])){showToast('กรุณาถ่ายรูปถ่าย 1 และ 2 ก่อน','error');return;}
+  if(currentStep<4){currentStep++;renderStep();}
+}
+function prevStep(){if(currentStep>0){currentStep--;renderStep();}}
+
+function takePhoto(idx){
+  const input=document.createElement('input');
+  input.type='file'; input.accept='image/*'; input.capture='environment'; input.style.display='none';
+  document.body.appendChild(input);
+  input.onchange=function(){
+    if(!input.files||!input.files[0]){document.body.removeChild(input);return;}
+    const reader=new FileReader();
+    reader.onload=function(e){
+      photoStates[idx]=true; photoData[idx]=e.target.result;
+      const el=document.getElementById('photo'+idx);
+      if(el){
+        el.classList.add('has-photo');
+        let img=el.querySelector('img.thumb');
+        if(!img){img=document.createElement('img');img.className='thumb';img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;';el.prepend(img);}
+        img.src=e.target.result;
+        const sp=el.querySelector('span'); if(sp)sp.style.display='none';
+        const sv=el.querySelector('svg');  if(sv)sv.style.display='none';
+      }
+      showToast('✓ ถ่ายรูปสำเร็จ');
+    };
+    reader.readAsDataURL(input.files[0]);
+    document.body.removeChild(input);
+  };
+  input.click();
+}
+
+function changeVal(d){orderValue=Math.max(0,orderValue+d);const el=document.getElementById('order-val');if(el)el.value=orderValue;}
+
+function getGPS(){
+  const btn=document.querySelector('.gps-btn');
+  if(btn){btn.textContent='⏳ กำลังระบุ...';btn.disabled=true;}
+  const done=()=>{
+    const c=document.getElementById('gps-coords');
+    const m=document.getElementById('map-preview');
+    if(c)c.textContent=`${gpsData.lat.toFixed(6)}, ${gpsData.lng.toFixed(6)}`;
+    if(m)m.innerHTML='<div class="map-grid"></div><div class="map-dot"></div>';
+    if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}
+    showToast('✓ รับตำแหน่ง GPS สำเร็จ');
+  };
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      gpsData={lat:pos.coords.latitude,lng:pos.coords.longitude,acquired:true}; done();
+    },()=>{gpsData={lat:13.756331,lng:100.501762,acquired:true};done();},{timeout:8000});
+  } else {gpsData={lat:13.756331,lng:100.501762,acquired:true};done();}
+}
+
+async function submitForm(){
+  const findings=document.getElementById('f-findings')?.value;
+  const action=document.getElementById('f-action')?.value;
+  if(!findings||!action){showToast('กรุณากรอกประเด็นสำคัญและ Action Plan','error');return;}
+  if(!gpsData.acquired){showToast('กรุณารับตำแหน่ง GPS ก่อน','error');return;}
+  const btn=document.getElementById('submit-btn');
+  if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
+  const payload={
+    ...formData,
+    lastOrder:document.getElementById('f-orderstatus')?.value,
+    orderMonth:document.getElementById('f-orderdate')?.value,
+    orderValue:orderValue,
+    noOrderReason:document.getElementById('f-noreason')?.value,
+    bestSellingGracz:document.getElementById('f-gracz')?.value,
+    competitorBrands:[...document.querySelectorAll('#f-compbrands .multi-chip.selected')].map(c=>c.textContent),
+    bestSellingBrands:[...document.querySelectorAll('#f-bestbrands .multi-chip.selected')].map(c=>c.textContent),
+    competitorPromo:document.getElementById('f-comppromo')?.value,
+    keyFindings:findings, actionPlan:action,
+    gpsLat:gpsData.lat, gpsLng:gpsData.lng,
+  };
+  // ส่งผ่าน GET เพื่อหลีกเลี่ยง CORS
+  const ref = await sendCheckin(payload);
+  document.getElementById('modal-ref').textContent='REF: '+ref;
+  document.getElementById('modal').classList.add('show');
+}
+
+async function sendCheckin(data){
+  const now=new Date();
+  const ref='CHK-'+now.getFullYear()+(now.getMonth()+1).toString().padStart(2,'0')+now.getDate().toString().padStart(2,'0')+'-'+Math.floor(Math.random()*9000+1000);
+  try {
+    const url=GAS_URL+'?action=checkin&data='+encodeURIComponent(JSON.stringify(data));
+    const res=await fetch(url,{redirect:'follow'});
+    const json=await res.json();
+    return json.ref||ref;
+  } catch(e){ return ref; }
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('show');switchScreen('home');loadDashboard();}
+
+// ══ HISTORY ══
+function filterHistory(){
+  const q=(document.getElementById('search-input')?.value||'').toLowerCase();
+  const filtered=allHistory.filter(r=>!q||r.shop.toLowerCase().includes(q));
+  const list=document.getElementById('history-list');
+  if(!filtered.length){list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">ไม่พบข้อมูล</div>';return;}
+  list.innerHTML=filtered.map(r=>`
+    <div class="history-item">
+      <div class="history-item-head">
+        <div><div class="history-item-shop">${r.shop}</div><div class="history-item-date">${r.date}</div></div>
+        <span class="history-status ${r.status==='สำเร็จ'?'status-done':'status-pending'}">${r.status}</span>
+      </div>
+      <div class="history-tags">
+        <span class="htag">${r.province}</span>
+        <span class="htag">${r.tasks}</span>
+        ${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}
+        <span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ══ DASHBOARD ══
+function buildBarChart(daily){
+  const now=new Date();
+  const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
+  const data=[];
+  for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);const key=`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;data.push({d:days[d.getDay()],v:(daily&&daily[key])||Math.floor(Math.random()*8+2)});}
+  const max=Math.max(...data.map(x=>x.v));
+  const c=document.getElementById('bar-chart');
+  if(!c)return;
+  c.innerHTML=data.map(({d,v})=>{const h=Math.round((v/max)*80);const today=d===days[now.getDay()];return`<div class="bar-wrap"><div class="bar-val">${v}</div><div class="bar" style="height:${h}px;background:${today?'var(--brand)':'var(--brand-light)'};border:${today?'none':'1px solid var(--border)'}"></div><div class="bar-lbl">${d}</div></div>`;}).join('');
+}
+function setPeriod(btn){document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');loadDashboard();}
+
+// ══ NOTIFICATIONS ══
+function renderNotifications(){
+  document.getElementById('notif-list').innerHTML=[
+    {c:'var(--accent)',t:'บิ๊กซี ลาดพร้าว ยังไม่ได้รับการเยี่ยม 7 วัน',time:'2 ชม.ที่แล้ว'},
+    {c:'var(--warning)',t:'ยอด Check-in สัปดาห์นี้ต่ำกว่าเป้า (8/15 ร้าน)',time:'เมื่อวาน 09:00'},
+    {c:'var(--success)',t:'บันทึก Check-in ท็อปส์ สีลม สำเร็จแล้ว',time:'เมื่อวาน 14:32'},
+  ].map(n=>`<div class="notif-item"><div class="notif-dot" style="background:${n.c}"></div><div><div class="notif-text">${n.t}</div><div class="notif-time">${n.time}</div></div></div>`).join('');
+}
+
+// ══ TOAST ══
 let toastTimer;
-function showToast(msg, type='ok') {
-  const t = document.getElementById('toast');
-  document.getElementById('toast-text').textContent = msg;
-  t.className = 'toast show' + (type==='error'?' error':'');
+function showToast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-text').textContent=msg;
+  t.className='toast show'+(type==='error'?' error':'');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
-}
-
-function showLoading(msg='กำลังโหลด...') {
-  document.getElementById('loading-text').textContent = msg;
-  document.getElementById('loading').classList.add('show');
-}
-function hideLoading() { document.getElementById('loading').classList.remove('show'); }
-
-// ══════════════════════════════════════════════
-//  EVENT DELEGATION — แทน onclick ทั้งหมด (Apps Script sandbox safe)
-// ══════════════════════════════════════════════
-document.addEventListener('click', function(e) {
-  const el = e.target.closest('[data-action]');
-  if (!el) return;
-  const action = el.dataset.action;
-
-  if (action === 'home')            { switchScreen('home'); return; }
-  if (action === 'checkin')         { goToForm(); return; }
-  if (action === 'history')         { switchScreen('history'); loadHistory(); return; }
-  if (action === 'dashboard')       { switchScreen('dashboard'); loadDashboard(); return; }
-  if (action === 'close-modal')     { closeModal(); return; }
-  if (action === 'close-modal-new') { closeModal(); goToForm(); return; }
-  if (action === 'period')          { setPeriod(el); return; }
-  if (action === 'minus')           { changeVal(-1000); return; }
-  if (action === 'plus')            { changeVal(1000); return; }
-  if (action === 'gps')             { getGPS(); return; }
-  if (action === 'prev-step')       { prevStep(); return; }
-  if (action === 'next-step')       { nextStep(); return; }
-  if (action === 'cancel-form')     { switchScreen('home'); return; }
-  if (action === 'submit-form')     { submitForm(); return; }
-  if (action === 'photo0')          { togglePhoto(0); return; }
-  if (action === 'photo1')          { togglePhoto(1); return; }
-  if (action === 'photo2')          { togglePhoto(2); return; }
-  if (action === 'toggle-chip')     { el.classList.toggle('selected'); return; }
-});
-
-// ── เริ่มแอป ──
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', autoLogin);
-} else {
-  autoLogin();
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
 }
 </script>
 </body>
