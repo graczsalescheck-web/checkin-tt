@@ -253,6 +253,14 @@ label.field-label .req{color:var(--accent)}
       </div>
     </div>
 
+    <!-- NOTIFICATIONS -->
+    <div style="padding:0 16px 8px">
+      <div class="section-title" style="padding-top:14px">การแจ้งเตือน</div>
+      <div id="notif-list">
+        <div class="notif-item"><div class="notif-dot" style="background:var(--warning)"></div><div><div class="notif-text">กำลังโหลด...</div></div></div>
+      </div>
+    </div>
+
     <!-- PLAN CALENDAR -->
     <div class="cal-wrap">
       <!-- Summary -->
@@ -368,6 +376,15 @@ label.field-label .req{color:var(--accent)}
 <script>
 // ══ CONFIG ══
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyV_Ifg7afWDt1NPTxq72Fra0fsX-fyv5jabUOkYuOHt-htflXPYTUDJoDjRHf9vz0O/exec';
+
+// ══ FORM STEPS (ต้อง declare ก่อน init) ══
+const stepDefs = [
+  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`,title:'ส่วนที่ 1: ข้อมูลร้านค้า'},
+  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>`,title:'อัปโหลดรูปถ่าย'},
+  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>`,title:'ส่วนที่ 2: ข้อมูลการซื้อและการจำหน่าย'},
+  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,title:'ส่วนที่ 3: ข้อมูลคู่แข่ง'},
+  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`,title:'ส่วนที่ 4: สรุปผลและ Action Plan'},
+];
 
 // ══ STATE ══
 let allHistory = [];
@@ -603,14 +620,7 @@ function switchScreen(name) {
   document.getElementById('nav-'+name)?.classList.add('active');
 }
 
-// ══ FORM ══
-const stepDefs = [
-  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`,title:'ส่วนที่ 1: ข้อมูลร้านค้า'},
-  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>`,title:'อัปโหลดรูปถ่าย'},
-  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>`,title:'ส่วนที่ 2: ข้อมูลการซื้อและการจำหน่าย'},
-  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,title:'ส่วนที่ 3: ข้อมูลคู่แข่ง'},
-  {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`,title:'ส่วนที่ 4: สรุปผลและ Action Plan'},
-];
+
 
 function goToForm() {
   currentStep=0; photoStates=[false,false,false]; photoData=[null,null,null];
@@ -854,7 +864,9 @@ function setPeriod(btn){document.querySelectorAll('.period-btn').forEach(b=>b.cl
 
 // ══ NOTIFICATIONS ══
 function renderNotifications(){
-  document.getElementById('notif-list').innerHTML=[
+  const notifEl = document.getElementById('notif-list');
+  if (!notifEl) return;
+  notifEl.innerHTML=[
     {c:'var(--accent)',t:'บิ๊กซี ลาดพร้าว ยังไม่ได้รับการเยี่ยม 7 วัน',time:'2 ชม.ที่แล้ว'},
     {c:'var(--warning)',t:'ยอด Check-in สัปดาห์นี้ต่ำกว่าเป้า (8/15 ร้าน)',time:'เมื่อวาน 09:00'},
     {c:'var(--success)',t:'บันทึก Check-in ท็อปส์ สีลม สำเร็จแล้ว',time:'เมื่อวาน 14:32'},
