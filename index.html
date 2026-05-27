@@ -615,7 +615,9 @@ const stepDefs = [
 function goToForm() {
   currentStep=0; photoStates=[false,false,false]; photoData=[null,null,null];
   gpsData={lat:null,lng:null,acquired:false}; formData={}; orderValue=0;
-  renderStep(); switchScreen('form');
+  switchScreen('form'); // แสดง screen ก่อน
+  renderStep();         // แล้วค่อย render form
+  document.querySelector('.main').scrollTo(0,0);
 }
 
 function renderStep() {
