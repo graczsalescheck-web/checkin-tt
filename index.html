@@ -1306,16 +1306,28 @@ function onCiShopChange(sel) {
 }
 
 function compressImage(dataUrl, maxWidth, quality, callback) {
-  const img = new Image();
-  img.onload = () => {
-    const canvas = document.createElement('canvas');
-    let w = img.width, h = img.height;
-    if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-    canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    callback(canvas.toDataURL('image/jpeg', quality));
-  };
-  img.src = dataUrl;
+  try {
+    const img = new Image();
+    img.onerror = () => callback(dataUrl); // fallback รูปเดิม
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const result = canvas.toDataURL('image/jpeg', quality);
+        // ถ้า result ว่างหรือผิดปกติ ใช้รูปเดิม
+        callback(result && result.length > 100 ? result : dataUrl);
+      } catch(e) {
+        callback(dataUrl); // fallback รูปเดิม
+      }
+    };
+    img.src = dataUrl;
+  } catch(e) {
+    callback(dataUrl); // fallback รูปเดิม
+  }
 }
 
 function takeCiPhoto() {
