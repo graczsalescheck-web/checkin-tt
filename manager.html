@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a3a8f">
+<title>Manager Dashboard — Sales TT</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#1a3a8f;--brand-mid:#2351c9;--brand-light:#e8eefb;
+  --accent:#e03131;--success:#2f9e44;--success-light:#ebfbee;
+  --warning:#f08c00;--warning-light:#fff9db;
+  --surface:#fff;--surface2:#f7f8fc;--surface3:#eef0f8;
+  --border:#dde2f0;--text:#1a1f36;--text2:#4a5070;--text3:#8890b0;
+  --radius:14px;--radius-sm:8px;
+  --shadow:0 2px 12px rgba(26,58,143,.10);
+  --shadow-lg:0 8px 32px rgba(26,58,143,.16);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--surface2);font-family:'Sarabun',sans-serif;color:var(--text);position:fixed;width:100%}
+.app-header{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--brand);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+.header-logo{display:flex;align-items:center;gap:10px}
+.header-logo-icon{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center}
+.app-header h1{color:#fff;font-size:15px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;border-top:1px solid var(--border);display:flex;height:62px;box-shadow:0 -4px 16px rgba(26,58,143,.08)}
+.nav-btn{flex:1;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--text3);font-size:10px;font-family:'Sarabun',sans-serif;transition:color .2s}
+.nav-btn svg{width:22px;height:22px;stroke-width:1.8}
+.nav-btn.active{color:var(--brand)}
+.nav-btn.active svg{stroke-width:2.5}
+.main{padding-top:56px;padding-bottom:62px;height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
+.screen{display:none;animation:fadeUp .25s ease}
+.screen.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.section-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.field-group{margin-bottom:12px}
+label.field-label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px}
+.field-input,.field-select,.field-textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:'Sarabun',sans-serif;color:var(--text);background:#fff;outline:none;transition:border-color .2s}
+.field-input:focus,.field-select:focus,.field-textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(26,58,143,.10)}
+.field-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238890b0' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px}
+.field-textarea{resize:vertical;min-height:80px;line-height:1.6}
+.btn{padding:10px 16px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:'Sarabun',sans-serif;transition:all .18s}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-secondary{background:var(--surface2);color:var(--text2);border:1.5px solid var(--border)}
+.btn-danger{background:var(--accent);color:#fff}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+
+/* ── KPI ── */
+.hero-band{background:linear-gradient(150deg,var(--brand),var(--brand-mid));padding:20px 16px 24px}
+.hero-title{color:#fff;font-size:18px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif}
+.hero-sub{color:rgba(255,255,255,.7);font-size:12px;margin-top:3px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+.kpi-mini{background:rgba(255,255,255,.15);border-radius:10px;padding:10px 8px;text-align:center}
+.kpi-mini-val{color:#fff;font-size:20px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif}
+.kpi-mini-lbl{color:rgba(255,255,255,.65);font-size:9px;margin-top:2px}
+
+/* ── TEAM TABLE ── */
+.team-table{width:100%;border-collapse:collapse;font-size:13px}
+.team-table th{padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid var(--border)}
+.team-table td{padding:10px 10px;border-bottom:1px solid var(--surface3);vertical-align:middle}
+.team-table tr:last-child td{border-bottom:none}
+.team-table tr:hover td{background:var(--surface2)}
+.perf-bar-wrap{width:60px;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:4px}
+.perf-bar{height:100%;border-radius:3px}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-done{background:var(--success-light);color:var(--success)}
+.badge-late{background:var(--warning-light);color:var(--warning)}
+.badge-miss{background:#fff0f0;color:var(--accent)}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;gap:8px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;cursor:pointer;white-space:nowrap;background:#fff;color:var(--text2);font-family:'Sarabun',sans-serif;transition:all .15s}
+.filter-chip.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
+
+/* ── CAL ── */
+.cal-wrap{padding:0 16px 16px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:16px}
+.cal-title{font-size:15px;font-weight:700;color:var(--text)}
+.cal-nav{display:flex;gap:6px}
+.cal-nav-btn{width:30px;height:30px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:14px}
+.cal-grid-head{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+.cal-day-name{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-cell{min-height:48px;border-radius:8px;padding:4px;cursor:pointer;position:relative;border:1px solid transparent;background:#fff}
+.cal-cell.other-month{background:transparent;border-color:transparent}
+.cal-cell.today{border-color:var(--brand)!important;background:var(--brand-light)}
+.cal-cell.has-plan.s-done{background:#ebfbee;border-color:#b2ddc0}
+.cal-cell.has-plan.s-late{background:#fff9db;border-color:#f3d076}
+.cal-cell.has-plan.s-miss{background:#fff0f0;border-color:#f5c1c1}
+.cal-cell.has-plan.s-future{background:#f7f8fc;border-color:var(--border)}
+.cal-date{font-size:11px;font-weight:700;color:var(--text2)}
+.cal-cell.today .cal-date{color:var(--brand)}
+.cal-cell.other-month .cal-date{color:var(--text3);opacity:.5}
+.cal-shops{margin-top:2px}
+.cal-shop-dot{font-size:9px;line-height:1.4;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-status-icon{position:absolute;top:3px;right:4px;font-size:10px}
+.day-detail-panel{background:#fff;border-radius:14px 14px 0 0;border-top:1px solid var(--border);padding:16px;margin-top:10px}
+.plan-item{background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:8px;border-left:4px solid var(--border)}
+.plan-item.done{border-left-color:var(--success)}
+.plan-item.late{border-left-color:var(--warning)}
+.plan-item.miss{border-left-color:var(--accent)}
+.plan-item.future{border-left-color:var(--border)}
+
+/* ── ADMIN PLAN ── */
+.plan-list-item{background:#fff;border-radius:10px;border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+.plan-del-btn{width:28px;height:28px;border-radius:50%;border:none;background:#fff0f0;color:var(--accent);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;margin-left:8px;flex-shrink:0}
+.add-plan-card{background:var(--brand-light);border:1.5px dashed var(--brand);border-radius:12px;padding:16px;margin-bottom:14px}
+
+.toast{position:fixed;top:68px;left:16px;right:16px;z-index:300;background:var(--text);color:#fff;border-radius:var(--radius-sm);padding:11px 15px;display:flex;align-items:center;gap:9px;font-size:13px;transform:translateY(-80px);opacity:0;transition:all .28s;box-shadow:var(--shadow-lg)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{background:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast">
+  <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  <span id="toast-text"></span>
+</div>
+
+<header class="app-header">
+  <div class="header-logo">
+    <div class="header-logo-icon">
+      <svg fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    </div>
+    <h1>Manager Dashboard</h1>
+  </div>
+  <div style="color:rgba(255,255,255,.7);font-size:12px" id="mgr-date"></div>
+</header>
+
+<main class="main">
+
+  <!-- OVERVIEW -->
+  <div class="screen active" id="screen-overview">
+    <div class="hero-band">
+      <div class="hero-title">ภาพรวมทีม Sales TT</div>
+      <div class="hero-sub" id="mgr-month-lbl">กำลังโหลด...</div>
+      <div class="kpi-row">
+        <div class="kpi-mini"><div class="kpi-mini-val" id="k-total">—</div><div class="kpi-mini-lbl">Check-in ทั้งหมด</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val" id="k-plan">—</div><div class="kpi-mini-lbl">แผนทั้งหมด</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val" id="k-rate">—</div><div class="kpi-mini-lbl">ตามแผน%</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-val" id="k-value">—</div><div class="kpi-mini-lbl">มูลค่ารวม</div></div>
+      </div>
+    </div>
+
+    <div style="padding:16px">
+      <!-- Alert section -->
+      <div id="alert-section"></div>
+
+      <!-- Team performance table -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 16px 10px;border-bottom:1px solid var(--border)">
+          <div style="font-size:14px;font-weight:700;color:var(--text)">ผลการทำงานรายคน</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px)" id="team-period-lbl">เดือนนี้</div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="team-table">
+            <thead>
+              <tr>
+                <th>พนักงาน</th>
+                <th>Check-in</th>
+                <th>ตามแผน</th>
+                <th>ช้า</th>
+                <th>พลาด</th>
+                <th>มูลค่า</th>
+              </tr>
+            </thead>
+            <tbody id="team-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3)">กำลังโหลด...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Bar chart -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px">Check-in รายวัน (7 วันล่าสุด)</div>
+        <div id="mgr-bar-chart" style="display:flex;align-items:flex-end;gap:7px;height:80px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="screen" id="screen-calendar">
+    <div class="filter-bar" id="cal-filter-bar">
+      <div class="filter-chip active" onclick="setCalFilter(this,'all')">ทุกคน</div>
+    </div>
+    <div class="cal-wrap">
+      <div class="cal-header">
+        <div class="cal-title" id="mgr-cal-title">พ.ค. 2569</div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="changeMgrCal(-1)">‹</button>
+          <button class="cal-nav-btn" onclick="changeMgrCal(0)" style="font-size:11px;width:auto;padding:0 8px">วันนี้</button>
+          <button class="cal-nav-btn" onclick="changeMgrCal(1)">›</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:#ebfbee;border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:700;color:var(--success)" id="cs-done">0</div><div style="font-size:10px;color:var(--success)">✅ ตามแผน</div></div>
+        <div style="background:#fff9db;border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:700;color:var(--warning)" id="cs-late">0</div><div style="font-size:10px;color:var(--warning)">⚠️ ช้ากว่าแผน</div></div>
+        <div style="background:#fff0f0;border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:700;color:var(--accent)" id="cs-miss">0</div><div style="font-size:10px;color:var(--accent)">❌ พลาด</div></div>
+        <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:700;color:var(--text3)" id="cs-future">0</div><div style="font-size:10px;color:var(--text3)">📅 กำหนด</div></div>
+      </div>
+      <div class="cal-grid-head">
+        <div class="cal-day-name">อา</div><div class="cal-day-name">จ</div><div class="cal-day-name">อ</div>
+        <div class="cal-day-name">พ</div><div class="cal-day-name">พฤ</div><div class="cal-day-name">ศ</div><div class="cal-day-name">ส</div>
+      </div>
+      <div class="cal-grid" id="mgr-cal-grid"></div>
+      <div id="mgr-day-detail" style="display:none" class="day-detail-panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:14px;font-weight:700" id="mgr-day-title">—</div>
+          <span style="font-size:12px;color:var(--text3);cursor:pointer" onclick="document.getElementById('mgr-day-detail').style.display='none'">✕</span>
+        </div>
+        <div id="mgr-day-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECK-IN REPORT -->
+  <div class="screen" id="screen-report">
+    <div class="filter-bar" id="report-filter-bar">
+      <div class="filter-chip active" onclick="setReportFilter(this,'all')">ทุกคน</div>
+    </div>
+    <div style="padding:12px 16px">
+      <div id="report-list">
+        <div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PLAN -->
+  <div class="screen" id="screen-plan">
+    <div style="padding:16px">
+      <div class="add-plan-card">
+        <div style="font-size:13px;font-weight:700;color:var(--brand);margin-bottom:12px">+ เพิ่มแผนการเข้าเยี่ยม</div>
+        <div class="field-group">
+          <label class="field-label">วันที่ *</label>
+          <input class="field-input" type="date" id="p-date">
+        </div>
+        <div class="field-group">
+          <label class="field-label">ร้านค้า *</label>
+          <select class="field-select" id="p-shop"></select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">พนักงาน *</label>
+          <select class="field-select" id="p-emp"></select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">หมายเหตุ</label>
+          <input class="field-input" type="text" id="p-note" placeholder="เช่น เน้นสินค้าใหม่">
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="addPlan()">บันทึกแผน</button>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700;color:var(--text)" id="plan-month-lbl">พ.ค. 2569</div>
+        <div style="display:flex;gap:6px">
+          <button class="cal-nav-btn" onclick="changePlanMonth(-1)">‹</button>
+          <button class="cal-nav-btn" onclick="changePlanMonth(0)" style="font-size:11px;width:auto;padding:0 8px">เดือนนี้</button>
+          <button class="cal-nav-btn" onclick="changePlanMonth(1)">›</button>
+        </div>
+      </div>
+      <div id="plan-list">
+        <div style="text-align:center;padding:30px;color:var(--text3)">กำลังโหลด...</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-overview" onclick="switchScreen('overview')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>ภาพรวม</span>
+  </button>
+  <button class="nav-btn" id="nav-calendar" onclick="switchScreen('calendar'); renderMgrCal();">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span>Calendar</span>
+  </button>
+  <button class="nav-btn" id="nav-report" onclick="switchScreen('report'); loadReport();">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    <span>รายงาน</span>
+  </button>
+  <button class="nav-btn" id="nav-plan" onclick="switchScreen('plan'); loadPlanList();">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    <span>แผนงาน</span>
+  </button>
+</nav>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyV_Ifg7afWDt1NPTxq72Fra0fsX-fyv5jabUOkYuOHt-htflXPYTUDJoDjRHf9vz0O/exec';
+
+// ── STATE ──
+let mgrCalYear  = new Date().getFullYear();
+let mgrCalMonth = new Date().getMonth();
+let planYear    = new Date().getFullYear();
+let planMonth   = new Date().getMonth();
+let calFilter   = 'all';
+let reportFilter= 'all';
+let allPlanData = [];
+let allEmployees= [];
+let allShops    = [];
+const TH_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+// ── INIT ──
+(function init() {
+  const now = new Date();
+  const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  document.getElementById('mgr-date').textContent =
+    `${days[now.getDay()]} ${now.getDate()} ${TH_MONTHS[now.getMonth()]} ${now.getFullYear()+543}`;
+  document.getElementById('mgr-month-lbl').textContent =
+    `${TH_MONTHS[now.getMonth()]} ${now.getFullYear()+543}`;
+  loadMasterData();
+  loadOverview();
+})();
+
+// ── API ──
+async function apiGet(params) {
+  try {
+    const url = GAS_URL + '?' + new URLSearchParams(params).toString();
+    const res  = await fetch(url, { redirect:'follow' });
+    return await res.json();
+  } catch(e) { return null; }
+}
+
+// ── MASTER DATA ──
+async function loadMasterData() {
+  const data = await apiGet({ action:'masterdata' });
+  if (data && data.employees) {
+    allEmployees = data.employees;
+    allShops     = data.shops || [];
+    buildFilterChips();
+    populatePlanDropdowns();
+  } else {
+    allEmployees = ['สมชาย ใจดี','วิชัย รักงาน','นภา มีสุข'];
+    allShops     = [{name:'ท็อปส์ สาขาสีลม'},{name:'บิ๊กซี สาขาลาดพร้าว'},{name:'โลตัส สาขานครปฐม'}];
+    buildFilterChips();
+    populatePlanDropdowns();
+  }
+}
+
+function buildFilterChips() {
+  // Calendar filter
+  const calBar = document.getElementById('cal-filter-bar');
+  calBar.innerHTML = `<div class="filter-chip active" onclick="setCalFilter(this,'all')">ทุกคน</div>` +
+    allEmployees.map(e => `<div class="filter-chip" onclick="setCalFilter(this,'${e}')">${e.split(' ')[0]}</div>`).join('');
+
+  // Report filter
+  const repBar = document.getElementById('report-filter-bar');
+  repBar.innerHTML = `<div class="filter-chip active" onclick="setReportFilter(this,'all')">ทุกคน</div>` +
+    allEmployees.map(e => `<div class="filter-chip" onclick="setReportFilter(this,'${e}')">${e.split(' ')[0]}</div>`).join('');
+}
+
+function populatePlanDropdowns() {
+  const pShop = document.getElementById('p-shop');
+  const pEmp  = document.getElementById('p-emp');
+  if (pShop) pShop.innerHTML = '<option value="">— เลือกร้านค้า —</option>' + allShops.map(s=>`<option>${s.name||s}</option>`).join('');
+  if (pEmp)  pEmp.innerHTML  = '<option value="">— เลือกพนักงาน —</option>' + allEmployees.map(e=>`<option>${e}</option>`).join('');
+  const pd = document.getElementById('p-date');
+  if (pd && !pd.value) pd.value = new Date().toISOString().slice(0,10);
+}
+
+// ── OVERVIEW ──
+async function loadOverview() {
+  const [dashData, planData, histData] = await Promise.all([
+    apiGet({ action:'dashboard' }),
+    apiGet({ action:'visitplan' }),
+    apiGet({ action:'history' }),
+  ]);
+
+  const total = dashData?.totalMonth || 0;
+  const value = dashData?.totalValue || 0;
+  const plans = planData?.plans || [];
+  allPlanData  = plans;
+
+  const now   = new Date(); now.setHours(0,0,0,0);
+  const done  = plans.filter(p=>p.status==='done').length;
+  const planTotal = plans.filter(p=>{ const d=new Date(p.date); return d<=now; }).length;
+  const rate  = planTotal ? Math.round((done/planTotal)*100) : 0;
+
+  document.getElementById('k-total').textContent = total;
+  document.getElementById('k-plan').textContent  = plans.length;
+  document.getElementById('k-rate').textContent  = rate + '%';
+  document.getElementById('k-value').textContent = '฿'+(value/1000).toFixed(0)+'K';
+
+  // alerts
+  const missed = plans.filter(p=>p.status==='miss');
+  const late   = plans.filter(p=>p.status==='late');
+  let alertHtml = '';
+  if (missed.length) alertHtml += `<div style="background:#fff0f0;border:1px solid #f5c1c1;border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:13px;color:var(--accent)">❌ <b>${missed.length} รายการ</b> ยังไม่ได้เข้าพบตามแผน</div>`;
+  if (late.length)   alertHtml += `<div style="background:var(--warning-light);border:1px solid #f3d076;border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:13px;color:var(--warning)">⚠️ <b>${late.length} รายการ</b> เข้าพบช้ากว่าแผน</div>`;
+  document.getElementById('alert-section').innerHTML = alertHtml;
+
+  // team table
+  const empStats = {};
+  allEmployees.forEach(e => { empStats[e] = { checkins:0, done:0, late:0, miss:0, value:0 }; });
+  plans.forEach(p => {
+    const emp = p.employeeName;
+    if (!emp || !empStats[emp]) return;
+    if (new Date(p.date) > now) return;
+    if (p.status==='done') empStats[emp].done++;
+    else if (p.status==='late') empStats[emp].late++;
+    else if (p.status==='miss') empStats[emp].miss++;
+  });
+  const rows = histData?.rows || [];
+  rows.forEach(r => {
+    const emp = r.employee;
+    if (empStats[emp]) {
+      empStats[emp].checkins++;
+      empStats[emp].value += Number(r.orderValue)||0;
+    }
+  });
+
+  const maxCheckins = Math.max(...Object.values(empStats).map(s=>s.checkins), 1);
+  document.getElementById('team-tbody').innerHTML = Object.entries(empStats).map(([name, s]) => {
+    const pct  = Math.round((s.checkins/maxCheckins)*100);
+    const color= s.miss > 2 ? 'var(--accent)' : s.late > 1 ? 'var(--warning)' : 'var(--success)';
+    return `<tr>
+      <td style="font-weight:600">${name.split(' ')[0]}</td>
+      <td><div style="display:flex;align-items:center;gap:4px"><div class="perf-bar-wrap"><div class="perf-bar" style="width:${pct}%;background:${color}"></div></div>${s.checkins}</div></td>
+      <td><span class="badge badge-done">${s.done}</span></td>
+      <td><span class="badge badge-late">${s.late}</span></td>
+      <td><span class="badge badge-miss">${s.miss}</span></td>
+      <td style="color:var(--success);font-weight:600">฿${(s.value/1000).toFixed(1)}K</td>
+    </tr>`;
+  }).join('');
+
+  // bar chart
+  const daily = dashData?.daily || {};
+  const now2  = new Date();
+  const days2 = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  const barData = [];
+  for (let i=6;i>=0;i--){const d=new Date(now2);d.setDate(d.getDate()-i);const key=`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;barData.push({d:days2[d.getDay()],v:(daily[key]||0)});}
+  const maxV = Math.max(...barData.map(x=>x.v),1);
+  const chartEl = document.getElementById('mgr-bar-chart');
+  if (chartEl) chartEl.innerHTML = barData.map(({d,v})=>{const h=Math.max(Math.round((v/maxV)*70),v?4:2);const today=d===days2[new Date().getDay()];return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end"><div style="font-size:10px;color:var(--text2);font-weight:700">${v||''}</div><div style="width:100%;border-radius:4px 4px 0 0;height:${h}px;background:${today?'var(--brand)':'var(--brand-light)'};border:${today?'none':'1px solid var(--border)'}"></div><div style="font-size:10px;color:var(--text3)">${d}</div></div>`;}).join('');
+}
+
+// ── CALENDAR ──
+function setCalFilter(el, val) {
+  calFilter = val;
+  document.querySelectorAll('#cal-filter-bar .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderMgrCal();
+}
+
+function changeMgrCal(dir) {
+  if (dir===0){mgrCalYear=new Date().getFullYear();mgrCalMonth=new Date().getMonth();}
+  else{mgrCalMonth+=dir;if(mgrCalMonth>11){mgrCalMonth=0;mgrCalYear++;}if(mgrCalMonth<0){mgrCalMonth=11;mgrCalYear--;}}
+  document.getElementById('mgr-day-detail').style.display='none';
+  renderMgrCal();
+}
+
+function renderMgrCal() {
+  document.getElementById('mgr-cal-title').textContent = `${TH_MONTHS[mgrCalMonth]} ${mgrCalYear+543}`;
+  const now      = new Date(); now.setHours(0,0,0,0);
+  const firstDay = new Date(mgrCalYear, mgrCalMonth, 1).getDay();
+  const daysInM  = new Date(mgrCalYear, mgrCalMonth+1, 0).getDate();
+  const daysInP  = new Date(mgrCalYear, mgrCalMonth, 0).getDate();
+
+  const filtered = allPlanData.filter(p => {
+    const [py,pm] = p.date.split('-').map(Number);
+    if (py!==mgrCalYear || pm!==mgrCalMonth+1) return false;
+    if (calFilter!=='all' && p.employeeName!==calFilter) return false;
+    return true;
+  });
+
+  const byDate = {};
+  filtered.forEach(p => { if(!byDate[p.date]) byDate[p.date]=[]; byDate[p.date].push(p); });
+
+  let done=0,late=0,miss=0,future=0;
+  filtered.forEach(p=>{if(p.status==='done')done++;else if(p.status==='late')late++;else if(p.status==='miss')miss++;else future++;});
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  s('cs-done',done);s('cs-late',late);s('cs-miss',miss);s('cs-future',future);
+
+  let cells='';
+  for(let i=0;i<firstDay;i++){const d=daysInP-firstDay+i+1;cells+=`<div class="cal-cell other-month"><div class="cal-date">${d}</div></div>`;}
+  for(let d=1;d<=daysInM;d++){
+    const mm=(mgrCalMonth+1).toString().padStart(2,'0');
+    const dd=d.toString().padStart(2,'0');
+    const key=`${mgrCalYear}-${mm}-${dd}`;
+    const plans=byDate[key]||[];
+    const isToday=(d===now.getDate()&&mgrCalMonth===now.getMonth()&&mgrCalYear===now.getFullYear());
+    let sc='',icon='';
+    if(plans.length){
+      const st=plans.map(p=>p.status);
+      if(st.includes('miss')){sc='has-plan s-miss';icon='❌';}
+      else if(st.includes('late')){sc='has-plan s-late';icon='⚠️';}
+      else if(st.every(s=>s==='done')){sc='has-plan s-done';icon='✅';}
+      else{sc='has-plan s-future';icon='📅';}
+    }
+    const lines=plans.slice(0,2).map(p=>`<div class="cal-shop-dot">${(p.employeeName||'').split(' ')[0]}: ${p.shopName.replace(/สาขา.*/,'').trim()}</div>`).join('');
+    cells+=`<div class="cal-cell ${isToday?'today':''} ${sc}" onclick="showMgrDay('${key}',${d})">
+      <div class="cal-date">${d}</div>
+      ${icon?`<div class="cal-status-icon">${icon}</div>`:''}
+      <div class="cal-shops">${lines}${plans.length>2?`<div style="font-size:9px;color:var(--text3)">+${plans.length-2}</div>`:''}</div>
+    </div>`;
+  }
+  const remain=(firstDay+daysInM)%7===0?0:7-(firstDay+daysInM)%7;
+  for(let d=1;d<=remain;d++)cells+=`<div class="cal-cell other-month"><div class="cal-date">${d}</div></div>`;
+  document.getElementById('mgr-cal-grid').innerHTML=cells;
+}
+
+function showMgrDay(key, day) {
+  const plans = allPlanData.filter(p => p.date===key && (calFilter==='all'||p.employeeName===calFilter));
+  const panel = document.getElementById('mgr-day-detail');
+  document.getElementById('mgr-day-title').textContent = `แผนวันที่ ${day} ${TH_MONTHS[mgrCalMonth]} ${mgrCalYear+543}`;
+  const statusMap = {
+    done:  {cls:'done',  label:'✅ เข้าพบตามแผน'},
+    late:  {cls:'late',  label:'⚠️ ช้ากว่าแผน'},
+    miss:  {cls:'miss',  label:'❌ พลาด'},
+    future:{cls:'future',label:'📅 ยังไม่ถึงกำหนด'},
+  };
+  document.getElementById('mgr-day-list').innerHTML = !plans.length
+    ? `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">ไม่มีแผนวันนี้</div>`
+    : plans.map(p=>{const s=statusMap[p.status]||statusMap.future;return`<div class="plan-item ${s.cls}"><div style="font-size:13px;font-weight:700">${p.shopName}</div><div style="font-size:11px;color:var(--text3);margin-top:3px">${p.employeeName||'—'} ${p.note?'· '+p.note:''}</div><span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-top:5px;background:${s.cls==='done'?'var(--success-light)':s.cls==='late'?'var(--warning-light)':s.cls==='miss'?'#fff0f0':'var(--surface3)'};color:${s.cls==='done'?'var(--success)':s.cls==='late'?'var(--warning)':s.cls==='miss'?'var(--accent)':'var(--text3)'}">${s.label}</span></div>`;}).join('');
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ── REPORT ──
+function setReportFilter(el, val) {
+  reportFilter = val;
+  document.querySelectorAll('#report-filter-bar .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  loadReport();
+}
+
+async function loadReport() {
+  const list = document.getElementById('report-list');
+  if (list) list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
+  const data = await apiGet({ action:'history' });
+  const rows = (data?.rows||[]).filter(r => reportFilter==='all' || r.employee===reportFilter);
+  if (!list) return;
+  if (!rows.length) {
+    list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">ไม่พบข้อมูล</div>'; return;
+  }
+  list.innerHTML = rows.map(r=>`
+    <div style="background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <div style="font-size:14px;font-weight:700">${r.shop}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${r.date}</div>
+        </div>
+        <span style="padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;background:${r.status==='สำเร็จ'?'var(--success-light)':'var(--warning-light)'};color:${r.status==='สำเร็จ'?'var(--success)':'var(--warning)'}">${r.status}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span style="background:var(--surface2);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text2)">${r.employee||'—'}</span>
+        <span style="background:var(--surface2);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text2)">${r.province||'—'}</span>
+        <span style="background:var(--surface2);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text2)">${r.tasks||'—'}</span>
+        ${r.orderValue?`<span style="background:var(--success-light);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--success);font-weight:600">฿${Number(r.orderValue).toLocaleString()}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ── PLAN ADMIN ──
+function changePlanMonth(dir) {
+  if(dir===0){planYear=new Date().getFullYear();planMonth=new Date().getMonth();}
+  else{planMonth+=dir;if(planMonth>11){planMonth=0;planYear++;}if(planMonth<0){planMonth=11;planYear--;}}
+  loadPlanList();
+}
+
+async function loadPlanList() {
+  const lbl = document.getElementById('plan-month-lbl');
+  if (lbl) lbl.textContent = `${TH_MONTHS[planMonth]} ${planYear+543}`;
+  const list = document.getElementById('plan-list');
+  if (list) list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">กำลังโหลด...</div>';
+  const monthStr = `${planYear}-${(planMonth+1).toString().padStart(2,'0')}`;
+  const data = await apiGet({ action:'admin_plans', month:monthStr });
+  const plans = data?.plans || [];
+  if (!list) return;
+  if (!plans.length) { list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">ยังไม่มีแผนในเดือนนี้</div>'; return; }
+  list.innerHTML = plans.map(p=>{
+    const d=new Date(p.date);
+    const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
+    return `<div class="plan-list-item">
+      <div>
+        <div style="font-size:14px;font-weight:700">${p.shopName}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">${p.employee||'—'} ${p.note?'· '+p.note:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <div style="font-size:13px;font-weight:600;color:var(--brand);min-width:50px;text-align:right">${days[d.getDay()]} ${d.getDate()}</div>
+        <button class="plan-del-btn" onclick="deletePlan(${p.row})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addPlan() {
+  const date=document.getElementById('p-date')?.value;
+  const shop=document.getElementById('p-shop')?.value;
+  const emp=document.getElementById('p-emp')?.value;
+  const note=document.getElementById('p-note')?.value||'';
+  if(!date||!shop||!emp){showToast('กรุณากรอกข้อมูลให้ครบ','error');return;}
+  const btn=document.querySelector('.add-plan-card .btn-primary');
+  if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
+  const data=await apiGet({action:'add_plan',date,shop,employee:emp,note});
+  if(btn){btn.textContent='บันทึกแผน';btn.disabled=false;}
+  if(data?.ok){showToast('✓ เพิ่มแผนสำเร็จ');document.getElementById('p-note').value='';loadPlanList();loadOverview();}
+  else showToast('เกิดข้อผิดพลาด','error');
+}
+
+async function deletePlan(row) {
+  if(!confirm('ต้องการลบแผนนี้?'))return;
+  const data=await apiGet({action:'delete_plan',row});
+  if(data?.ok){showToast('✓ ลบแผนแล้ว');loadPlanList();loadOverview();}
+  else showToast('เกิดข้อผิดพลาด','error');
+}
+
+// ── NAV ──
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name)?.classList.add('active');
+  document.getElementById('nav-'+name)?.classList.add('active');
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-text').textContent=msg;
+  t.className='toast show'+(type==='error'?' error':'');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+</script>
+</body>
+</html>
