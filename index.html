@@ -1328,17 +1328,18 @@ function takeCiPhoto() {
     reader.onload = e => {
       // บีบอัดรูปให้เล็กลงก่อนเก็บ
       compressImage(e.target.result, 800, 0.6, compressed => {
-      ciPhotoData = compressed;
-      const box = document.getElementById('ci-photo-box');
-      if (box) {
-        box.classList.add('has-photo');
-        let img = box.querySelector('img.thumb');
-        if (!img) { img=document.createElement('img'); img.className='thumb'; img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;'; box.prepend(img); }
-        img.src = ciPhotoData;
-        const sp = box.querySelector('span'); if(sp) sp.style.display='none';
-        const sv = box.querySelector('svg');  if(sv) sv.style.display='none';
-      }
-      showToast('✓ ถ่ายรูปสำเร็จ');
+        ciPhotoData = compressed;
+        const box = document.getElementById('ci-photo-box');
+        if (box) {
+          box.classList.add('has-photo');
+          let img = box.querySelector('img.thumb');
+          if (!img) { img=document.createElement('img'); img.className='thumb'; img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;'; box.prepend(img); }
+          img.src = compressed;
+          const sp = box.querySelector('span'); if(sp) sp.style.display='none';
+          const sv = box.querySelector('svg');  if(sv) sv.style.display='none';
+        }
+        showToast('✓ ถ่ายรูปสำเร็จ');
+      }); // end compressImage
     };
     reader.readAsDataURL(input.files[0]);
     document.body.removeChild(input);
