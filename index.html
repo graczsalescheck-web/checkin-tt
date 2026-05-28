@@ -1220,7 +1220,7 @@ async function deletePlanItem(row) {
 
 // ══ NOTIFICATIONS (In-app) ══
 async function loadNotifications() {
-  const data = await apiGet({ action:'notifications' });
+  const data = await apiGet({ action:'notifications', employee: currentUser||'' });
   const notifEl = document.getElementById('notif-list');
   if (!notifEl) return;
 
