@@ -272,10 +272,11 @@ label.field-label .req{color:var(--accent)}
           <button class="cal-nav-btn" onclick="changeCalMonth(1)">›</button>
         </div>
       </div>
-      <div class="cal-summary">
+      <div class="cal-summary" style="grid-template-columns:1fr 1fr 1fr 1fr">
         <div class="cal-sum-card"><div class="cal-sum-val" id="sum-total" style="color:var(--brand)">0</div><div class="cal-sum-lbl">แผนทั้งหมด</div></div>
-        <div class="cal-sum-card"><div class="cal-sum-val" id="sum-done" style="color:var(--success)">0</div><div class="cal-sum-lbl">✅ พบแล้ว</div></div>
-        <div class="cal-sum-card"><div class="cal-sum-val" id="sum-miss" style="color:var(--accent)">0</div><div class="cal-sum-lbl">❌ ยังไม่พบ</div></div>
+        <div class="cal-sum-card"><div class="cal-sum-val" id="sum-done" style="color:var(--success)">0</div><div class="cal-sum-lbl">✅ ตามแผน</div></div>
+        <div class="cal-sum-card"><div class="cal-sum-val" id="sum-late" style="color:var(--warning)">0</div><div class="cal-sum-lbl">⚠️ ช้ากว่าแผน</div></div>
+        <div class="cal-sum-card"><div class="cal-sum-val" id="sum-miss" style="color:var(--accent)">0</div><div class="cal-sum-lbl">❌ พลาด</div></div>
       </div>
       <!-- Calendar grid -->
       <div class="cal-grid-head">
@@ -492,12 +493,14 @@ async function loadVisitPlan() {
     const now  = new Date();
     const y    = now.getFullYear();
     const m    = (now.getMonth()+1).toString().padStart(2,'0');
+    // คำนวณ status จาก check-in จริงใน checkinDates
+    const todayStr = new Date().toISOString().slice(0,10);
     planData = [
       {date:`${y}-${m}-05`, shopName:'ท็อปส์ สาขาสีลม',    status:'done'},
       {date:`${y}-${m}-05`, shopName:'บิ๊กซี สาขาลาดพร้าว', status:'done'},
-      {date:`${y}-${m}-10`, shopName:'โลตัส สาขานครปฐม',    status:'miss'},
+      {date:`${y}-${m}-10`, shopName:'โลตัส สาขานครปฐม',    status:'late'},
       {date:`${y}-${m}-12`, shopName:'แม็คโคร สาขาบางนา',   status:'done'},
-      {date:`${y}-${m}-15`, shopName:'เทสโก้ สาขารังสิต',   status:'warn'},
+      {date:`${y}-${m}-15`, shopName:'เทสโก้ สาขารังสิต',   status:'miss'},
       {date:`${y}-${m}-18`, shopName:'ท็อปส์ สาขาสีลม',    status:'future'},
       {date:`${y}-${m}-20`, shopName:'บิ๊กซี สาขาลาดพร้าว', status:'future'},
       {date:`${y}-${m}-22`, shopName:'โลตัส สาขานครปฐม',    status:'future'},
@@ -539,12 +542,15 @@ function renderCalendar() {
     const [py,pm] = p.date.split('-').map(Number);
     return py===calYear && pm===calMonth+1;
   });
-  const done   = monthPlans.filter(p=>p.status==='done').length;
-  const miss   = monthPlans.filter(p=>p.status==='miss').length;
-  const warn   = monthPlans.filter(p=>p.status==='warn').length;
+  const done = monthPlans.filter(p=>p.status==='done').length;
+  const late = monthPlans.filter(p=>p.status==='late').length;
+  const miss = monthPlans.filter(p=>p.status==='miss').length;
   document.getElementById('sum-total').textContent = monthPlans.length;
   document.getElementById('sum-done').textContent  = done;
-  document.getElementById('sum-miss').textContent  = miss + warn;
+  document.getElementById('sum-miss').textContent  = miss;
+  // อัพเดต label ให้มี late ด้วย
+  const lateEl = document.getElementById('sum-late');
+  if (lateEl) lateEl.textContent = late;
 
   let cells = '';
   // prev month padding
@@ -598,7 +604,12 @@ function showDayDetail(dateKey, dayNum) {
   if (!plans.length) {
     document.getElementById('day-detail-list').innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">ไม่มีแผนวันนี้</div>`;
   } else {
-    const statusMap = { done:{cls:'done',badge:'badge-done',label:'✅ เข้าพบแล้ว'}, warn:{cls:'warn',badge:'badge-warn',label:'⚠️ ไม่ครบ/สาย'}, miss:{cls:'miss',badge:'badge-miss',label:'❌ ยังไม่พบ'}, future:{cls:'future',badge:'badge-future',label:'📅 ยังไม่ถึงกำหนด'} };
+    const statusMap = {
+      done:  {cls:'done',  badge:'badge-done',   label:'✅ เข้าพบตามแผน'},
+      late:  {cls:'warn',  badge:'badge-warn',   label:'⚠️ ช้ากว่าแผน (เข้าพบในเดือนนี้)'},
+      miss:  {cls:'miss',  badge:'badge-miss',   label:'❌ พลาด (ไม่ได้เข้าพบในเดือนนี้)'},
+      future:{cls:'future',badge:'badge-future', label:'📅 ยังไม่ถึงกำหนด'},
+    };
     document.getElementById('day-detail-list').innerHTML = plans.map(p => {
       const s = statusMap[p.status] || statusMap.future;
       return `<div class="plan-item ${s.cls}">
