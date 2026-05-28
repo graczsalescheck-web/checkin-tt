@@ -666,7 +666,7 @@ let planData = []; // [{date:'2026-05-15', shopName:'...', employeeName:'...', s
 let checkinDates = {}; // {'2026-05-15': ['ร้าน A','ร้าน B']}
 
 async function loadVisitPlan() {
-  const data = await apiGet({ action: 'visitplan' });
+  const data = await apiGet({ action: 'visitplan', employee: currentUser||'' });
   if (data && data.plans) {
     planData = data.plans;
   } else {
