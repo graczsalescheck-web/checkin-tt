@@ -624,24 +624,25 @@ async function loadMasterData() {
 }
 
 async function loadDashboard() {
-  renderDashKPI(42, 486000, 18, 96);
+  // แสดง — ก่อนโหลด ไม่ใช้ demo data
+  renderDashKPI(0, 0, 0, 0);
   buildBarChart(null);
-  const data = await apiGet({ action:'dashboard' });
-  if (data && data.totalMonth) {
-    renderDashKPI(data.totalMonth, data.totalValue, data.uniqueShops, data.successRate);
+  const data = await apiGet({ action:'dashboard', employee: currentUser||'' });
+  if (data && (data.totalMonth !== undefined)) {
+    renderDashKPI(data.totalMonth, data.totalValue, data.uniqueShops, data.successRate, data.todayCount);
     buildBarChart(data.daily);
   }
 }
 
-function renderDashKPI(total, value, shops, rate) {
+function renderDashKPI(total, value, shops, rate, today) {
   const s = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-  s('kpi-total', total);
-  s('kpi-value', '฿'+(value/1000).toFixed(0)+'K');
-  s('kpi-shops', shops);
-  s('kpi-rate',  rate+'%');
-  s('stat-today', 8);
-  s('stat-month', total);
-  s('stat-rate',  rate+'%');
+  s('kpi-total', total||'—');
+  s('kpi-value', value ? '฿'+(value/1000).toFixed(0)+'K' : '—');
+  s('kpi-shops', shops||'—');
+  s('kpi-rate',  rate ? rate+'%' : '—');
+  s('stat-today', today||'—');
+  s('stat-month', total||'—');
+  s('stat-rate',  rate ? rate+'%' : '—');
 }
 
 async function loadHistory() {
