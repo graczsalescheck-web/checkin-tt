@@ -166,20 +166,7 @@ label.field-label .req{color:var(--accent)}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.error{background:var(--accent)}
 
-/* ── ADMIN PIN ── */
-.pin-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;align-items:center;justify-content:center;padding:20px}
-.pin-overlay.show{display:flex;animation:fadeIn .2s ease}
-.pin-card{background:#fff;border-radius:20px;padding:28px 24px;max-width:300px;width:100%;text-align:center}
-.pin-title{font-size:17px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;margin-bottom:4px}
-.pin-sub{font-size:12px;color:var(--text3);margin-bottom:20px}
-.pin-dots{display:flex;justify-content:center;gap:10px;margin-bottom:20px}
-.pin-dot{width:14px;height:14px;border-radius:50%;background:var(--border);transition:background .15s}
-.pin-dot.filled{background:var(--brand)}
-.pin-pad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.pin-btn{height:52px;border:1.5px solid var(--border);border-radius:12px;font-size:20px;font-weight:600;background:#fff;cursor:pointer;color:var(--text);transition:all .15s;font-family:'IBM Plex Sans Thai',sans-serif}
-.pin-btn:active{background:var(--brand-light);border-color:var(--brand);color:var(--brand)}
-.pin-btn.del{font-size:16px;color:var(--text3)}
-.pin-error{color:var(--accent);font-size:12px;margin-top:8px;min-height:16px}
+/* PIN removed */
 
 /* ── ADMIN SCREEN ── */
 .admin-header{background:linear-gradient(135deg,#1a3a8f,#2351c9);padding:20px 16px;color:#fff}
@@ -468,38 +455,9 @@ label.field-label .req{color:var(--accent)}
   </button>
   <button class="nav-btn" id="nav-admin" onclick="openAdmin()">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><line x1="19" y1="8" x2="21" y2="8"/><line x1="19" y1="11" x2="21" y2="11"/></svg>
-    <span>Admin</span>
+    <span>แผนงาน</span>
   </button>
 </nav>
-
-<!-- PIN OVERLAY -->
-<div class="pin-overlay" id="pin-overlay">
-  <div class="pin-card">
-    <div class="pin-title">🔐 Admin</div>
-    <div class="pin-sub">กรอก PIN 4 หลักเพื่อเข้าใช้งาน</div>
-    <div class="pin-dots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
-    </div>
-    <div class="pin-pad">
-      <button class="pin-btn" onclick="pinInput('1')">1</button>
-      <button class="pin-btn" onclick="pinInput('2')">2</button>
-      <button class="pin-btn" onclick="pinInput('3')">3</button>
-      <button class="pin-btn" onclick="pinInput('4')">4</button>
-      <button class="pin-btn" onclick="pinInput('5')">5</button>
-      <button class="pin-btn" onclick="pinInput('6')">6</button>
-      <button class="pin-btn" onclick="pinInput('7')">7</button>
-      <button class="pin-btn" onclick="pinInput('8')">8</button>
-      <button class="pin-btn" onclick="pinInput('9')">9</button>
-      <button class="pin-btn" onclick="document.getElementById('pin-overlay').classList.remove('show')">ยกเลิก</button>
-      <button class="pin-btn" onclick="pinInput('0')">0</button>
-      <button class="pin-btn del" onclick="pinDel()">⌫</button>
-    </div>
-    <div class="pin-error" id="pin-error"></div>
-  </div>
-</div>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modal">
@@ -1093,52 +1051,13 @@ let adminMonth   = new Date().getMonth();
 let adminUnlocked = false;
 
 function openAdmin() {
-  if (adminUnlocked) {
-    switchScreen('admin');
-    renderAdminMonth();
-    populateAdminDropdowns();
-  } else {
-    pinValue = '';
-    updatePinDots();
-    document.getElementById('pin-error').textContent = '';
-    document.getElementById('pin-overlay').classList.add('show');
-  }
+  adminUnlocked = true;
+  switchScreen('admin');
+  renderAdminMonth();
+  populateAdminDropdowns();
 }
 
-function pinInput(d) {
-  if (pinValue.length >= 4) return;
-  pinValue += d;
-  updatePinDots();
-  if (pinValue.length === 4) setTimeout(checkPin, 150);
-}
-
-function pinDel() {
-  pinValue = pinValue.slice(0,-1);
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-}
-
-function updatePinDots() {
-  for (let i=0; i<4; i++) {
-    const el = document.getElementById('pd'+i);
-    if (el) el.classList.toggle('filled', i < pinValue.length);
-  }
-}
-
-async function checkPin() {
-  const data = await apiGet({ action:'verify_pin', pin:pinValue });
-  if (data && data.ok) {
-    adminUnlocked = true;
-    document.getElementById('pin-overlay').classList.remove('show');
-    switchScreen('admin');
-    renderAdminMonth();
-    populateAdminDropdowns();
-  } else {
-    document.getElementById('pin-error').textContent = 'PIN ไม่ถูกต้อง ลองใหม่';
-    pinValue = '';
-    updatePinDots();
-  }
-}
+// PIN functions removed
 
 function populateAdminDropdowns() {
   const shopSel = document.getElementById('admin-shop');
@@ -1168,7 +1087,7 @@ async function renderAdminMonth() {
   if (list) list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">กำลังโหลด...</div>';
 
   const monthStr = `${adminYear}-${(adminMonth+1).toString().padStart(2,'0')}`;
-  const data = await apiGet({ action:'admin_plans', month:monthStr });
+  const data = await apiGet({ action:'admin_plans', month:monthStr, employee:currentUser||'' });
   const plans = (data && data.plans) ? data.plans : [];
 
   if (!list) return;
@@ -1189,7 +1108,7 @@ async function renderAdminMonth() {
       </div>
       <div style="display:flex;align-items:center;gap:4px">
         <div class="plan-list-date">${dayName} ${day}</div>
-        <button class="plan-del-btn" onclick="deletePlanItem(${p.row})" title="ลบ">✕</button>
+        <button class="plan-del-btn" onclick="deletePlanItem(${p.row},'${p.shopName}','${day}')" title="ลบ">✕</button>
       </div>
     </div>`;
   }).join('');
@@ -1220,8 +1139,8 @@ async function addAdminPlan() {
   }
 }
 
-async function deletePlanItem(row) {
-  if (!confirm('ต้องการลบแผนนี้?')) return;
+async function deletePlanItem(row, shopName, dateStr) {
+  if (!confirm(`ลบแผน "${shopName}" วันที่ ${dateStr} ใช่ไหม?\nการลบไม่สามารถเรียกคืนได้`)) return;
   const data = await apiGet({ action:'delete_plan', row });
   if (data && data.ok) {
     showToast('✓ ลบแผนแล้ว');
