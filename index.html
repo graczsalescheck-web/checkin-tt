@@ -1305,6 +1305,19 @@ function onCiShopChange(sel) {
   // auto province lookup
 }
 
+function compressImage(dataUrl, maxWidth, quality, callback) {
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    let w = img.width, h = img.height;
+    if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
+}
+
 function takeCiPhoto() {
   const input = document.createElement('input');
   input.type='file'; input.accept='image/*'; input.capture='environment'; input.style.display='none';
@@ -1313,7 +1326,9 @@ function takeCiPhoto() {
     if (!input.files || !input.files[0]) { document.body.removeChild(input); return; }
     const reader = new FileReader();
     reader.onload = e => {
-      ciPhotoData = e.target.result;
+      // บีบอัดรูปให้เล็กลงก่อนเก็บ
+      compressImage(e.target.result, 800, 0.6, compressed => {
+      ciPhotoData = compressed;
       const box = document.getElementById('ci-photo-box');
       if (box) {
         box.classList.add('has-photo');
@@ -1357,6 +1372,7 @@ async function submitCheckin() {
   if (btn) { btn.textContent='⏳ กำลัง Check-in...'; btn.disabled=true; }
 
   const opt = document.getElementById('ci-shop')?.options[document.getElementById('ci-shop').selectedIndex];
+  // ส่งข้อมูลหลักก่อน ไม่รวมรูป
   const data = await apiGet({
     action:   'checkin_only',
     employee: currentUser||'',
@@ -1364,8 +1380,19 @@ async function submitCheckin() {
     province: opt?.dataset?.prov||'',
     lat:      ciGpsData.lat,
     lng:      ciGpsData.lng,
-    photo1:   ciPhotoData ? encodeURIComponent(ciPhotoData.slice(0,50000)) : '',
   });
+
+  // ถ้าสำเร็จ ส่งรูปแยกผ่าน POST
+  if (data && data.ok && ciPhotoData) {
+    try {
+      await fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action:'upload_photo', row: data.row, photo1: ciPhotoData }),
+      });
+    } catch(e) { console.warn('Photo upload failed:', e); }
+  }
 
   if (btn) { btn.textContent='✓ Check-in เลย'; btn.disabled=false; }
 
