@@ -166,6 +166,23 @@ label.field-label .req{color:var(--accent)}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.error{background:var(--accent)}
 
+/* ── ACTIVE VISITS ── */
+.visit-card{background:#fff;border-radius:var(--radius);border:1.5px solid var(--border);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.visit-card.active-ci{border-left:4px solid var(--brand)}
+.visit-shop{font-size:15px;font-weight:700;color:var(--text)}
+.visit-time{font-size:12px;color:var(--text3);margin-top:3px}
+.visit-actions{display:flex;gap:8px;margin-top:12px}
+.btn-checkout{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;flex:1}
+.btn-checkout:active{opacity:.85}
+.checkin-quick-btn{width:100%;padding:14px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(26,58,143,.3);margin-bottom:16px}
+.checkin-quick-btn:active{opacity:.9}
+
+/* ── QUICK CHECK-IN MODAL ── */
+.ci-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250;align-items:flex-end;justify-content:center}
+.ci-modal.show{display:flex;animation:fadeIn .2s ease}
+.ci-sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.ci-sheet-title{font-size:16px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+
 /* PIN removed */
 
 /* ── ADMIN SCREEN ── */
@@ -285,15 +302,22 @@ label.field-label .req{color:var(--accent)}
       <div class="sync-dot"></div>
       <span>เชื่อมต่อ Google Sheets · <span id="last-sync">กำลังโหลด...</span></span>
     </div>
-    <!-- QUICK ACTIONS -->
-    <div style="display:flex;gap:10px;padding:14px 16px 0">
-      <div class="action-card" onclick="goToForm()" style="flex:1;margin-bottom:0">
-        <div class="action-card-icon" style="background:#e8eefb;width:36px;height:36px"><svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-        <div><div class="action-card-title" style="font-size:13px">Check-in ใหม่</div></div>
+    <!-- ACTIVE VISITS + QUICK CHECKIN -->
+    <div style="padding:14px 16px 0">
+      <button class="checkin-quick-btn" onclick="openCheckinModal()">
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="20" height="20"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+        Check-in ร้านใหม่
+      </button>
+      <div class="section-title">กำลังเยี่ยมอยู่วันนี้</div>
+      <div id="active-visits-list">
+        <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">กำลังโหลด...</div>
       </div>
-      <div class="action-card" onclick="switchScreen('history'); loadHistory();" style="flex:1;margin-bottom:0">
-        <div class="action-card-icon" style="background:#ebfbee;width:36px;height:36px"><svg fill="none" stroke="#2f9e44" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
-        <div><div class="action-card-title" style="font-size:13px">ประวัติ</div></div>
+      <div style="margin-top:8px">
+        <div class="action-card" onclick="switchScreen('history'); loadHistory();" style="margin-bottom:0">
+          <div class="action-card-icon" style="background:#ebfbee;width:36px;height:36px"><svg fill="none" stroke="#2f9e44" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+          <div><div class="action-card-title" style="font-size:13px">ประวัติ Check-in</div></div>
+          <svg fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24" width="16" height="16" style="margin-left:auto"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
       </div>
     </div>
 
@@ -459,6 +483,51 @@ label.field-label .req{color:var(--accent)}
   </button>
 </nav>
 
+<!-- QUICK CHECK-IN MODAL -->
+<div class="ci-modal" id="ci-modal">
+  <div class="ci-sheet">
+    <div class="ci-sheet-title">
+      <span>📍 Check-in ร้าน</span>
+      <span style="font-size:13px;color:var(--text3);cursor:pointer" onclick="closeCiModal()">✕</span>
+    </div>
+    <div class="field-group">
+      <label class="field-label">ร้านค้า <span class="req">*</span></label>
+      <select class="field-select" id="ci-shop" onchange="onCiShopChange(this)"></select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">ถ่ายรูปหน้าร้าน <span class="req">*</span></label>
+      <div class="photo-upload" id="ci-photo-box" onclick="takeCiPhoto()" style="aspect-ratio:2/1;flex-direction:row;gap:12px;padding:16px">
+        <div class="photo-check">✓</div>
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+        <span id="ci-photo-label">กดเพื่อถ่ายรูป</span>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">GPS</label>
+      <div class="gps-field">
+        <div class="gps-bar">
+          <span class="gps-coords" id="ci-gps-text">กดรับตำแหน่ง</span>
+          <button class="gps-btn" onclick="getCiGPS()" type="button" id="ci-gps-btn">รับตำแหน่ง</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px" onclick="submitCheckin()" id="ci-submit-btn">
+      ✓ Check-in เลย
+    </button>
+  </div>
+</div>
+
+<!-- CHECKOUT FORM MODAL -->
+<div class="ci-modal" id="co-modal">
+  <div class="ci-sheet">
+    <div class="ci-sheet-title">
+      <span>🏁 Check-out — <span id="co-shop-title"></span></span>
+      <span style="font-size:13px;color:var(--text3);cursor:pointer" onclick="closeCoModal()">✕</span>
+    </div>
+    <div id="co-form-body"></div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="modal">
   <div class="modal-card">
@@ -559,6 +628,7 @@ function enterApp() {
   if (shortEl) shortEl.textContent = first;
   loadMasterData();
   loadSalesShops();
+  loadActiveVisits();
   loadDashboard();
   loadVisitPlan();
   loadNotifications();
@@ -1169,6 +1239,384 @@ async function loadNotifications() {
       <div class="notif-dot" style="background:var(--success)"></div>
       <div><div class="notif-text">✅ ไม่มีการแจ้งเตือน</div></div>
     </div>`;
+  }
+}
+
+// ══ CHECK-IN / CHECK-OUT FLOW ══
+let ciPhotoData  = null;
+let ciGpsData    = { lat:null, lng:null, acquired:false };
+let activeVisits = [];
+let coData       = {}; // ข้อมูล checkout ปัจจุบัน
+let coStep       = 0;
+const CO_STEPS   = 4;
+
+// ── โหลด Active Visits ──
+async function loadActiveVisits() {
+  const data = await apiGet({ action:'active_visits', employee: currentUser||'' });
+  activeVisits = (data && data.visits) ? data.visits : [];
+  renderActiveVisits();
+}
+
+function renderActiveVisits() {
+  const el = document.getElementById('active-visits-list');
+  if (!el) return;
+  if (!activeVisits.length) {
+    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in วันนี้</div>`;
+    return;
+  }
+  el.innerHTML = activeVisits.map(v => {
+    const t = v.checkinTime ? String(v.checkinTime).slice(0,5) + ' น.' : '—';
+    return `<div class="visit-card active-ci">
+      <div class="visit-shop">${v.shop}</div>
+      <div class="visit-time">⏰ Check-in ${t} · ${v.province||''}</div>
+      <div class="visit-actions">
+        <button class="btn-checkout" onclick="openCheckout('${v.ref}',${v.row},'${v.shop}',${v.lat||0},${v.lng||0})">
+          🏁 Check-out + กรอกข้อมูล
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Quick Check-in Modal ──
+function openCheckinModal() {
+  ciPhotoData = null;
+  ciGpsData   = { lat:null, lng:null, acquired:false };
+  // populate shop dropdown
+  const sel = document.getElementById('ci-shop');
+  const list = salesShops.length > 0 ? salesShops : masterData.shops;
+  sel.innerHTML = '<option value="">— เลือกร้านค้า —</option>' +
+    list.map(s=>`<option value="${s.name||s}" data-prov="${s.province||''}">${s.name||s}</option>`).join('');
+  // reset UI
+  const box = document.getElementById('ci-photo-box');
+  if (box) { box.classList.remove('has-photo'); const sp=box.querySelector('span'); if(sp) sp.textContent='กดเพื่อถ่ายรูป'; }
+  document.getElementById('ci-gps-text').textContent = 'กดรับตำแหน่ง';
+  document.getElementById('ci-modal').classList.add('show');
+  // auto get GPS
+  getCiGPS();
+}
+
+function closeCiModal() {
+  document.getElementById('ci-modal').classList.remove('show');
+}
+
+function onCiShopChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  // auto province lookup
+}
+
+function takeCiPhoto() {
+  const input = document.createElement('input');
+  input.type='file'; input.accept='image/*'; input.capture='environment'; input.style.display='none';
+  document.body.appendChild(input);
+  input.onchange = () => {
+    if (!input.files || !input.files[0]) { document.body.removeChild(input); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      ciPhotoData = e.target.result;
+      const box = document.getElementById('ci-photo-box');
+      if (box) {
+        box.classList.add('has-photo');
+        let img = box.querySelector('img.thumb');
+        if (!img) { img=document.createElement('img'); img.className='thumb'; img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;'; box.prepend(img); }
+        img.src = ciPhotoData;
+        const sp = box.querySelector('span'); if(sp) sp.style.display='none';
+        const sv = box.querySelector('svg');  if(sv) sv.style.display='none';
+      }
+      showToast('✓ ถ่ายรูปสำเร็จ');
+    };
+    reader.readAsDataURL(input.files[0]);
+    document.body.removeChild(input);
+  };
+  input.click();
+}
+
+function getCiGPS() {
+  const btn = document.getElementById('ci-gps-btn');
+  const txt = document.getElementById('ci-gps-text');
+  if (btn) { btn.textContent='⏳ กำลังระบุ...'; btn.disabled=true; }
+  const done = () => {
+    if (txt) txt.textContent = `${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;
+    if (btn) { btn.textContent='รีเฟรช'; btn.disabled=false; }
+  };
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      p => { ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true}; done(); },
+      () => { ciGpsData={lat:13.756331,lng:100.501762,acquired:true}; done(); },
+      {timeout:8000}
+    );
+  } else { ciGpsData={lat:13.756331,lng:100.501762,acquired:true}; done(); }
+}
+
+async function submitCheckin() {
+  const shop = document.getElementById('ci-shop')?.value;
+  if (!shop) { showToast('กรุณาเลือกร้านค้า','error'); return; }
+  if (!ciGpsData.acquired) { showToast('กรุณารับตำแหน่ง GPS ก่อน','error'); return; }
+
+  const btn = document.getElementById('ci-submit-btn');
+  if (btn) { btn.textContent='⏳ กำลัง Check-in...'; btn.disabled=true; }
+
+  const opt = document.getElementById('ci-shop')?.options[document.getElementById('ci-shop').selectedIndex];
+  const data = await apiGet({
+    action:   'checkin_only',
+    employee: currentUser||'',
+    shop:     shop,
+    province: opt?.dataset?.prov||'',
+    lat:      ciGpsData.lat,
+    lng:      ciGpsData.lng,
+    photo1:   ciPhotoData ? encodeURIComponent(ciPhotoData.slice(0,50000)) : '',
+  });
+
+  if (btn) { btn.textContent='✓ Check-in เลย'; btn.disabled=false; }
+
+  if (data && data.ok) {
+    closeCiModal();
+    showToast(`✅ Check-in ${shop} สำเร็จ`);
+    loadActiveVisits();
+    loadDashboard();
+  } else {
+    showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
+  }
+}
+
+// ── Checkout ──
+function openCheckout(ref, row, shop, checkinLat, checkinLng) {
+  coData = { ref, row, shop, checkinLat, checkinLng };
+  coStep = 0;
+  document.getElementById('co-shop-title').textContent = shop;
+  renderCoStep();
+  document.getElementById('co-modal').classList.add('show');
+}
+
+function closeCoModal() {
+  document.getElementById('co-modal').classList.remove('show');
+}
+
+const coStepDefs = [
+  'ข้อมูลร้านค้า',
+  'ข้อมูลการซื้อและการจำหน่าย',
+  'ข้อมูลคู่แข่ง',
+  'สรุปผลและ Action Plan + GPS Check-out',
+];
+
+function renderCoStep() {
+  const body = document.getElementById('co-form-body');
+  if (!body) return;
+
+  // progress mini
+  let prog = `<div style="display:flex;gap:4px;margin-bottom:16px">`;
+  for(let i=0;i<CO_STEPS;i++){
+    prog+=`<div style="flex:1;height:4px;border-radius:2px;background:${i<=coStep?'var(--brand)':'var(--border)'}"></div>`;
+  }
+  prog+=`</div><div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px">${coStepDefs[coStep]}</div>`;
+
+  let fields = '';
+  if (coStep===0) fields = renderCoStep0();
+  if (coStep===1) fields = renderCoStep1();
+  if (coStep===2) fields = renderCoStep2();
+  if (coStep===3) fields = renderCoStep3();
+
+  const navBtns = `<div class="form-nav" style="margin-top:16px">
+    ${coStep>0 ? `<button class="btn btn-secondary" onclick="coStepPrev()">← ก่อนหน้า</button>` : `<button class="btn btn-secondary" onclick="closeCoModal()">ยกเลิก</button>`}
+    ${coStep<CO_STEPS-1
+      ? `<button class="btn btn-primary" onclick="coStepNext()">ถัดไป →</button>`
+      : `<button class="btn btn-success" id="co-submit-btn" onclick="submitCheckout()">🏁 Check-out</button>`}
+  </div>`;
+
+  body.innerHTML = prog + fields + navBtns;
+  if (coStep===0) { document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected'))); }
+  if (coStep===3) getCiGPS(); // auto GPS checkout
+}
+
+function renderCoStep0() {
+  return `
+  <div class="field-group"><label class="field-label">กลุ่มลูกค้า *</label><select class="field-select" id="co-cgroup">${mkOpts(masterData.customerGroups)}</select></div>
+  <div class="field-group"><label class="field-label">ประเภทร้านค้า *</label><select class="field-select" id="co-stype">${mkOpts(masterData.shopTypes)}</select></div>
+  <div class="field-group"><label class="field-label">รายละเอียดงาน *</label><div class="multi-select-group" id="co-task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}</div></div>
+  <div class="field-group"><label class="field-label">ชื่อลูกค้า *</label><input class="field-input" id="co-custname" type="text" placeholder="ชื่อผู้ติดต่อ"></div>
+  <div class="field-group"><label class="field-label">อื่นๆ ระบุ</label><input class="field-input" id="co-other" type="text" placeholder="หมายเหตุ"></div>`;
+}
+
+function renderCoStep1() {
+  return `
+  <div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด *</label><select class="field-select" id="co-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div>
+  <div class="field-group"><label class="field-label">ระบุเดือน ปี *</label><input class="field-input" type="date" id="co-orderdate" value="${new Date().toISOString().slice(0,10)}"></div>
+  <div class="field-group"><label class="field-label">มูลค่า (บาท)</label>
+    <div class="number-input">
+      <button class="number-btn" type="button" onclick="changeCoVal(-1000)">−</button>
+      <input class="field-input" type="number" id="co-orderval" value="0" min="0" oninput="coOrderValue=parseInt(this.value)||0">
+      <button class="number-btn" type="button" onclick="changeCoVal(1000)">+</button>
+    </div></div>
+  <div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" id="co-noreason" type="text"></div>
+  <div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี *</label><textarea class="field-textarea" id="co-gracz" placeholder="ระบุรุ่น..."></textarea></div>
+  <div class="field-group"><label class="field-label">ถ่ายรูปเพิ่มเติม</label>
+    <div class="photo-upload" id="co-photo-box" onclick="takeCoPhoto()" style="aspect-ratio:2.5/1;flex-direction:row;gap:12px;padding:14px">
+      <div class="photo-check">✓</div>
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+      <span id="co-photo-label">กดถ่ายรูป (ไม่บังคับ)</span>
+    </div></div>`;
+}
+
+function renderCoStep2() {
+  return `
+  <div class="field-group"><label class="field-label">แบรนด์คู่แข่งในร้าน *</label>
+    <div class="multi-select-group">${['Brand A','Brand B','Brand C','Brand D','Brand E','อื่นๆ'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}</div></div>
+  <div class="field-group"><label class="field-label">แบรนด์สินค้าที่ขายดี *</label>
+    <div class="multi-select-group">${['Brand A','Brand B','Brand C','Gracz'].map(b=>`<div class="multi-chip ${b==='Gracz'?'selected':''}" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}</div></div>
+  <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง *</label><textarea class="field-textarea" id="co-comppromo" placeholder="อธิบายโปรโมชั่น..."></textarea></div>`;
+}
+
+function renderCoStep3() {
+  return `
+  <div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ *</label><textarea class="field-textarea" id="co-findings" placeholder="สรุปสิ่งที่พบ..."></textarea></div>
+  <div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ *</label><textarea class="field-textarea" id="co-action" placeholder="Action Plan..."></textarea></div>
+  <div class="field-group"><label class="field-label">GPS Check-out</label>
+    <div class="gps-field">
+      <div class="gps-bar">
+        <span class="gps-coords" id="co-gps-text">กำลังระบุตำแหน่ง...</span>
+        <button class="gps-btn" onclick="getCoGPS()" type="button" id="co-gps-btn">รีเฟรช</button>
+      </div>
+    </div>
+    <div id="co-gps-warning" style="font-size:12px;color:var(--warning);margin-top:6px;display:none">⚠️ ตำแหน่งห่างจากจุด Check-in เกิน 100 เมตร</div>
+  </div>`;
+}
+
+let coOrderValue = 0;
+let coGpsData    = { lat:null, lng:null, acquired:false };
+let coPhotoData  = null;
+
+function changeCoVal(d) { coOrderValue=Math.max(0,coOrderValue+d); const el=document.getElementById('co-orderval'); if(el) el.value=coOrderValue; }
+
+function takeCoPhoto() {
+  const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.capture='environment'; input.style.display='none';
+  document.body.appendChild(input);
+  input.onchange=()=>{
+    if(!input.files||!input.files[0]){document.body.removeChild(input);return;}
+    const reader=new FileReader();
+    reader.onload=e=>{
+      coPhotoData=e.target.result;
+      const box=document.getElementById('co-photo-box');
+      if(box){box.classList.add('has-photo');const sp=box.querySelector('span');if(sp)sp.textContent='อัปโหลดแล้ว';}
+      showToast('✓ ถ่ายรูปสำเร็จ');
+    };
+    reader.readAsDataURL(input.files[0]);
+    document.body.removeChild(input);
+  };
+  input.click();
+}
+
+function getCoGPS() {
+  const btn=document.getElementById('co-gps-btn');
+  const txt=document.getElementById('co-gps-text');
+  if(btn){btn.textContent='⏳...';btn.disabled=true;}
+  const done=()=>{
+    if(txt) txt.textContent=`${coGpsData.lat.toFixed(5)}, ${coGpsData.lng.toFixed(5)}`;
+    if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}
+    // ตรวจสอบระยะห่าง
+    if(coData.checkinLat && coGpsData.acquired) {
+      const dist = calcDistanceJS(coData.checkinLat, coData.checkinLng, coGpsData.lat, coGpsData.lng);
+      const warn = document.getElementById('co-gps-warning');
+      if(warn) { warn.style.display = dist > 100 ? 'block' : 'none'; if(dist>100) warn.textContent=`⚠️ ห่างจากจุด Check-in ${Math.round(dist)} เมตร (กด Check-out ได้แต่จะถูก Log)`; }
+    }
+  };
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(p=>{coGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};done();},()=>{coGpsData={lat:13.756331,lng:100.501762,acquired:true};done();},{timeout:8000});
+  } else {coGpsData={lat:13.756331,lng:100.501762,acquired:true};done();}
+}
+
+// Haversine ฝั่ง JS
+function calcDistanceJS(lat1,lng1,lat2,lng2){
+  const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function coStepNext() {
+  if(coStep===0){
+    const cg=document.getElementById('co-cgroup')?.value;
+    const cn=document.getElementById('co-custname')?.value;
+    if(!cg||!cn){showToast('กรุณากรอกข้อมูลที่จำเป็น','error');return;}
+    coData.customerGroup=cg;
+    coData.shopType=document.getElementById('co-stype')?.value;
+    coData.tasks=[...document.querySelectorAll('#co-task-chips .multi-chip.selected')].map(c=>c.dataset.val).join(', ');
+    coData.customerName=cn;
+    coData.otherNote=document.getElementById('co-other')?.value||'';
+  }
+  if(coStep===1){
+    coData.lastOrder=document.getElementById('co-orderstatus')?.value;
+    coData.orderMonth=document.getElementById('co-orderdate')?.value;
+    coData.orderValue=coOrderValue;
+    coData.noOrderReason=document.getElementById('co-noreason')?.value||'';
+    coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';
+  }
+  if(coStep===2){
+    coData.competitorBrands=[...document.querySelectorAll('#co-form-body .multi-select-group:first-of-type .multi-chip.selected')].map(c=>c.textContent).join(', ');
+    coData.bestSellingBrands=[...document.querySelectorAll('#co-form-body .multi-select-group:nth-of-type(2) .multi-chip.selected')].map(c=>c.textContent).join(', ');
+    coData.competitorPromo=document.getElementById('co-comppromo')?.value||'';
+  }
+  if(coStep<CO_STEPS-1){coStep++;renderCoStep();}
+}
+
+function coStepPrev(){if(coStep>0){coStep--;renderCoStep();}}
+
+async function submitCheckout() {
+  const findings=document.getElementById('co-findings')?.value;
+  const action=document.getElementById('co-action')?.value;
+  if(!findings||!action){showToast('กรุณากรอกประเด็นสำคัญและ Action Plan','error');return;}
+
+  // ตรวจสอบระยะห่าง
+  let distWarning = false;
+  if(coGpsData.acquired && coData.checkinLat) {
+    const dist = calcDistanceJS(coData.checkinLat, coData.checkinLng, coGpsData.lat, coGpsData.lng);
+    if(dist > 100) {
+      distWarning = true;
+      if(!confirm(`⚠️ ตำแหน่งปัจจุบันห่างจากจุด Check-in ${Math.round(dist)} เมตร
+
+ต้องการ Check-out ต่อไหม? (จะถูกบันทึก Log)`)) return;
+    }
+  }
+
+  const btn=document.getElementById('co-submit-btn');
+  if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
+
+  const payload = {
+    action:       'checkout',
+    row:          coData.row,
+    ref:          coData.ref,
+    employee:     currentUser||'',
+    shop:         coData.shop,
+    checkinLat:   coData.checkinLat,
+    checkinLng:   coData.checkinLng,
+    lat:          coGpsData.lat||'',
+    lng:          coGpsData.lng||'',
+    customerGroup:   coData.customerGroup||'',
+    shopType:        coData.shopType||'',
+    tasks:           coData.tasks||'',
+    customerName:    coData.customerName||'',
+    otherNote:       coData.otherNote||'',
+    lastOrder:       coData.lastOrder||'',
+    orderMonth:      coData.orderMonth||'',
+    orderValue:      coData.orderValue||0,
+    noOrderReason:   coData.noOrderReason||'',
+    bestSellingGracz:coData.bestSellingGracz||'',
+    competitorBrands:coData.competitorBrands||'',
+    bestSellingBrands:coData.bestSellingBrands||'',
+    competitorPromo: coData.competitorPromo||'',
+    keyFindings:     findings,
+    actionPlan:      action,
+    photo2:          coPhotoData||'',
+  };
+
+  const result = await apiGet(payload);
+  if(btn){btn.textContent='🏁 Check-out';btn.disabled=false;}
+
+  if(result && result.ok){
+    closeCoModal();
+    showToast(`✅ Check-out ${coData.shop} สำเร็จ`);
+    loadActiveVisits();
+    loadDashboard();
+  } else {
+    showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
   }
 }
 
