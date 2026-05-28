@@ -651,10 +651,7 @@ async function loadHistory() {
   if (data && data.rows && data.rows.length) {
     allHistory = data.rows;
   } else {
-    allHistory = [
-      {ref:'CHK-20260527-1234',date:'27/05/2569 14:32',shop:'ท็อปส์ สาขาสีลม',province:'กรุงเทพฯ',tasks:'ตรวจเยี่ยมลูกค้า',orderValue:12500,status:'สำเร็จ'},
-      {ref:'CHK-20260527-1235',date:'27/05/2569 11:15',shop:'บิ๊กซี สาขาลาดพร้าว',province:'กรุงเทพฯ',tasks:'เสนอสินค้า',orderValue:8200,status:'สำเร็จ'},
-    ];
+    allHistory = []; // ไม่มีข้อมูล
   }
   filterHistory();
   document.getElementById('history-sub').textContent = `${allHistory.length} รายการ`;
@@ -852,7 +849,22 @@ function renderStep() {
 }
 
 function mkOpts(arr,ph='— เลือก —'){return`<option value="">${ph}</option>`+arr.map(v=>`<option>${v}</option>`).join('')}
-function mkShopOpts(){return`<option value="">— เลือกร้านค้า —</option>`+masterData.shops.map(s=>`<option value="${s.name}" data-prov="${s.province}" data-type="${s.type}">${s.name}</option>`).join('')}
+function mkShopOpts(){
+  // ถ้ามีแผนงานของตัวเอง ให้แสดงเฉพาะร้านในแผน + ร้านทั้งหมดเป็น fallback
+  const planShops = planData
+    .map(p => p.shopName)
+    .filter((v,i,a) => a.indexOf(v) === i) // unique
+    .sort();
+
+  const shopList = planShops.length > 0
+    ? planShops.map(name => {
+        const s = masterData.shops.find(x => x.name === name) || {};
+        return `<option value="${name}" data-prov="${s.province||''}" data-type="${s.type||''}">${name}</option>`;
+      })
+    : masterData.shops.map(s=>`<option value="${s.name}" data-prov="${s.province}" data-type="${s.type}">${s.name}</option>`);
+
+  return `<option value="">— เลือกร้านค้า —</option>` + shopList.join('');
+}
 
 function renderStep0(){
   const now=new Date();
