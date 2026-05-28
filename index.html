@@ -617,7 +617,7 @@ async function loadMasterData() {
   const data = await apiGet({ action:'masterdata' });
   if (data && data.employees && data.employees.length) {
     masterData = data;
-    document.getElementById('hero-name').textContent = data.employees[0].split(' ')[0] || 'Sales';
+    // hero-name ใช้ currentUser เสมอ ไม่ override
     showToast('✓ โหลดข้อมูลจาก Sheets สำเร็จ');
   }
   document.getElementById('last-sync').textContent = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
