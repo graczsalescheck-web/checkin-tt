@@ -535,6 +535,7 @@ let photoData   = [null, null, null];
 let gpsData     = { lat: null, lng: null, acquired: false };
 let formData    = {};
 let orderValue  = 0;
+let salesShops  = []; // ร้านค้าที่ Sales คนนี้ดูแล
 let masterData  = {
   employees:      ['สมชาย ใจดี','วิชัย รักงาน','นภา มีสุข'],
   shops:          [
@@ -599,6 +600,7 @@ function enterApp() {
   const shortEl = document.getElementById('user-name-short');
   if (shortEl) shortEl.textContent = first;
   loadMasterData();
+  loadSalesShops();
   loadDashboard();
   loadVisitPlan();
   loadNotifications();
@@ -611,6 +613,15 @@ async function apiGet(params) {
     const res  = await fetch(url, { redirect:'follow' });
     return await res.json();
   } catch(e) { return null; }
+}
+
+async function loadSalesShops() {
+  const data = await apiGet({ action:'salesshops', employee: currentUser||'' });
+  if (data && data.shops && data.shops.length) {
+    salesShops = data.shops;
+  } else {
+    salesShops = []; // fallback — จะใช้ masterData.shops แทน
+  }
 }
 
 async function loadMasterData() {
@@ -850,20 +861,10 @@ function renderStep() {
 
 function mkOpts(arr,ph='— เลือก —'){return`<option value="">${ph}</option>`+arr.map(v=>`<option>${v}</option>`).join('')}
 function mkShopOpts(){
-  // ถ้ามีแผนงานของตัวเอง ให้แสดงเฉพาะร้านในแผน + ร้านทั้งหมดเป็น fallback
-  const planShops = planData
-    .map(p => p.shopName)
-    .filter((v,i,a) => a.indexOf(v) === i) // unique
-    .sort();
-
-  const shopList = planShops.length > 0
-    ? planShops.map(name => {
-        const s = masterData.shops.find(x => x.name === name) || {};
-        return `<option value="${name}" data-prov="${s.province||''}" data-type="${s.type||''}">${name}</option>`;
-      })
-    : masterData.shops.map(s=>`<option value="${s.name}" data-prov="${s.province}" data-type="${s.type}">${s.name}</option>`);
-
-  return `<option value="">— เลือกร้านค้า —</option>` + shopList.join('');
+  // ใช้ salesShops (ร้านที่ดูแล) ถ้ามี ไม่งั้น fallback masterData.shops
+  const list = salesShops.length > 0 ? salesShops : masterData.shops;
+  return `<option value="">— เลือกร้านค้า —</option>` +
+    list.map(s => `<option value="${s.name}" data-prov="${s.province||''}" data-type="${s.type||''}">${s.name}</option>`).join('');
 }
 
 function renderStep0(){
