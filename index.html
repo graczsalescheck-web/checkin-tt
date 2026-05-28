@@ -1231,8 +1231,11 @@ async function loadNotifications() {
         <div><div class="notif-text">${n.message}</div></div>
       </div>`).join('');
   } else {
-    // fallback demo
-    renderNotifications();
+    // ไม่มีการแจ้งเตือน
+    notifEl.innerHTML = `<div class="notif-item">
+      <div class="notif-dot" style="background:var(--success)"></div>
+      <div><div class="notif-text">✅ ไม่มีการแจ้งเตือน</div></div>
+    </div>`;
   }
 }
 
