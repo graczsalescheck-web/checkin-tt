@@ -1335,7 +1335,7 @@ function renderActiveVisits() {
   const el = document.getElementById('active-visits-list');
   if (!el) return;
   if (!activeVisits.length) {
-    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in0</div>`;
+    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ตอนนี้ไม่มีการ Check-in</div>`;
     return;
   }
   el.innerHTML = activeVisits.map(v => {
