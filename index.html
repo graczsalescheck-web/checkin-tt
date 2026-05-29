@@ -1641,7 +1641,7 @@ function getCoGPS() {
     if(coData.checkinLat && coGpsData.acquired) {
       const dist = calcDistanceJS(coData.checkinLat, coData.checkinLng, coGpsData.lat, coGpsData.lng);
       const warn = document.getElementById('co-gps-warning');
-      if(warn) { warn.style.display = dist > 100 ? 'block' : 'none'; if(dist>100) warn.textContent=`⚠️ ห่างจากจุด Check-in ${Math.round(dist)} เมตร (กด Check-out ได้แต่จะถูก Log)`; }
+      if(warn) { warn.style.display = dist > 200 ? 'block' : 'none'; if(dist>200) warn.textContent=`⚠️ ห่างจากจุด Check-in ${Math.round(dist)} เมตร (กด Check-out ได้แต่จะถูก Log)`; }
     }
   };
   if(navigator.geolocation){
@@ -1693,7 +1693,7 @@ async function submitCheckout() {
   let distWarning = false;
   if(coGpsData.acquired && coData.checkinLat) {
     const dist = calcDistanceJS(coData.checkinLat, coData.checkinLng, coGpsData.lat, coGpsData.lng);
-    if(dist > 100) {
+    if(dist > 200) {
       distWarning = true;
       if(!confirm(`⚠️ ตำแหน่งปัจจุบันห่างจากจุด Check-in ${Math.round(dist)} เมตร
 
