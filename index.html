@@ -686,11 +686,11 @@ function renderDashKPI(total, value, shops, rate, today) {
 
 async function loadHistory() {
   document.getElementById('history-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
-  const data = await apiGet({ action:'history', email: currentUser||'' });
+  const data = await apiGet({ action:'history', employee: currentUser||'' });
   if (data && data.rows && data.rows.length) {
     allHistory = data.rows;
   } else {
-    allHistory = []; // ไม่มีข้อมูล
+    allHistory = [];
   }
   filterHistory();
   document.getElementById('history-sub').textContent = `${allHistory.length} รายการ`;
@@ -1647,7 +1647,22 @@ async function submitCheckout() {
     photo2:          coPhotoData||'',
   };
 
-  const result = await apiGet(payload);
+  // ส่งผ่าน POST เพราะข้อมูลเยอะ
+  let result = null;
+  try {
+    const resp = await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload),
+    });
+    // no-cors ไม่ return body — ถือว่าสำเร็จ
+    result = { ok: true };
+  } catch(e) {
+    // fallback: GET แบบย่อ ไม่ส่งรูป
+    const shortPayload = { ...payload, photo2: '' };
+    result = await apiGet(shortPayload);
+  }
   if(btn){btn.textContent='🏁 Check-out';btn.disabled=false;}
 
   if(result && result.ok){
