@@ -166,6 +166,17 @@ label.field-label .req{color:var(--accent)}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.error{background:var(--accent)}
 
+/* ── AUTOCOMPLETE ── */
+.ac-wrap{position:relative}
+.ac-input{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:'Sarabun',sans-serif;color:var(--text);background:#fff;outline:none;transition:border-color .2s}
+.ac-input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(26,58,143,.10)}
+.ac-list{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--brand);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:220px;overflow-y:auto;z-index:999;box-shadow:var(--shadow-lg)}
+.ac-list.show{display:block}
+.ac-item{padding:10px 13px;font-size:14px;font-family:'Sarabun',sans-serif;cursor:pointer;color:var(--text);border-bottom:1px solid var(--surface2)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.active{background:var(--brand-light);color:var(--brand)}
+.ac-empty{padding:10px 13px;font-size:13px;color:var(--text3);text-align:center}
+
 /* ── ACTIVE VISITS ── */
 .visit-card{background:#fff;border-radius:var(--radius);border:1.5px solid var(--border);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
 .visit-card.active-ci{border-left:4px solid var(--brand)}
@@ -492,7 +503,11 @@ label.field-label .req{color:var(--accent)}
     </div>
     <div class="field-group">
       <label class="field-label">ร้านค้า <span class="req">*</span></label>
-      <select class="field-select" id="ci-shop" onchange="onCiShopChange(this)"></select>
+      <div class="ac-wrap">
+        <input class="ac-input" id="ci-shop-input" placeholder="พิมพ์ชื่อร้านค้า..." autocomplete="off">
+        <div class="ac-list" id="ci-shop-list"></div>
+        <input type="hidden" id="ci-shop">
+      </div>
     </div>
     <div class="field-group">
       <label class="field-label">ถ่ายรูปหน้าร้าน <span class="req">*</span></label>
@@ -1227,7 +1242,8 @@ async function renderAdminMonth() {
 
 async function addAdminPlan() {
   const date = document.getElementById('admin-date')?.value;
-  const shop = document.getElementById('admin-shop')?.value;
+  const shop = document.getElementById('admin-shop')?.value ||
+               document.getElementById('admin-shop-input')?.value;
   const emp  = document.getElementById('admin-employee')?.value;
   const note = document.getElementById('admin-note')?.value || '';
 
@@ -1324,10 +1340,21 @@ function openCheckinModal() {
   ciPhotoData = null;
   ciGpsData   = { lat:null, lng:null, acquired:false };
   // populate shop dropdown
-  const sel = document.getElementById('ci-shop');
-  const list = salesShops.length > 0 ? salesShops : masterData.shops;
-  sel.innerHTML = '<option value="">— เลือกร้านค้า —</option>' +
-    list.map(s=>`<option value="${s.name||s}" data-prov="${s.province||''}">${s.name||s}</option>`).join('');
+  // init autocomplete สำหรับร้านค้า
+  const ciShopItems = salesShops.length > 0 ? salesShops : masterData.shops;
+  const ciShopInp   = document.getElementById('ci-shop-input');
+  const ciShopHid   = document.getElementById('ci-shop');
+  if (ciShopInp) ciShopInp.value = '';
+  if (ciShopHid) ciShopHid.value = '';
+  createAutocomplete('ci-shop-input', 'ci-shop-list', ciShopItems, (val, item) => {
+    document.getElementById('ci-shop').value = val;
+    // auto province
+    if (item && item.province) {
+      const prov = document.getElementById('ci-gps-text');
+      // เก็บ province ไว้ใช้ตอน submit
+      window._ciProvince = item.province;
+    }
+  });
   // reset UI
   const box = document.getElementById('ci-photo-box');
   if (box) { box.classList.remove('has-photo'); const sp=box.querySelector('span'); if(sp) sp.textContent='กดเพื่อถ่ายรูป'; }
@@ -1418,20 +1445,23 @@ function getCiGPS() {
 }
 
 async function submitCheckin() {
-  const shop = document.getElementById('ci-shop')?.value;
+  const shop = document.getElementById('ci-shop')?.value ||
+               document.getElementById('ci-shop-input')?.value;
   if (!shop) { showToast('กรุณาเลือกร้านค้า','error'); return; }
   if (!ciGpsData.acquired) { showToast('กรุณารับตำแหน่ง GPS ก่อน','error'); return; }
 
   const btn = document.getElementById('ci-submit-btn');
   if (btn) { btn.textContent='⏳ กำลัง Check-in...'; btn.disabled=true; }
 
-  const opt = document.getElementById('ci-shop')?.options[document.getElementById('ci-shop').selectedIndex];
+  const ciShopItems2 = salesShops.length > 0 ? salesShops : masterData.shops;
+  const foundShop = ciShopItems2.find(s => (s.name||s) === shop);
+  const opt = { dataset: { prov: (foundShop && foundShop.province) || window._ciProvince || '' } };
   // ส่งข้อมูลหลักก่อน ไม่รวมรูป
   const data = await apiGet({
     action:   'checkin_only',
     employee: currentUser||'',
     shop:     shop,
-    province: opt?.dataset?.prov||'',
+    province: opt?.dataset?.prov || '',
     lat:      ciGpsData.lat,
     lng:      ciGpsData.lng,
   });
@@ -1714,6 +1744,85 @@ async function submitCheckout() {
   } else {
     showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
   }
+}
+
+// ══ AUTOCOMPLETE ══
+function createAutocomplete(inputId, listId, items, onSelect) {
+  const inp  = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  if (!inp || !list) return;
+
+  let activeIdx = -1;
+
+  inp.addEventListener('input', () => {
+    const q = inp.value.trim().toLowerCase();
+    const filtered = q
+      ? items.filter(it => (it.name||it).toLowerCase().includes(q))
+      : items;
+
+    if (!filtered.length) {
+      list.innerHTML = '<div class="ac-empty">ไม่พบร้านค้า</div>';
+    } else {
+      list.innerHTML = filtered.slice(0,30).map((it,i) =>
+        `<div class="ac-item" data-idx="${i}" data-val="${it.name||it}">${it.name||it}</div>`
+      ).join('');
+    }
+    list.classList.add('show');
+    activeIdx = -1;
+
+    // click item
+    list.querySelectorAll('.ac-item').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        selectAcItem(inp, list, el.dataset.val, items, onSelect);
+      });
+    });
+  });
+
+  inp.addEventListener('keydown', e => {
+    const items2 = list.querySelectorAll('.ac-item');
+    if (e.key === 'ArrowDown') {
+      activeIdx = Math.min(activeIdx+1, items2.length-1);
+      items2.forEach((el,i) => el.classList.toggle('active', i===activeIdx));
+    } else if (e.key === 'ArrowUp') {
+      activeIdx = Math.max(activeIdx-1, 0);
+      items2.forEach((el,i) => el.classList.toggle('active', i===activeIdx));
+    } else if (e.key === 'Enter' && activeIdx >= 0) {
+      e.preventDefault();
+      const val = items2[activeIdx]?.dataset.val;
+      if (val) selectAcItem(inp, list, val, items, onSelect);
+    } else if (e.key === 'Escape') {
+      list.classList.remove('show');
+    }
+  });
+
+  inp.addEventListener('focus', () => {
+    if (inp.value.trim() === '') {
+      // แสดงทั้งหมดตอน focus
+      list.innerHTML = items.slice(0,30).map((it,i) =>
+        `<div class="ac-item" data-val="${it.name||it}">${it.name||it}</div>`
+      ).join('');
+      list.classList.add('show');
+      list.querySelectorAll('.ac-item').forEach(el => {
+        el.addEventListener('mousedown', e => {
+          e.preventDefault();
+          selectAcItem(inp, list, el.dataset.val, items, onSelect);
+        });
+      });
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!inp.contains(e.target) && !list.contains(e.target)) {
+      list.classList.remove('show');
+    }
+  });
+}
+
+function selectAcItem(inp, list, val, items, onSelect) {
+  inp.value = val;
+  list.classList.remove('show');
+  if (onSelect) onSelect(val, items.find(it => (it.name||it) === val));
 }
 
 // ══ TOAST ══
