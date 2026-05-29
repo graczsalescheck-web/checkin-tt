@@ -423,7 +423,7 @@ label.field-label .req{color:var(--accent)}
   <!-- ADMIN -->
   <div class="screen" id="screen-admin">
     <div class="admin-header">
-      <div class="admin-title">⚙️ Admin — แผนการเข้าเยี่ยม</div>
+      <div class="admin-title">⚙️ วางแผนการเข้าเยี่ยม</div>
       <div class="admin-sub">เพิ่ม/ลบแผนการเข้าพบลูกค้าประจำเดือน</div>
     </div>
     <div class="admin-body">
@@ -681,7 +681,7 @@ async function loadMasterData() {
   if (data && data.employees && data.employees.length) {
     masterData = data;
     // hero-name ใช้ currentUser เสมอ ไม่ override
-    showToast('✓ โหลดข้อมูลจาก Sheets สำเร็จ');
+    showToast('✓ โหลดข้อมูลสำเร็จ');
   }
   document.getElementById('last-sync').textContent = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 }
