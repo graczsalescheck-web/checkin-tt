@@ -637,10 +637,19 @@ function enterApp() {
 // ══ API ══
 async function apiGet(params) {
   try {
-    const url = GAS_URL + '?' + new URLSearchParams(params).toString();
+    // ใช้ URLSearchParams เพื่อ encode ภาษาไทยถูกต้อง
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      sp.append(k, v === null || v === undefined ? '' : String(v));
+    }
+    const url = GAS_URL + '?' + sp.toString();
     const res  = await fetch(url, { redirect:'follow' });
-    return await res.json();
-  } catch(e) { return null; }
+    const text = await res.text();
+    return JSON.parse(text);
+  } catch(e) {
+    console.warn('apiGet error:', e);
+    return null;
+  }
 }
 
 async function loadSalesShops() {
