@@ -446,8 +446,8 @@ label.field-label .req{color:var(--accent)}
           </div>
         </div>
         <div class="field-group">
-          <label class="field-label">พนักงาน <span class="req">*</span></label>
-          <select class="field-select" id="admin-employee"></select>
+          <label class="field-label">พนักงาน</label>
+          <input class="field-input readonly" id="admin-employee" readonly>
         </div>
         <div class="field-group">
           <label class="field-label">หมายเหตุ</label>
@@ -1205,11 +1205,9 @@ function populateAdminDropdowns() {
     });
   }, 100);
 
-  // พนักงาน — select ปกติ auto-select ตัวเอง
+  // พนักงาน — แสดงชื่อตัวเองอย่างเดียว ไม่ให้เปลี่ยน
   if (empSel) {
-    empSel.innerHTML = masterData.employees.map(e =>
-      `<option value="${e}" ${e===currentUser?'selected':''}>${e}</option>`
-    ).join('');
+    empSel.value = currentUser || '';
   }
 
   // วันที่ default วันนี้
