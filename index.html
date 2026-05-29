@@ -685,7 +685,8 @@ function renderDashKPI(total, value, shops, rate, today) {
 }
 
 async function loadHistory() {
-  document.getElementById('history-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
+  const listEl = document.getElementById('history-list');
+  if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
   const data = await apiGet({ action:'history', employee: currentUser||'' });
   if (data && data.rows && data.rows.length) {
     allHistory = data.rows;
@@ -693,7 +694,8 @@ async function loadHistory() {
     allHistory = [];
   }
   filterHistory();
-  document.getElementById('history-sub').textContent = `${allHistory.length} รายการ`;
+  const subEl = document.getElementById('history-sub');
+  if (subEl) subEl.textContent = `${allHistory.length} รายการ`;
 }
 
 // ══ PLAN CALENDAR ══
