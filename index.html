@@ -1096,23 +1096,34 @@ function formatDate(val) {
 }
 
 function filterHistory(){
-  const q=(document.getElementById('search-input')?.value||'').toLowerCase();
-  const filtered=allHistory.filter(r=>!q||r.shop.toLowerCase().includes(q));
-  const list=document.getElementById('history-list');
-  if(!filtered.length){list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">ไม่พบข้อมูล</div>';return;}
-  list.innerHTML=filtered.map(r=>`
-    <div class="history-item">
+  const q = (document.getElementById('search-input')?.value||'').toLowerCase();
+  const filtered = allHistory.filter(r => !q || (r.shop||'').toLowerCase().includes(q));
+  const list = document.getElementById('history-list');
+  if (!list) return;
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">ไม่พบข้อมูล</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(r => {
+    const isCiOnly    = r.status === 'check-in';
+    const statusLabel = isCiOnly ? '🟡 กำลังเยี่ยม' : '✅ สำเร็จ';
+    const statusClass = isCiOnly ? 'status-pending' : 'status-done';
+    return `<div class="history-item">
       <div class="history-item-head">
-        <div><div class="history-item-shop">${r.shop}</div><div class="history-item-date">${r.date}</div></div>
-        <span class="history-status ${r.status==='สำเร็จ'?'status-done':'status-pending'}">${r.status}</span>
+        <div>
+          <div class="history-item-shop">${r.shop||'—'}</div>
+          <div class="history-item-date">${formatDate(r.date)}</div>
+        </div>
+        <span class="history-status ${statusClass}">${statusLabel}</span>
       </div>
       <div class="history-tags">
-        <span class="htag">${r.province}</span>
-        <span class="htag">${r.tasks}</span>
-        ${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}
+        <span class="htag">${r.province||'—'}</span>
+        <span class="htag">${r.tasks||'—'}</span>
+        ${r.orderValue ? `<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>` : ''}
         <span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ══ DASHBOARD ══
