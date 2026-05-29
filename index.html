@@ -696,7 +696,7 @@ function renderDashKPI(total, value, shops, rate, today) {
 async function loadHistory() {
   const listEl = document.getElementById('history-list');
   if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
-  const data = await apiGet({ action:'history' }); // temp: no filter
+  const data = await apiGet({ action:'history', employee: currentUser||'' });
   if (data && data.rows && data.rows.length) {
     allHistory = data.rows;
   } else {
@@ -1081,6 +1081,20 @@ async function sendCheckin(data){
 function closeModal(){document.getElementById('modal').classList.remove('show');switchScreen('home');loadDashboard();}
 
 // ══ HISTORY ══
+function formatDate(val) {
+  try {
+    if (!val) return '—';
+    const d = new Date(val);
+    if (isNaN(d)) return String(val);
+    const dd  = d.getDate().toString().padStart(2,'0');
+    const mm  = (d.getMonth()+1).toString().padStart(2,'0');
+    const yy  = d.getFullYear() + 543;
+    const hh  = d.getHours().toString().padStart(2,'0');
+    const min = d.getMinutes().toString().padStart(2,'0');
+    return `${dd}/${mm}/${yy} ${hh}:${min}`;
+  } catch(e) { return String(val); }
+}
+
 function filterHistory(){
   const q=(document.getElementById('search-input')?.value||'').toLowerCase();
   const filtered=allHistory.filter(r=>!q||r.shop.toLowerCase().includes(q));
