@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a3a8f">
-<title>Check-in Sales TT</title>
+<title>Check-in Sales TT Ver 1.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -311,7 +311,7 @@ label.field-label .req{color:var(--accent)}
     </div>
     <div class="sync-bar">
       <div class="sync-dot"></div>
-      <span>เชื่อมต่อ Database · <span id="last-sync">กำลังโหลด...</span></span>
+      <span>เชื่อมต่อ Google Sheets · <span id="last-sync">กำลังโหลด...</span></span>
     </div>
     <!-- ACTIVE VISITS + QUICK CHECKIN -->
     <div style="padding:14px 16px 0">
@@ -375,7 +375,7 @@ label.field-label .req{color:var(--accent)}
   </div>
 
   <!-- FORM -->
-  <div class="screen" id="screen-form">
+  <div class="screen" id="screen-form" style="display:none!important">
     <div class="form-progress">
       <div class="progress-steps" id="progress-steps">
         <div class="progress-step active"><div class="progress-step-num">1</div>ร้านค้า</div>
@@ -423,7 +423,7 @@ label.field-label .req{color:var(--accent)}
   <!-- ADMIN -->
   <div class="screen" id="screen-admin">
     <div class="admin-header">
-      <div class="admin-title">⚙️ จัดการแผนการเข้าเยี่ยม</div>
+      <div class="admin-title">⚙️ Admin — แผนการเข้าเยี่ยม</div>
       <div class="admin-sub">เพิ่ม/ลบแผนการเข้าพบลูกค้าประจำเดือน</div>
     </div>
     <div class="admin-body">
@@ -480,10 +480,7 @@ label.field-label .req{color:var(--accent)}
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     <span>หน้าหลัก</span>
   </button>
-  <button class="nav-btn" id="nav-form" onclick="goToForm()">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-    <span>Check-in</span>
-  </button>
+
   <button class="nav-btn" id="nav-history" onclick="switchScreen('history'); loadHistory();">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
     <span>ประวัติ</span>
@@ -685,7 +682,7 @@ async function loadMasterData() {
   if (data && data.employees && data.employees.length) {
     masterData = data;
     // hero-name ใช้ currentUser เสมอ ไม่ override
-    showToast('✓ โหลดข้อมูลจาก Database สำเร็จ');
+    showToast('✓ โหลดข้อมูลจาก Sheets สำเร็จ');
   }
   document.getElementById('last-sync').textContent = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 }
@@ -1335,7 +1332,7 @@ function renderActiveVisits() {
   const el = document.getElementById('active-visits-list');
   if (!el) return;
   if (!activeVisits.length) {
-    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ตอนนี้ไม่มีการ Check-in</div>`;
+    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in วันนี้</div>`;
     return;
   }
   el.innerHTML = activeVisits.map(v => {
