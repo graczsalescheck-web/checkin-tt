@@ -682,7 +682,7 @@ async function loadMasterData() {
   if (data && data.employees && data.employees.length) {
     masterData = data;
     // hero-name ใช้ currentUser เสมอ ไม่ override
-    showToast('✓ โหลดข้อมูลจาก Sheets สำเร็จ');
+    showToast('✓ โหลดข้อมูลจาก Database สำเร็จ');
   }
   document.getElementById('last-sync').textContent = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 }
