@@ -1186,14 +1186,27 @@ function openAdmin() {
 // PIN functions removed
 
 function populateAdminDropdowns() {
-  const shopSel = document.getElementById('admin-shop');
-  const empSel  = document.getElementById('admin-employee');
-  if (!shopSel || !empSel) return;
-  shopSel.innerHTML = '<option value="">— เลือกร้านค้า —</option>' +
-    masterData.shops.map(s=>`<option>${s.name}</option>`).join('');
-  empSel.innerHTML = '<option value="">— เลือกพนักงาน —</option>' +
-    masterData.employees.map(e=>`<option>${e}</option>`).join('');
-  // set default date to today
+  const empSel = document.getElementById('admin-employee');
+
+  // ร้านค้า — autocomplete
+  const myShops = salesShops.length > 0 ? salesShops : masterData.shops;
+  const adminInp = document.getElementById('admin-shop-input');
+  const adminHid = document.getElementById('admin-shop');
+  if (adminInp) adminInp.value = '';
+  if (adminHid) adminHid.value = '';
+  createAutocomplete('admin-shop-input', 'admin-shop-list', myShops, (val) => {
+    const h = document.getElementById('admin-shop');
+    if (h) h.value = val;
+  });
+
+  // พนักงาน — select ปกติ auto-select ตัวเอง
+  if (empSel) {
+    empSel.innerHTML = masterData.employees.map(e =>
+      `<option value="${e}" ${e===currentUser?'selected':''}>${e}</option>`
+    ).join('');
+  }
+
+  // วันที่ default วันนี้
   const di = document.getElementById('admin-date');
   if (di && !di.value) di.value = new Date().toISOString().slice(0,10);
 }
