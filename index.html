@@ -696,9 +696,14 @@ function renderDashKPI(total, value, shops, rate, today) {
 async function loadHistory() {
   const listEl = document.getElementById('history-list');
   if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
-  const data = await apiGet({ action:'history', employee: currentUser||'' });
+  const data = await apiGet({ action:'history' });
   if (data && data.rows && data.rows.length) {
-    allHistory = data.rows;
+    // filter ใน JS — normalize whitespace ก่อน compare
+    const norm = s => String(s||'').replace(/\s+/g,' ').trim();
+    const me   = norm(currentUser||'');
+    allHistory = me
+      ? data.rows.filter(r => norm(r.employee) === me)
+      : data.rows;
   } else {
     allHistory = [];
   }
