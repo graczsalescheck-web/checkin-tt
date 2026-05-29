@@ -311,7 +311,7 @@ label.field-label .req{color:var(--accent)}
     </div>
     <div class="sync-bar">
       <div class="sync-dot"></div>
-      <span>เชื่อมต่อ Google Sheets · <span id="last-sync">กำลังโหลด...</span></span>
+      <span>เชื่อมต่อ Database · <span id="last-sync">กำลังโหลด...</span></span>
     </div>
     <!-- ACTIVE VISITS + QUICK CHECKIN -->
     <div style="padding:14px 16px 0">
@@ -423,7 +423,7 @@ label.field-label .req{color:var(--accent)}
   <!-- ADMIN -->
   <div class="screen" id="screen-admin">
     <div class="admin-header">
-      <div class="admin-title">⚙️ Admin — แผนการเข้าเยี่ยม</div>
+      <div class="admin-title">⚙️ จัดการแผนการเข้าเยี่ยม</div>
       <div class="admin-sub">เพิ่ม/ลบแผนการเข้าพบลูกค้าประจำเดือน</div>
     </div>
     <div class="admin-body">
@@ -1335,7 +1335,7 @@ function renderActiveVisits() {
   const el = document.getElementById('active-visits-list');
   if (!el) return;
   if (!activeVisits.length) {
-    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in วันนี้</div>`;
+    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in0</div>`;
     return;
   }
   el.innerHTML = activeVisits.map(v => {
