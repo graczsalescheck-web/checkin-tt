@@ -423,7 +423,7 @@ label.field-label .req{color:var(--accent)}
   <!-- ADMIN -->
   <div class="screen" id="screen-admin">
     <div class="admin-header">
-      <div class="admin-title">⚙️ วางแผนการเข้าเยี่ยม</div>
+      <div class="admin-title">⚙️ Admin — แผนการเข้าเยี่ยม</div>
       <div class="admin-sub">เพิ่ม/ลบแผนการเข้าพบลูกค้าประจำเดือน</div>
     </div>
     <div class="admin-body">
@@ -439,7 +439,11 @@ label.field-label .req{color:var(--accent)}
         </div>
         <div class="field-group">
           <label class="field-label">ร้านค้า <span class="req">*</span></label>
-          <select class="field-select" id="admin-shop"></select>
+          <div class="ac-wrap">
+            <input class="ac-input" id="admin-shop-input" placeholder="พิมพ์ชื่อร้านค้า..." autocomplete="off">
+            <div class="ac-list" id="admin-shop-list"></div>
+            <input type="hidden" id="admin-shop">
+          </div>
         </div>
         <div class="field-group">
           <label class="field-label">พนักงาน <span class="req">*</span></label>
@@ -681,7 +685,7 @@ async function loadMasterData() {
   if (data && data.employees && data.employees.length) {
     masterData = data;
     // hero-name ใช้ currentUser เสมอ ไม่ override
-    showToast('✓ โหลดข้อมูลสำเร็จ');
+    showToast('✓ โหลดข้อมูลจาก Sheets สำเร็จ');
   }
   document.getElementById('last-sync').textContent = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 }
@@ -1188,16 +1192,18 @@ function openAdmin() {
 function populateAdminDropdowns() {
   const empSel = document.getElementById('admin-employee');
 
-  // ร้านค้า — autocomplete
+  // ร้านค้า — autocomplete (รอ DOM render ก่อน)
   const myShops = salesShops.length > 0 ? salesShops : masterData.shops;
   const adminInp = document.getElementById('admin-shop-input');
   const adminHid = document.getElementById('admin-shop');
   if (adminInp) adminInp.value = '';
   if (adminHid) adminHid.value = '';
-  createAutocomplete('admin-shop-input', 'admin-shop-list', myShops, (val) => {
-    const h = document.getElementById('admin-shop');
-    if (h) h.value = val;
-  });
+  setTimeout(() => {
+    createAutocomplete('admin-shop-input', 'admin-shop-list', myShops, (val) => {
+      const h = document.getElementById('admin-shop');
+      if (h) h.value = val;
+    });
+  }, 100);
 
   // พนักงาน — select ปกติ auto-select ตัวเอง
   if (empSel) {
