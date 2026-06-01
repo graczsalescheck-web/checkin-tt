@@ -1513,7 +1513,10 @@ function renderPreview(){
     </tr>`).join('');
 
   const confirmBtn=document.getElementById('upload-confirm-btn');
-  if(confirmBtn){confirmBtn.disabled=valid===0;if(valid===0)confirmBtn.textContent='ไม่มีรายการที่ถูกต้อง';}
+  if(confirmBtn){
+    confirmBtn.disabled=valid===0;
+    confirmBtn.textContent=valid===0?'ไม่มีรายการที่ถูกต้อง':`✅ นำเข้าเฉพาะรายการที่ถูกต้อง (${valid} รายการ)`;
+  }
 
   document.getElementById('upload-step1').style.display='none';
   document.getElementById('upload-step2').style.display='block';
