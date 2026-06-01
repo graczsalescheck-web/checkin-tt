@@ -963,8 +963,8 @@ async function deletePlanItem(row,shopName,dateStr){
 
 // ══ CHECK-IN / CHECK-OUT ══
 let ciPhotoData=null;let ciGpsData={lat:null,lng:null,acquired:false};
-let activeVisits=[];let coData={};let coStep=0;let coOrderValue=0;let coGpsData={lat:null,lng:null,acquired:false};let coPhotoData=null;
-const CO_STEPS=4;
+let activeVisits=[];let coData={};let coStep=0;let coOrderValue=0;let coGpsData={lat:null,lng:null,acquired:false};let coPhotoData=[null,null,null,null,null];let coPhotoStates=[false,false,false,false,false];
+const CO_STEPS=5;
 
 async function loadActiveVisits(){
   const data=await apiGet({action:'active_visits',employee:currentUser||''});
@@ -1070,12 +1070,12 @@ async function submitCheckin(){
 }
 
 function openCheckout(ref,row,shop,checkinLat,checkinLng){
-  coData={ref,row,shop,checkinLat,checkinLng};coStep=0;coOrderValue=0;coPhotoData=null;coGpsData={lat:null,lng:null,acquired:false};
+  coData={ref,row,shop,checkinLat,checkinLng};coStep=0;coOrderValue=0;coPhotoData=[null,null,null,null,null];coPhotoStates=[false,false,false,false,false];coGpsData={lat:null,lng:null,acquired:false};
   document.getElementById('co-shop-title').textContent=shop;renderCoStep();document.getElementById('co-modal').classList.add('show');
 }
 function closeCoModal(){document.getElementById('co-modal').classList.remove('show');}
 
-const coStepDefs=['ข้อมูลร้านค้า','ข้อมูลการซื้อและการจำหน่าย','ข้อมูลคู่แข่ง','สรุปผลและ Action Plan + GPS Check-out'];
+const coStepDefs=['รูปถ่าย','ข้อมูลร้านค้า','ข้อมูลการซื้อและการจำหน่าย','ข้อมูลคู่แข่ง','สรุปผลและ Action Plan + GPS Check-out'];
 
 function renderCoStep(){
   const body=document.getElementById('co-form-body');if(!body)return;
@@ -1083,7 +1083,7 @@ function renderCoStep(){
   for(let i=0;i<CO_STEPS;i++)prog+=`<div style="flex:1;height:4px;border-radius:2px;background:${i<=coStep?'var(--brand)':'var(--border)'}"></div>`;
   prog+=`</div><div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px">${coStepDefs[coStep]}</div>`;
   let fields='';
-  if(coStep===0)fields=renderCoStep0();if(coStep===1)fields=renderCoStep1();if(coStep===2)fields=renderCoStep2();if(coStep===3)fields=renderCoStep3();
+  if(coStep===0)fields=renderCoStepPhoto();if(coStep===1)fields=renderCoStep0();if(coStep===2)fields=renderCoStep1();if(coStep===3)fields=renderCoStep2();if(coStep===4)fields=renderCoStep3();
   const navBtns=`<div class="form-nav" style="margin-top:16px">${coStep>0?`<button class="btn btn-secondary" onclick="coStepPrev()">← ก่อนหน้า</button>`:`<button class="btn btn-secondary" onclick="closeCoModal()">ยกเลิก</button>`}${coStep<CO_STEPS-1?`<button class="btn btn-primary" onclick="coStepNext()">ถัดไป →</button>`:`<button class="btn btn-success" id="co-submit-btn" onclick="submitCheckout()">🏁 Check-out</button>`}</div>`;
   body.innerHTML=prog+fields+navBtns;
   if(coStep===0){document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected')));}
@@ -1106,6 +1106,56 @@ function renderCoStep2(){return`<div class="field-group"><label class="field-lab
 function renderCoStep3(){return`<div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ *</label><textarea class="field-textarea" id="co-findings" placeholder="สรุปสิ่งที่พบ..."></textarea></div><div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ *</label><textarea class="field-textarea" id="co-action" placeholder="Action Plan..."></textarea></div><div class="field-group"><label class="field-label">GPS Check-out</label><div class="gps-field"><div class="gps-bar"><span class="gps-coords" id="co-gps-text">กำลังระบุตำแหน่ง...</span><button class="gps-btn" onclick="getCoGPS()" type="button" id="co-gps-btn">รีเฟรช</button></div></div><div class="gps-warning-banner" id="co-gps-warning"><span class="warn-icon">⚠️</span><span id="co-gps-warning-text">ตำแหน่งห่างจากจุด Check-in เกินกว่า 200 เมตร — ระบบจะบันทึก Log ไว้</span></div></div>`;}
 
 function changeCoVal(d){coOrderValue=Math.max(0,coOrderValue+d);const el=document.getElementById('co-orderval');if(el)el.value=coOrderValue;}
+
+
+// ── [NEW] CHECKOUT STEP 0 — ถ่ายรูป 5 รูป ──
+function renderCoStepPhoto(){
+  const labels=['รูปถ่าย 1 *','รูปถ่าย 2 *','รูปถ่ายเพิ่มเติม 3','รูปถ่ายเพิ่มเติม 4','รูปถ่ายเพิ่มเติม 5'];
+  const grid = labels.map((lbl,i)=>`
+    <div class="photo-upload ${coPhotoStates[i]?'has-photo':''}" id="co-photo-${i}" onclick="takeCoPhotoIdx(${i})" style="${i<2?'aspect-ratio:1':'aspect-ratio:2.5/1;flex-direction:row;gap:12px;padding:14px'}">
+      <div class="photo-check">✓</div>
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="${i<2?26:20}" height="${i<2?26:20}"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+      <span id="co-photo-lbl-${i}">${coPhotoStates[i]?'อัปโหลดแล้ว':lbl}</span>
+    </div>`).join('');
+  return`<p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">ถ่ายรูปถ่าย 1 และ 2 จำเป็นต้องมี</p>
+  <div class="photo-grid" style="margin-bottom:10px">${[0,1].map(i=>`
+    <div class="photo-upload ${coPhotoStates[i]?'has-photo':''}" id="co-photo-${i}" onclick="takeCoPhotoIdx(${i})">
+      <div class="photo-check">✓</div>
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+      <span id="co-photo-lbl-${i}">${coPhotoStates[i]?'อัปโหลดแล้ว':'รูปถ่าย '+(i+1)+' *'}</span>
+    </div>`).join('')}</div>
+  ${[2,3,4].map(i=>`
+  <div class="photo-upload ${coPhotoStates[i]?'has-photo':''}" id="co-photo-${i}" onclick="takeCoPhotoIdx(${i})" style="aspect-ratio:2.5/1;flex-direction:row;gap:12px;padding:14px;margin-bottom:8px">
+    <div class="photo-check">✓</div>
+    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+    <span id="co-photo-lbl-${i}">${coPhotoStates[i]?'อัปโหลดแล้ว':'รูปถ่ายเพิ่มเติม '+(i+1)+' (ไม่บังคับ)'}</span>
+  </div>`).join('')}`;
+}
+
+function takeCoPhotoIdx(idx){
+  const input=document.createElement('input');input.type='file';input.accept='image/*';input.capture='environment';input.style.display='none';
+  document.body.appendChild(input);
+  input.onchange=()=>{
+    if(!input.files||!input.files[0]){document.body.removeChild(input);return;}
+    const reader=new FileReader();
+    reader.onload=e=>{
+      compressImage(e.target.result,800,0.6,compressed=>{
+        coPhotoData[idx]=compressed;coPhotoStates[idx]=true;
+        const box=document.getElementById('co-photo-'+idx);
+        if(box){
+          box.classList.add('has-photo');
+          let img=box.querySelector('img.thumb');
+          if(!img){img=document.createElement('img');img.className='thumb';img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;';box.prepend(img);}
+          img.src=compressed;
+          const sp=box.querySelector('span');if(sp)sp.style.display='none';
+          const sv=box.querySelector('svg');if(sv)sv.style.display='none';
+        }
+        showToast('✓ ถ่ายรูปที่ '+(idx+1)+' สำเร็จ');
+      });
+    };
+    reader.readAsDataURL(input.files[0]);document.body.removeChild(input);
+  };input.click();
+}
 
 function takeCoPhoto(){
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.capture='environment';input.style.display='none';
@@ -1134,6 +1184,10 @@ function calcDistanceJS(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Ma
 
 function coStepNext(){
   if(coStep===0){
+    // validate รูปถ่ายบังคับ 2 รูปแรก
+    if(!coPhotoStates[0]||!coPhotoStates[1]){showToast('กรุณาถ่ายรูปถ่าย 1 และ 2 ก่อน','error');return;}
+  }
+  if(coStep===1){
     const cn=document.getElementById('co-custname')?.value;
     if(!cn){showToast('กรุณากรอกชื่อลูกค้า','error');return;}
     coData.customerGroup='';
@@ -1142,8 +1196,8 @@ function coStepNext(){
     coData.customerName=cn;
     coData.otherNote=document.getElementById('co-other')?.value||'';
   }
-  if(coStep===1){coData.lastOrder=document.getElementById('co-orderstatus')?.value;coData.orderMonth=document.getElementById('co-orderdate')?.value;coData.orderValue=coOrderValue;coData.noOrderReason=document.getElementById('co-noreason')?.value||'';coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';}
-  if(coStep===2){
+  if(coStep===2){coData.lastOrder=document.getElementById('co-orderstatus')?.value;coData.orderMonth=document.getElementById('co-orderdate')?.value;coData.orderValue=coOrderValue;coData.noOrderReason=document.getElementById('co-noreason')?.value||'';coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';}
+  if(coStep===3){
     coData.competitorBrands=getBrands('#co-form-body .multi-select-group:first-of-type','co-comp-other-input').join(', ');
     coData.bestSellingBrands=getBrands('#co-form-body .multi-select-group:nth-of-type(2)','co-best-other-input').join(', ');
     coData.competitorPromo=document.getElementById('co-comppromo')?.value||'';
@@ -1157,10 +1211,10 @@ async function submitCheckout(){
   const findings=document.getElementById('co-findings')?.value;const action=document.getElementById('co-action')?.value;
   if(!findings||!action){showToast('กรุณากรอกประเด็นสำคัญและ Action Plan','error');return;}
   const btn=document.getElementById('co-submit-btn');if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
-  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,photo2:coPhotoData||''};
+  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,photo2:coPhotoData[0]||'',photo3:coPhotoData[1]||'',photo4:coPhotoData[2]||'',photo5:coPhotoData[3]||'',photo6:coPhotoData[4]||''};
   let result=null;
   try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});result={ok:true};}
-  catch(e){const sp={...payload,photo2:''};result=await apiGet(sp);}
+  catch(e){const sp={...payload,photo2:'',photo3:'',photo4:'',photo5:'',photo6:''};result=await apiGet(sp);}
   if(btn){btn.textContent='🏁 Check-out';btn.disabled=false;}
   if(result&&result.ok){closeCoModal();showToast(`✅ Check-out ${coData.shop} สำเร็จ`);loadActiveVisits();loadDashboard();}
   else showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
