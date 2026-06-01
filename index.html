@@ -1086,7 +1086,7 @@ function renderCoStep(){
   if(coStep===0)fields=renderCoStepPhoto();if(coStep===1)fields=renderCoStep0();if(coStep===2)fields=renderCoStep1();if(coStep===3)fields=renderCoStep2();if(coStep===4)fields=renderCoStep3();
   const navBtns=`<div class="form-nav" style="margin-top:16px">${coStep>0?`<button class="btn btn-secondary" onclick="coStepPrev()">← ก่อนหน้า</button>`:`<button class="btn btn-secondary" onclick="closeCoModal()">ยกเลิก</button>`}${coStep<CO_STEPS-1?`<button class="btn btn-primary" onclick="coStepNext()">ถัดไป →</button>`:`<button class="btn btn-success" id="co-submit-btn" onclick="submitCheckout()">🏁 Check-out</button>`}</div>`;
   body.innerHTML=prog+fields+navBtns;
-  if(coStep===0){document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected')));}
+  if(coStep===1){document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected')));}
   if(coStep===3)getCoGPS();
 }
 
