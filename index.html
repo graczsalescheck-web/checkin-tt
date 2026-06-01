@@ -523,8 +523,9 @@ let masterData   = {
     {name:'เทสโก้ สาขารังสิต',province:'ปทุมธานี',type:'Hypermarket'},
   ],
   provinces:['กรุงเทพมหานคร','นครปฐม','ปทุมธานี','นนทบุรี','สมุทรปราการ','เชียงใหม่'],
+  customerGroups:['Modern Trade','Traditional Trade','Wholesale','Hypermart'],
   shopTypes:['LMT','WSS','WS','OT'],
-  tasks:['ตรวจเยี่ยมลูกค้า','ติดตามงานขาย','เสนอสินค้า','จัดสินค้า','อัพเดทโปรโมชั่น'],
+  tasks:['ตรวจเยี่ยมลูกค้า','ติดตามงานขาย','เสนอสินค้า','อัพเดทโปรโมชั่น','จัดสินค้า'],
   orderStatuses:['สั่งซื้อปกติ','สั่งซื้อเพิ่มพิเศษ','ลดการสั่งซื้อ','ไม่สั่งซื้อ'],
 };
 
@@ -769,11 +770,10 @@ function renderStep0(){
   <div class="field-group"><label class="field-label">ชื่อ นามสกุล <span class="req">*</span></label><select class="field-select" id="f-employee">${mkOpts(masterData.employees)}</select></div>
   <div class="field-group"><label class="field-label">ชื่อร้านค้า <span class="req">*</span></label><select class="field-select" id="f-shop" onchange="onShopChange(this)">${mkShopOpts()}</select></div>
   <div class="field-group"><label class="field-label">จังหวัด <span class="req">*</span></label><select class="field-select" id="f-province">${mkOpts(masterData.provinces)}</select></div>
-  <div class="field-group"><label class="field-label">กลุ่มลูกค้า <span class="req">*</span></label><select class="field-select" id="f-cgroup">${mkOpts(masterData.customerGroups)}</select></div>
   <div class="field-group"><label class="field-label">ประเภทของร้านค้า <span class="req">*</span></label><select class="field-select" id="f-stype">${mkOpts(masterData.shopTypes)}</select></div>
   <div class="field-group"><label class="field-label">รายละเอียดงาน <span class="req">*</span></label><div class="multi-select-group" id="task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}</div></div>
-  <div class="field-group"><label class="field-label">ชื่อลูกค้า <span class="req">*</span></label><input class="field-input" id="f-custname" type="text" placeholder="ชื่อผู้ติดต่อ"></div>
-  <div class="field-group"><label class="field-label">อื่นๆ ระบุ</label><input class="field-input" id="f-other" type="text" placeholder="หมายเหตุเพิ่มเติม"></div>`;}
+  <div class="field-group"><label class="field-label">ชื่อลูกค้า <span class="req">*</span></label><input class="field-input" id="f-custname" type="text" placeholder="ชื่อผู้ติดต่อ" value="${getLastCustomerName(formData.shopName)||''}"></div>
+  <div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="f-other" type="text" placeholder="ชื่อผู้มีอำนาจตัดสินใจ"></div>`;}
 
 function initStep0(){document.querySelectorAll('#task-chips .multi-chip').forEach(c=>{c.addEventListener('click',()=>c.classList.toggle('selected'));});}
 function onShopChange(sel){const o=sel.options[sel.selectedIndex];if(o.dataset.prov){const p=document.getElementById('f-province');if(p)p.value=o.dataset.prov;}if(o.dataset.type){const t=document.getElementById('f-stype');if(t)t.value=o.dataset.type;}}
@@ -1090,7 +1090,9 @@ function renderCoStep(){
   if(coStep===3)getCoGPS();
 }
 
-function renderCoStep0(){return`<div class="field-group"><label class="field-label">กลุ่มลูกค้า *</label><select class="field-select" id="co-cgroup">${mkOpts(masterData.customerGroups)}</select></div><div class="field-group"><label class="field-label">ประเภทร้านค้า *</label><select class="field-select" id="co-stype">${mkOpts(masterData.shopTypes)}</select></div><div class="field-group"><label class="field-label">รายละเอียดงาน *</label><div class="multi-select-group" id="co-task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}</div></div><div class="field-group"><label class="field-label">ชื่อลูกค้า *</label><input class="field-input" id="co-custname" type="text" placeholder="ชื่อผู้ติดต่อ"></div><div class="field-group"><label class="field-label">อื่นๆ ระบุ</label><input class="field-input" id="co-other" type="text" placeholder="หมายเหตุ"></div>`;}
+function renderCoStep0(){
+  const lastCust=getLastCustomerName(coData.shop)||'';
+  return`<div class="field-group"><label class="field-label">ประเภทร้านค้า *</label><select class="field-select" id="co-stype">${mkOpts(masterData.shopTypes)}</select></div><div class="field-group"><label class="field-label">รายละเอียดงาน *</label><div class="multi-select-group" id="co-task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}</div></div><div class="field-group"><label class="field-label">ชื่อลูกค้า *</label><input class="field-input" id="co-custname" type="text" placeholder="ชื่อผู้ติดต่อ" value="${lastCust}"></div><div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="co-other" type="text" placeholder="ชื่อผู้มีอำนาจตัดสินใจ"></div>`;}
 function renderCoStep1(){return`<div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด *</label><select class="field-select" id="co-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div><div class="field-group"><label class="field-label">ระบุเดือน ปี *</label><input class="field-input" type="date" id="co-orderdate" value="${new Date().toISOString().slice(0,10)}"></div><div class="field-group"><label class="field-label">มูลค่า (บาท)</label><div class="number-input"><button class="number-btn" type="button" onclick="changeCoVal(-1000)">−</button><input class="field-input" type="number" id="co-orderval" value="0" min="0" oninput="coOrderValue=parseInt(this.value)||0"><button class="number-btn" type="button" onclick="changeCoVal(1000)">+</button></div></div><div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" id="co-noreason" type="text"></div><div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี *</label><textarea class="field-textarea" id="co-gracz" placeholder="ระบุรุ่น..."></textarea></div><div class="field-group"><label class="field-label">ถ่ายรูปเพิ่มเติม</label><div class="photo-upload" id="co-photo-box" onclick="takeCoPhoto()" style="aspect-ratio:2.5/1;flex-direction:row;gap:12px;padding:14px"><div class="photo-check">✓</div><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg><span id="co-photo-label">กดถ่ายรูป (ไม่บังคับ)</span></div></div>`;}
 function renderCoStep2(){return`<div class="field-group"><label class="field-label">แบรนด์คู่แข่งในร้าน *</label>
   <div class="multi-select-group">${['Fest','Go Eco','Chan','Leev','Aoy Plus'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}<div class="multi-chip" id="co-comp-other-chip" onclick="toggleOtherInput('co-comp-other-chip','co-comp-other-wrap')">+ อื่นๆ</div></div>
@@ -1131,7 +1133,15 @@ function getCoGPS(){
 function calcDistanceJS(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 
 function coStepNext(){
-  if(coStep===0){const cg=document.getElementById('co-cgroup')?.value;const cn=document.getElementById('co-custname')?.value;if(!cg||!cn){showToast('กรุณากรอกข้อมูลที่จำเป็น','error');return;}coData.customerGroup=cg;coData.shopType=document.getElementById('co-stype')?.value;coData.tasks=[...document.querySelectorAll('#co-task-chips .multi-chip.selected')].map(c=>c.dataset.val).join(', ');coData.customerName=cn;coData.otherNote=document.getElementById('co-other')?.value||'';}
+  if(coStep===0){
+    const cn=document.getElementById('co-custname')?.value;
+    if(!cn){showToast('กรุณากรอกชื่อลูกค้า','error');return;}
+    coData.customerGroup='';
+    coData.shopType=document.getElementById('co-stype')?.value;
+    coData.tasks=[...document.querySelectorAll('#co-task-chips .multi-chip.selected')].map(c=>c.dataset.val).join(', ');
+    coData.customerName=cn;
+    coData.otherNote=document.getElementById('co-other')?.value||'';
+  }
   if(coStep===1){coData.lastOrder=document.getElementById('co-orderstatus')?.value;coData.orderMonth=document.getElementById('co-orderdate')?.value;coData.orderValue=coOrderValue;coData.noOrderReason=document.getElementById('co-noreason')?.value||'';coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';}
   if(coStep===2){
     coData.competitorBrands=getBrands('#co-form-body .multi-select-group:first-of-type','co-comp-other-input').join(', ');
@@ -1179,6 +1189,14 @@ function createAutocomplete(inputId,listId,items,onSelect){
   document.addEventListener('click',e=>{if(!inp.contains(e.target)&&!list.contains(e.target))list.classList.remove('show');});
 }
 function selectAcItem(inp,list,val,items,onSelect){inp.value=val;list.classList.remove('show');if(onSelect)onSelect(val,items.find(it=>(it.name||it)===val));}
+
+// ── helper: ดึงชื่อลูกค้าล่าสุดของร้านนั้นจาก History ──
+function getLastCustomerName(shopName){
+  if(!shopName||!allHistory||!allHistory.length)return'';
+  const norm=s=>String(s||'').replace(/\s+/g,' ').trim();
+  const match=allHistory.find(r=>norm(r.shop)===norm(shopName)&&r.customerName);
+  return match?match.customerName:'';
+}
 
 // ── TOGGLE OTHER INPUT ──
 function toggleOtherInput(chipId, wrapId){
