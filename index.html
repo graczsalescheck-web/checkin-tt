@@ -470,7 +470,7 @@ label.field-label .req{color:var(--accent)}
         </div>
       </div>
     </div>
-    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px" onclick="submitCheckin()" id="ci-submit-btn">✓ Check-in เลย</button>
+    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px" onclick="submitCheckin()" id="ci-submit-btn" disabled>⏳ กำลังรับ GPS...</button>
   </div>
 </div>
 <!-- CHECKOUT MODAL -->
@@ -1017,6 +1017,9 @@ function openCheckinModal(){
   const box=document.getElementById('ci-photo-box');
   if(box){box.classList.remove('has-photo');const sp=box.querySelector('span');if(sp)sp.textContent='กดเพื่อถ่ายรูป';}
   document.getElementById('ci-gps-text').textContent='กดรับตำแหน่ง';
+  // reset ปุ่ม Check-in
+  const subBtn=document.getElementById('ci-submit-btn');
+  if(subBtn){subBtn.disabled=true;subBtn.textContent='⏳ กำลังรับ GPS...';}
   document.getElementById('ci-modal').classList.add('show');getCiGPS();
 }
 
@@ -1038,11 +1041,35 @@ function takeCiPhoto(){
 }
 
 function getCiGPS(){
-  const btn=document.getElementById('ci-gps-btn');const txt=document.getElementById('ci-gps-text');
+  const btn=document.getElementById('ci-gps-btn');
+  const txt=document.getElementById('ci-gps-text');
+  const subBtn=document.getElementById('ci-submit-btn');
   if(btn){btn.textContent='⏳ กำลังระบุ...';btn.disabled=true;}
-  const done=()=>{if(txt)txt.textContent=`${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}};
-  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};done();},()=>{ciGpsData={lat:13.756331,lng:100.501762,acquired:true};done();},{timeout:8000});}
-  else{ciGpsData={lat:13.756331,lng:100.501762,acquired:true};done();}
+  // ปิดปุ่ม Check-in ระหว่างรับ GPS
+  if(subBtn){subBtn.disabled=true;subBtn.textContent='⏳ กำลังรับ GPS...';}
+
+  const onSuccess=()=>{
+    if(txt)txt.textContent=`${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;
+    if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}
+    // GPS สำเร็จ — เปิดปุ่ม Check-in
+    if(subBtn){subBtn.disabled=false;subBtn.textContent='✓ Check-in เลย';}
+  };
+
+  const onFail=()=>{
+    if(txt)txt.textContent='ไม่สามารถรับ GPS ได้';
+    if(btn){btn.textContent='รับตำแหน่งใหม่';btn.disabled=false;}
+    // GPS ไม่ได้ — ปุ่มยังปิดอยู่
+    if(subBtn){subBtn.disabled=true;subBtn.textContent='⚠️ กรุณารับ GPS ก่อน';}
+    showToast('ไม่สามารถรับ GPS ได้ กรุณากดรับตำแหน่งใหม่','error');
+  };
+
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      p=>{ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};onSuccess();},
+      ()=>{onFail();},
+      {timeout:8000}
+    );
+  } else {onFail();}
 }
 
 async function submitCheckin(){
