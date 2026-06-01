@@ -188,6 +188,8 @@ label.field-label .req{color:var(--accent)}
 .btn-checkout:active{opacity:.85}
 .checkin-quick-btn{width:100%;padding:14px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(26,58,143,.3);margin-bottom:16px}
 .checkin-quick-btn:active{opacity:.9}
+.checkin-quick-btn:disabled{background:var(--text3);box-shadow:none;cursor:not-allowed;opacity:.7}
+.checkin-block-msg{background:#fff9db;border:1.5px solid #f3d076;border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:12px;font-size:13px;color:#854f0b;display:flex;align-items:center;gap:8px;line-height:1.5}
 .ci-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250;align-items:flex-end;justify-content:center}
 .ci-modal.show{display:flex;animation:fadeIn .2s ease}
 .ci-sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
@@ -297,7 +299,7 @@ label.field-label .req{color:var(--accent)}
       </button>
     </div>
     <div style="padding:14px 16px 0">
-      <button class="checkin-quick-btn" onclick="openCheckinModal()">
+      <button class="checkin-quick-btn" id="ci-quick-btn" onclick="openCheckinModal()">
         <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="20" height="20"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
         Check-in ร้านใหม่
       </button>
@@ -968,7 +970,30 @@ async function loadActiveVisits(){
 
 function renderActiveVisits(){
   const el=document.getElementById('active-visits-list');if(!el)return;
-  if(!activeVisits.length){el.innerHTML=`<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in วันนี้</div>`;return;}
+  const ciBtn=document.getElementById('ci-quick-btn');
+
+  if(!activeVisits.length){
+    // ไม่มี active visit — เปิดปุ่ม Check-in
+    el.innerHTML=`<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in วันนี้</div>`;
+    if(ciBtn){ciBtn.disabled=false;ciBtn.textContent='📍 Check-in ร้านใหม่';}
+    // ลบข้อความแจ้งเตือนถ้ามี
+    const msgEl=document.getElementById('checkin-block-msg');if(msgEl)msgEl.remove();
+    return;
+  }
+
+  // มี active visit — ปิดปุ่ม Check-in + แสดงข้อความ
+  if(ciBtn){
+    ciBtn.disabled=true;
+    ciBtn.innerHTML=`<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> กรุณา Check-out ก่อน`;
+  }
+  // แสดงข้อความแจ้งเตือน
+  const existing=document.getElementById('checkin-block-msg');
+  if(!existing){
+    const msg=document.createElement('div');msg.id='checkin-block-msg';msg.className='checkin-block-msg';
+    msg.innerHTML=`⚠️ กรุณา Check-out ร้านที่กำลังเยี่ยมอยู่ให้เรียบร้อยก่อน จึงจะ Check-in ร้านถัดไปได้`;
+    ciBtn?ciBtn.insertAdjacentElement('afterend',msg):el.insertAdjacentElement('beforebegin',msg);
+  }
+
   el.innerHTML=activeVisits.map(v=>{
     const t=v.checkinTime?String(v.checkinTime).slice(0,5)+' น.':'—';
     return`<div class="visit-card active-ci"><div class="visit-shop">${v.shop}</div><div class="visit-time">⏰ Check-in ${t} · ${v.province||''}</div><div class="visit-actions"><button class="btn-checkout" onclick="openCheckout('${v.ref}',${v.row},'${v.shop}',${v.lat||0},${v.lng||0})">🏁 Check-out + กรอกข้อมูล</button></div></div>`;
@@ -976,6 +1001,11 @@ function renderActiveVisits(){
 }
 
 function openCheckinModal(){
+  // [GUARD] ตรวจสอบว่ามี active visit อยู่แล้วไหม
+  if(activeVisits&&activeVisits.length>0){
+    showToast(`กรุณา Check-out "${activeVisits[0].shop}" ก่อน`,'error');
+    return;
+  }
   ciPhotoData=null;ciGpsData={lat:null,lng:null,acquired:false};
   const ciShopItems=salesShops.length>0?salesShops:masterData.shops;
   const ciShopInp=document.getElementById('ci-shop-input');const ciShopHid=document.getElementById('ci-shop');
@@ -1020,10 +1050,19 @@ async function submitCheckin(){
   const ciShopItems2=salesShops.length>0?salesShops:masterData.shops;
   const foundShop=ciShopItems2.find(s=>(s.name||s)===shop);
   const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province:(foundShop&&foundShop.province)||window._ciProvince||'',lat:ciGpsData.lat,lng:ciGpsData.lng});
-  if(data&&data.ok&&ciPhotoData){try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'upload_photo',row:data.row,photo1:ciPhotoData})});}catch(e){console.warn('Photo upload failed:',e);}}
   if(btn){btn.textContent='✓ Check-in เลย';btn.disabled=false;}
+
+  // [GUARD] Backend ตอบว่า Check-in ซ้ำ
+  if(data&&!data.ok&&data.reason==='already_checkin'){
+    closeCiModal();
+    showToast(`กรุณา Check-out "${data.shop||'ร้านที่กำลังเยี่ยม'}" ก่อน`,'error');
+    loadActiveVisits();
+    return;
+  }
+
+  if(data&&data.ok&&ciPhotoData){try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'upload_photo',row:data.row,photo1:ciPhotoData})});}catch(e){console.warn('Photo upload failed:',e);}}
   if(data&&data.ok){closeCiModal();showToast(`✅ Check-in ${shop} สำเร็จ`);loadActiveVisits();loadDashboard();}
-  else showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
+  else if(!data||(!data.ok&&data.reason!=='already_checkin'))showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
 }
 
 function openCheckout(ref,row,shop,checkinLat,checkinLng){
