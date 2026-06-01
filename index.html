@@ -1045,6 +1045,7 @@ function getCiGPS(){
 async function submitCheckin(){
   const shop=document.getElementById('ci-shop')?.value||document.getElementById('ci-shop-input')?.value;
   if(!shop){showToast('กรุณาเลือกร้านค้า','error');return;}
+  if(!ciPhotoData){showToast('กรุณาถ่ายรูปหน้าร้านก่อน','error');return;}
   if(!ciGpsData.acquired){showToast('กรุณารับตำแหน่ง GPS ก่อน','error');return;}
   const btn=document.getElementById('ci-submit-btn');if(btn){btn.textContent='⏳ กำลัง Check-in...';btn.disabled=true;}
   const ciShopItems2=salesShops.length>0?salesShops:masterData.shops;
