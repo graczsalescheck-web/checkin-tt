@@ -132,6 +132,8 @@ label.field-label .req{color:var(--accent)}
 .btn-success{background:var(--success);color:#fff}
 .btn:disabled{opacity:.6;cursor:not-allowed}
 .history-header{padding:14px 16px;background:#fff;border-bottom:1px solid var(--border);display:flex;gap:10px}
+.filter-chip{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;cursor:pointer;white-space:nowrap;background:#fff;color:var(--text2);font-family:'Sarabun',sans-serif;transition:all .15s;flex-shrink:0}
+.filter-chip.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
 .history-filter{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'Sarabun',sans-serif;color:var(--text);background:#fff;outline:none}
 .history-list{padding:12px 16px}
 .history-item{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
@@ -367,6 +369,10 @@ label.field-label .req{color:var(--accent)}
       <select class="history-filter" style="max-width:120px" id="filter-select" onchange="filterHistory()">
         <option>ทั้งหมด</option><option>วันนี้</option><option>สัปดาห์นี้</option><option>เดือนนี้</option>
       </select>
+    </div>
+    <!-- [NEW] Employee Tab Filter -->
+    <div id="history-emp-tabs" style="display:flex;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <div class="filter-chip active" id="emp-tab-all" onclick="setEmpTab('all',this)" style="white-space:nowrap">ทั้งหมด</div>
     </div>
     <div class="history-list" id="history-list"><div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div></div>
   </div>
@@ -695,15 +701,56 @@ function setPeriod(btn){
   loadDashboard();
 }
 
+let historyEmpFilter = 'all'; // [NEW] employee filter state
+
 async function loadHistory(){
   const listEl=document.getElementById('history-list');
   if(listEl)listEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
   const data=await apiGet({action:'history'});
   if(data&&data.rows&&data.rows.length){
-    const norm=s=>String(s||'').replace(/\s+/g,' ').trim();
-    const me=norm(currentUser||'');
-    allHistory=me?data.rows.filter(r=>norm(r.employee)===me):data.rows;
+    // [NEW] โหลดทั้งหมด ไม่ filter ตาม employee
+    allHistory=data.rows;
   }else{allHistory=[];}
+  buildEmpTabs();
+  filterHistory();
+}
+
+// [NEW] สร้าง Tab พนักงาน
+function buildEmpTabs(){
+  const tabsEl=document.getElementById('history-emp-tabs');
+  if(!tabsEl)return;
+  // ดึงรายชื่อพนักงานจาก history
+  const emps=[...new Set(allHistory.map(r=>r.employee||'').filter(Boolean))].sort();
+  let html=`<div class="filter-chip ${historyEmpFilter==='all'?'active':''}" onclick="setEmpTab('all',this)">ทั้งหมด</div>`;
+  // ปุ่มชื่อตัวเองก่อน
+  if(currentUser&&emps.includes(currentUser)){
+    html+=`<div class="filter-chip ${historyEmpFilter===currentUser?'active':''}" onclick="setEmpTab('${currentUser}',this)" style="background:${historyEmpFilter===currentUser?'var(--brand)':'var(--success-light)'};color:${historyEmpFilter===currentUser?'#fff':'var(--success)'};border-color:${historyEmpFilter===currentUser?'var(--brand)':'var(--success)'}">⭐ ของฉัน</div>`;
+  }
+  // พนักงานคนอื่น
+  emps.filter(e=>e!==currentUser).forEach(e=>{
+    const first=e.split(' ')[0];
+    html+=`<div class="filter-chip ${historyEmpFilter===e?'active':''}" onclick="setEmpTab('${e}',this)">${first}</div>`;
+  });
+  tabsEl.innerHTML=html;
+}
+
+// [NEW] กด Tab เลือกพนักงาน
+function setEmpTab(emp, el){
+  historyEmpFilter=emp;
+  // อัปเดต active style
+  document.querySelectorAll('#history-emp-tabs .filter-chip').forEach(c=>{
+    c.classList.remove('active');
+    // reset style พิเศษของ "ของฉัน"
+    if(c.textContent.includes('ของฉัน')&&emp!==currentUser){
+      c.style.background='var(--success-light)';c.style.color='var(--success)';c.style.borderColor='var(--success)';
+    }
+  });
+  if(el){
+    el.classList.add('active');
+    if(el.textContent.includes('ของฉัน')){
+      el.style.background='var(--brand)';el.style.color='#fff';el.style.borderColor='var(--brand)';
+    }
+  }
   filterHistory();
 }
 
@@ -949,13 +996,20 @@ function formatDate(val){
 
 function filterHistory(){
   const q=(document.getElementById('search-input')?.value||'').toLowerCase();
-  const filtered=allHistory.filter(r=>!q||(r.shop||'').toLowerCase().includes(q));
+  const norm=s=>String(s||'').replace(/\s+/g,' ').trim();
+  const filtered=allHistory.filter(r=>{
+    if(historyEmpFilter!=='all'&&norm(r.employee)!==norm(historyEmpFilter))return false;
+    if(q&&!(r.shop||'').toLowerCase().includes(q))return false;
+    return true;
+  });
   const list=document.getElementById('history-list');if(!list)return;
   if(!filtered.length){list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">ไม่พบข้อมูล</div>';return;}
   list.innerHTML=filtered.map(r=>{
     const isCiOnly=r.status==='check-in';
+    const empBadge=historyEmpFilter==='all'&&r.employee
+      ?`<span class="htag" style="background:var(--brand-light);color:var(--brand);font-weight:600">👤 ${r.employee.split(' ')[0]}</span>`:'';
     return`<div class="history-item"><div class="history-item-head"><div><div class="history-item-shop">${r.shop||'—'}</div><div class="history-item-date">${formatDate(r.date)}</div></div><span class="history-status ${isCiOnly?'status-pending':'status-done'}">${isCiOnly?'🟡 กำลังเยี่ยม':'✅ สำเร็จ'}</span></div>
-    <div class="history-tags"><span class="htag">${r.province||'—'}</span><span class="htag">${r.tasks||'—'}</span>${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}<span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span></div></div>`;
+    <div class="history-tags">${empBadge}<span class="htag">${r.province||'—'}</span><span class="htag">${r.tasks||'—'}</span>${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}<span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span></div></div>`;
   }).join('');
 }
 
