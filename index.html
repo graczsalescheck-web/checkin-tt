@@ -490,12 +490,12 @@ label.field-label .req{color:var(--accent)}
       <label class="field-label">GPS</label>
       <div class="gps-field">
         <div class="gps-bar">
-          <span class="gps-coords" id="ci-gps-text">กดปุ่ม "รับตำแหน่ง" ก่อน</span>
-          <button class="gps-btn" onclick="getCiGPS()" type="button" id="ci-gps-btn">📍 รับตำแหน่ง</button>
+          <span class="gps-coords" id="ci-gps-text">⏳ กำลังรับตำแหน่ง...</span>
+          <button class="gps-btn" onclick="getCiGPS()" type="button" id="ci-gps-btn">🔄 รับใหม่</button>
         </div>
       </div>
     </div>
-    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px" onclick="submitCheckin()" id="ci-submit-btn" disabled>📍 กรุณารับตำแหน่ง GPS ก่อน</button>
+    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px" onclick="submitCheckin()" id="ci-submit-btn" disabled>⏳ กำลังรับ GPS...</button>
   </div>
 </div>
 <!-- CHECKOUT MODAL -->
@@ -1199,15 +1199,16 @@ function openCheckinModal(){
   createAutocomplete('ci-shop-input','ci-shop-list',ciShopItems,(val,item)=>{document.getElementById('ci-shop').value=val;if(item&&item.province)window._ciProvince=item.province;});
   const box=document.getElementById('ci-photo-box');
   if(box){box.classList.remove('has-photo');const sp=box.querySelector('span');if(sp)sp.textContent='กดเพื่อถ่ายรูป';}
-  document.getElementById('ci-gps-text').textContent='กดปุ่ม "รับตำแหน่ง" ก่อน';
-  // reset ปุ่ม Check-in — รอให้กด GPS เอง
+  document.getElementById('ci-gps-text').textContent='⏳ กำลังรับตำแหน่ง...';
+  // reset ปุ่ม Check-in
   const subBtn=document.getElementById('ci-submit-btn');
-  if(subBtn){subBtn.disabled=true;subBtn.textContent='📍 กรุณารับตำแหน่ง GPS ก่อน';}
+  if(subBtn){subBtn.disabled=true;subBtn.textContent='⏳ กำลังรับ GPS...';}
   // reset GPS btn
   const gpsBtn=document.getElementById('ci-gps-btn');
   if(gpsBtn){gpsBtn.disabled=false;gpsBtn.textContent='📍 รับตำแหน่ง';}
   document.getElementById('ci-modal').classList.add('show');
-  // ไม่เรียก getCiGPS() อัตโนมัติ — รอให้ผู้ใช้กดเอง (iOS requirement)
+  // เรียก GPS อัตโนมัติเหมือนเดิม
+  getCiGPS();
 }
 
 function closeCiModal(){
