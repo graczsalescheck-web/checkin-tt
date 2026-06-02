@@ -1239,7 +1239,7 @@ function getCiGPS(retryCount=0){
     navigator.geolocation.getCurrentPosition(
       p=>{ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};onSuccess();},
       ()=>{onFail();},
-      {timeout:8000,enableHighAccuracy:true,maximumAge:0}
+      {timeout:10000,enableHighAccuracy:false,maximumAge:30000}
     );
   } else {onFail();}
 }
@@ -1310,7 +1310,7 @@ function renderCoStep2(){return`<div class="field-group"><label class="field-lab
   <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง *</label><textarea class="field-textarea" id="co-comppromo" placeholder="อธิบายโปรโมชั่น..."></textarea></div>`;}
 
 // [NEW] renderCoStep3 — เพิ่ม GPS Warning Banner
-function renderCoStep3(){return`<div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ *</label><textarea class="field-textarea" id="co-findings" placeholder="สรุปสิ่งที่พบ..."></textarea></div><div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ *</label><textarea class="field-textarea" id="co-action" placeholder="Action Plan..."></textarea></div><div class="field-group"><label class="field-label">GPS Check-out</label><div class="gps-field"><div class="gps-bar"><span class="gps-coords" id="co-gps-text">กำลังระบุตำแหน่ง...</span><button class="gps-btn" onclick="getCoGPS()" type="button" id="co-gps-btn">รีเฟรช</button></div></div><div class="gps-warning-banner" id="co-gps-warning"><span class="warn-icon">⚠️</span><span id="co-gps-warning-text">ตำแหน่งห่างจากจุด Check-in เกินกว่า 200 เมตร — ระบบจะบันทึก Log ไว้</span></div></div>`;}
+function renderCoStep3(){return`<div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ *</label><textarea class="field-textarea" id="co-findings" placeholder="สรุปสิ่งที่พบ..."></textarea></div><div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ *</label><textarea class="field-textarea" id="co-action" placeholder="Action Plan..."></textarea></div><div class="field-group"><label class="field-label">GPS Check-out</label><div class="gps-field"><div class="gps-bar"><span class="gps-coords" id="co-gps-text">กำลังระบุตำแหน่ง...</span><button class="gps-btn" onclick="getCoGPS()" type="button" id="co-gps-btn">รีเฟรช</button></div></div></div>`;}
 
 function changeCoVal(d){coOrderValue=Math.max(0,coOrderValue+d);const el=document.getElementById('co-orderval');if(el)el.value=coOrderValue;}
 
@@ -1376,12 +1376,7 @@ function getCoGPS(){
   const done=()=>{
     if(txt)txt.textContent=`${coGpsData.lat.toFixed(5)}, ${coGpsData.lng.toFixed(5)}`;
     if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}
-    if(coData.checkinLat&&parseFloat(coData.checkinLat)!==0&&coGpsData.acquired){
-      const dist=calcDistanceJS(parseFloat(coData.checkinLat),parseFloat(coData.checkinLng),coGpsData.lat,coGpsData.lng);
-      const warn=document.getElementById('co-gps-warning');const warnTxt=document.getElementById('co-gps-warning-text');
-      if(warn&&dist>200){if(warnTxt)warnTxt.textContent=`ตำแหน่งปัจจุบันห่างจากจุด Check-in ${Math.round(dist)} เมตร — ระบบจะบันทึก Log ไว้`;warn.classList.add('show');}
-      else if(warn)warn.classList.remove('show');
-    }
+    // GPS distance log handled by GAS backend
   };
   if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{coGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};done();},()=>{coGpsData={lat:13.756331,lng:100.501762,acquired:true};done();},{timeout:8000});}
   else{coGpsData={lat:13.756331,lng:100.501762,acquired:true};done();}
