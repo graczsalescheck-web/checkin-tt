@@ -4,12 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="no">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a3a8f">
 <title>Check-in Sales TT Ver 1.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --brand:#1a3a8f; --brand-mid:#2351c9; --brand-light:#e8eefb;
@@ -132,8 +131,6 @@ label.field-label .req{color:var(--accent)}
 .btn-success{background:var(--success);color:#fff}
 .btn:disabled{opacity:.6;cursor:not-allowed}
 .history-header{padding:14px 16px;background:#fff;border-bottom:1px solid var(--border);display:flex;gap:10px}
-.filter-chip{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;cursor:pointer;white-space:nowrap;background:#fff;color:var(--text2);font-family:'Sarabun',sans-serif;transition:all .15s;flex-shrink:0}
-.filter-chip.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
 .history-filter{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'Sarabun',sans-serif;color:var(--text);background:#fff;outline:none}
 .history-list{padding:12px 16px}
 .history-item{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
@@ -265,13 +262,6 @@ label.field-label .req{color:var(--accent)}
     <div style="font-size:11px;color:var(--text3)">ข้อมูลจะแสดงเฉพาะของคุณเท่านั้น</div>
   </div>
 </div>
-<!-- [FIX iOS GPS] แจ้งเตือนเมื่อเปิดจาก Home Screen -->
-<div id="pwa-gps-warning" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:#854f0b;color:#fff;padding:12px 16px;font-size:13px;font-family:'Sarabun',sans-serif;text-align:center;line-height:1.6">
-  ⚠️ กรุณาเปิดแอปผ่าน <b>Safari browser</b> แทนการเปิดจาก Home Screen<br>
-  เพื่อให้สามารถรับ GPS ได้
-  <button onclick="document.getElementById('pwa-gps-warning').style.display='none'" style="margin-left:10px;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:4px;padding:3px 10px;cursor:pointer;font-family:'Sarabun',sans-serif">ปิด</button>
-</div>
-
 <div class="toast" id="toast">
   <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
   <span id="toast-text"></span>
@@ -377,10 +367,6 @@ label.field-label .req{color:var(--accent)}
         <option>ทั้งหมด</option><option>วันนี้</option><option>สัปดาห์นี้</option><option>เดือนนี้</option>
       </select>
     </div>
-    <!-- [NEW] Employee Tab Filter -->
-    <div id="history-emp-tabs" style="display:flex;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch">
-      <div class="filter-chip active" id="emp-tab-all" onclick="setEmpTab('all',this)" style="white-space:nowrap">ทั้งหมด</div>
-    </div>
     <div class="history-list" id="history-list"><div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div></div>
   </div>
   <!-- DASHBOARD [NEW] period + label -->
@@ -411,17 +397,6 @@ label.field-label .req{color:var(--accent)}
       <div class="admin-sub">เพิ่ม/ลบแผนการเข้าพบลูกค้าประจำเดือน</div>
     </div>
     <div class="admin-body">
-      <!-- [NEW] ปุ่มอัพโหลดแผนงาน -->
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <button class="btn btn-primary" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px" onclick="openUploadModal()">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          📥 อัพโหลดแผนงาน (.xlsx)
-        </button>
-        <button class="btn btn-secondary" style="flex:0 0 auto;padding:12px 14px" onclick="downloadTemplate()" title="ดาวน์โหลด Template">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Template
-        </button>
-      </div>
       <div class="add-plan-form">
         <div class="add-plan-title">
           <svg fill="none" stroke="var(--brand)" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
@@ -490,12 +465,12 @@ label.field-label .req{color:var(--accent)}
       <label class="field-label">GPS</label>
       <div class="gps-field">
         <div class="gps-bar">
-          <span class="gps-coords" id="ci-gps-text">⏳ กำลังรับตำแหน่ง...</span>
-          <button class="gps-btn" onclick="getCiGPS()" type="button" id="ci-gps-btn">🔄 รับใหม่</button>
+          <span class="gps-coords" id="ci-gps-text">กดรับตำแหน่ง</span>
+          <button class="gps-btn" onclick="getCiGPS()" type="button" id="ci-gps-btn">รับตำแหน่ง</button>
         </div>
       </div>
     </div>
-    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px" onclick="submitCheckin()" id="ci-submit-btn" disabled>⏳ กำลังรับ GPS...</button>
+    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px" onclick="submitCheckin()" id="ci-submit-btn">✓ Check-in เลย</button>
   </div>
 </div>
 <!-- CHECKOUT MODAL -->
@@ -505,63 +480,6 @@ label.field-label .req{color:var(--accent)}
     <div id="co-form-body"></div>
   </div>
 </div>
-<!-- UPLOAD PLAN MODAL -->
-<div class="ci-modal" id="upload-modal">
-  <div class="ci-sheet" style="max-height:92vh">
-    <div class="ci-sheet-title">
-      <span>📥 อัพโหลดแผนงาน</span>
-      <span style="font-size:13px;color:var(--text3);cursor:pointer" onclick="closeUploadModal()">✕</span>
-    </div>
-    <!-- Step 1: เลือกไฟล์ -->
-    <div id="upload-step1">
-      <div style="background:var(--surface2);border:2px dashed var(--border);border-radius:var(--radius);padding:28px 16px;text-align:center;cursor:pointer;margin-bottom:14px" onclick="document.getElementById('upload-file-input').click()">
-        <svg fill="none" stroke="var(--brand)" stroke-width="1.5" viewBox="0 0 24 24" width="40" height="40" style="margin:0 auto 10px;display:block"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <div style="font-size:14px;font-weight:700;color:var(--brand);margin-bottom:4px">กดเพื่อเลือกไฟล์</div>
-        <div style="font-size:12px;color:var(--text3)">รองรับไฟล์ .xlsx และ .csv</div>
-      </div>
-      <input type="file" id="upload-file-input" accept=".xlsx,.csv" style="display:none" onchange="handleUploadFile(this)">
-      <div style="background:var(--brand-light);border-radius:var(--radius-sm);padding:12px 14px;font-size:12px;color:var(--brand)">
-        <b>รูปแบบไฟล์ที่ต้องการ (.xlsx หรือ .csv):</b><br>
-        คอลัมน์ A: วันที่ (dd/mm/yyyy)<br>
-        คอลัมน์ B: ชื่อร้านค้า<br>
-        คอลัมน์ C: ชื่อพนักงาน<br>
-        คอลัมน์ D: หมายเหตุ (ไม่บังคับ)
-      </div>
-    </div>
-    <!-- Step 2: Preview + Validate -->
-    <div id="upload-step2" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:700;color:var(--text)" id="upload-summary">กำลังตรวจสอบ...</div>
-        <button style="font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;font-family:'Sarabun',sans-serif" onclick="resetUpload()">← เลือกใหม่</button>
-      </div>
-      <div style="overflow-y:auto;max-height:300px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:14px">
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead>
-            <tr style="background:var(--surface3)">
-              <th style="padding:8px 6px;text-align:left;color:var(--text2);white-space:nowrap">แถว</th>
-              <th style="padding:8px 6px;text-align:left;color:var(--text2)">วันที่</th>
-              <th style="padding:8px 6px;text-align:left;color:var(--text2)">ร้านค้า</th>
-              <th style="padding:8px 6px;text-align:left;color:var(--text2)">พนักงาน</th>
-              <th style="padding:8px 6px;text-align:left;color:var(--text2)">สถานะ</th>
-            </tr>
-          </thead>
-          <tbody id="upload-preview-body"></tbody>
-        </table>
-      </div>
-      <button class="btn btn-primary" style="width:100%;padding:13px" id="upload-confirm-btn" onclick="confirmUpload()">
-        ✅ นำเข้าเฉพาะรายการที่ถูกต้อง
-      </button>
-    </div>
-    <!-- Step 3: Result -->
-    <div id="upload-step3" style="display:none;text-align:center;padding:20px 0">
-      <div style="font-size:40px;margin-bottom:12px" id="upload-result-icon">✅</div>
-      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px" id="upload-result-title">นำเข้าสำเร็จ</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:20px" id="upload-result-msg"></div>
-      <button class="btn btn-primary" style="width:100%" onclick="closeUploadModal()">เรียบร้อย</button>
-    </div>
-  </div>
-</div>
-
 <!-- SUCCESS MODAL -->
 <div class="modal-overlay" id="modal">
   <div class="modal-card">
@@ -612,29 +530,6 @@ let masterData   = {
 };
 
 // ══ INIT ══
-// ── [FIX iOS GPS] ตรวจ standalone mode ──
-(function checkStandalone(){
-  const isStandalone = window.navigator.standalone === true // iOS
-    || window.matchMedia('(display-mode: standalone)').matches; // Android
-  if(isStandalone){
-    // ตรวจว่า GPS ใช้ได้ไหม
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition(
-        ()=>{}, // GPS ได้ ไม่ต้องแจ้ง
-        ()=>{
-          // GPS ไม่ได้ใน standalone — แสดง warning
-          const w=document.getElementById('pwa-gps-warning');
-          if(w)w.style.display='block';
-        },
-        {timeout:3000,maximumAge:60000}
-      );
-    } else {
-      const w=document.getElementById('pwa-gps-warning');
-      if(w)w.style.display='block';
-    }
-  }
-})();
-
 (function init(){
   const now=new Date();
   const days=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
@@ -731,56 +626,15 @@ function setPeriod(btn){
   loadDashboard();
 }
 
-let historyEmpFilter = 'all'; // [NEW] employee filter state
-
 async function loadHistory(){
   const listEl=document.getElementById('history-list');
   if(listEl)listEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
   const data=await apiGet({action:'history'});
   if(data&&data.rows&&data.rows.length){
-    // [NEW] โหลดทั้งหมด ไม่ filter ตาม employee
-    allHistory=data.rows;
+    const norm=s=>String(s||'').replace(/\s+/g,' ').trim();
+    const me=norm(currentUser||'');
+    allHistory=me?data.rows.filter(r=>norm(r.employee)===me):data.rows;
   }else{allHistory=[];}
-  buildEmpTabs();
-  filterHistory();
-}
-
-// [NEW] สร้าง Tab พนักงาน
-function buildEmpTabs(){
-  const tabsEl=document.getElementById('history-emp-tabs');
-  if(!tabsEl)return;
-  // ดึงรายชื่อพนักงานจาก history
-  const emps=[...new Set(allHistory.map(r=>r.employee||'').filter(Boolean))].sort();
-  let html=`<div class="filter-chip ${historyEmpFilter==='all'?'active':''}" onclick="setEmpTab('all',this)">ทั้งหมด</div>`;
-  // ปุ่มชื่อตัวเองก่อน
-  if(currentUser&&emps.includes(currentUser)){
-    html+=`<div class="filter-chip ${historyEmpFilter===currentUser?'active':''}" onclick="setEmpTab('${currentUser}',this)" style="background:${historyEmpFilter===currentUser?'var(--brand)':'var(--success-light)'};color:${historyEmpFilter===currentUser?'#fff':'var(--success)'};border-color:${historyEmpFilter===currentUser?'var(--brand)':'var(--success)'}">⭐ ของฉัน</div>`;
-  }
-  // พนักงานคนอื่น
-  emps.filter(e=>e!==currentUser).forEach(e=>{
-    const first=e.split(' ')[0];
-    html+=`<div class="filter-chip ${historyEmpFilter===e?'active':''}" onclick="setEmpTab('${e}',this)">${first}</div>`;
-  });
-  tabsEl.innerHTML=html;
-}
-
-// [NEW] กด Tab เลือกพนักงาน
-function setEmpTab(emp, el){
-  historyEmpFilter=emp;
-  // อัปเดต active style
-  document.querySelectorAll('#history-emp-tabs .filter-chip').forEach(c=>{
-    c.classList.remove('active');
-    // reset style พิเศษของ "ของฉัน"
-    if(c.textContent.includes('ของฉัน')&&emp!==currentUser){
-      c.style.background='var(--success-light)';c.style.color='var(--success)';c.style.borderColor='var(--success)';
-    }
-  });
-  if(el){
-    el.classList.add('active');
-    if(el.textContent.includes('ของฉัน')){
-      el.style.background='var(--brand)';el.style.color='#fff';el.style.borderColor='var(--brand)';
-    }
-  }
   filterHistory();
 }
 
@@ -792,7 +646,21 @@ let planData=[];
 async function loadVisitPlan(){
   const data=await apiGet({action:'visitplan',employee:currentUser||''});
   if(data&&data.plans){planData=data.plans;}
-  else{planData=[];}
+  else{
+    const now=new Date();const y=now.getFullYear();const m=(now.getMonth()+1).toString().padStart(2,'0');
+    planData=[
+      {date:`${y}-${m}-05`,shopName:'ท็อปส์ สาขาสีลม',status:'done'},
+      {date:`${y}-${m}-05`,shopName:'บิ๊กซี สาขาลาดพร้าว',status:'done'},
+      {date:`${y}-${m}-10`,shopName:'โลตัส สาขานครปฐม',status:'late'},
+      {date:`${y}-${m}-12`,shopName:'แม็คโคร สาขาบางนา',status:'done'},
+      {date:`${y}-${m}-15`,shopName:'เทสโก้ สาขารังสิต',status:'miss'},
+      {date:`${y}-${m}-18`,shopName:'ท็อปส์ สาขาสีลม',status:'future'},
+      {date:`${y}-${m}-20`,shopName:'บิ๊กซี สาขาลาดพร้าว',status:'future'},
+      {date:`${y}-${m}-22`,shopName:'โลตัส สาขานครปฐม',status:'future'},
+      {date:`${y}-${m}-25`,shopName:'แม็คโคร สาขาบางนา',status:'future'},
+      {date:`${y}-${m}-27`,shopName:'เทสโก้ สาขารังสิต',status:'future'},
+    ];
+  }
   renderCalendar();
 }
 
@@ -1012,20 +880,13 @@ function formatDate(val){
 
 function filterHistory(){
   const q=(document.getElementById('search-input')?.value||'').toLowerCase();
-  const norm=s=>String(s||'').replace(/\s+/g,' ').trim();
-  const filtered=allHistory.filter(r=>{
-    if(historyEmpFilter!=='all'&&norm(r.employee)!==norm(historyEmpFilter))return false;
-    if(q&&!(r.shop||'').toLowerCase().includes(q))return false;
-    return true;
-  });
+  const filtered=allHistory.filter(r=>!q||(r.shop||'').toLowerCase().includes(q));
   const list=document.getElementById('history-list');if(!list)return;
   if(!filtered.length){list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">ไม่พบข้อมูล</div>';return;}
   list.innerHTML=filtered.map(r=>{
     const isCiOnly=r.status==='check-in';
-    const empBadge=historyEmpFilter==='all'&&r.employee
-      ?`<span class="htag" style="background:var(--brand-light);color:var(--brand);font-weight:600">👤 ${r.employee.split(' ')[0]}</span>`:'';
     return`<div class="history-item"><div class="history-item-head"><div><div class="history-item-shop">${r.shop||'—'}</div><div class="history-item-date">${formatDate(r.date)}</div></div><span class="history-status ${isCiOnly?'status-pending':'status-done'}">${isCiOnly?'🟡 กำลังเยี่ยม':'✅ สำเร็จ'}</span></div>
-    <div class="history-tags">${empBadge}<span class="htag">${r.province||'—'}</span><span class="htag">${r.tasks||'—'}</span>${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}<span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span></div></div>`;
+    <div class="history-tags"><span class="htag">${r.province||'—'}</span><span class="htag">${r.tasks||'—'}</span>${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}<span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span></div></div>`;
   }).join('');
 }
 
@@ -1038,49 +899,11 @@ function buildBarChart(daily){
   c.innerHTML=data.map(({d,v})=>{const h=Math.round((v/max)*80);const today=d===days[now.getDay()];return`<div class="bar-wrap"><div class="bar-val">${v||''}</div><div class="bar" style="height:${Math.max(h,v?4:2)}px;background:${today?'var(--brand)':'var(--brand-light)'};border:${today?'none':'1px solid var(--border)'}"></div><div class="bar-lbl">${d}</div></div>`;}).join('');
 }
 
-// เก็บ dismissed notifications ใน localStorage
-function getDismissed(){try{return JSON.parse(localStorage.getItem('dismissed_notifs')||'[]');}catch(e){return[];}}
-function saveDismissed(arr){localStorage.setItem('dismissed_notifs',JSON.stringify(arr));}
-
-function dismissNotif(key){
-  const arr=getDismissed();
-  if(!arr.includes(key)){arr.push(key);saveDismissed(arr);}
-  // log ไว้ใน console (GAS log ต้องการ endpoint แยก)
-  console.log('dismissed notif:',key, new Date().toISOString());
-  loadNotifications();
-}
-
 async function loadNotifications(){
   const data=await apiGet({action:'notifications',employee:currentUser||''});
   const notifEl=document.getElementById('notif-list');if(!notifEl)return;
-  const dismissed=getDismissed();
-
-  // กรองเฉพาะเดือนปัจจุบัน
-  const now=new Date();
-  const thisYM=`${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}`;
-
   if(data&&data.notifications&&data.notifications.length){
-    const filtered=data.notifications.filter(n=>{
-      // กรองเฉพาะเดือนนี้
-      if(n.date&&!n.date.startsWith(thisYM))return false;
-      // กรองที่ยังไม่ dismiss
-      const key=`${n.date||''}|${n.message||''}`;
-      return !dismissed.includes(key);
-    });
-    if(!filtered.length){
-      notifEl.innerHTML=`<div class="notif-item"><div class="notif-dot" style="background:var(--success)"></div><div><div class="notif-text">✅ ไม่มีการแจ้งเตือนเดือนนี้</div></div></div>`;
-      return;
-    }
-    notifEl.innerHTML=filtered.map(n=>{
-      const key=`${n.date||''}|${n.message||''}`;
-      return`<div class="notif-item" style="justify-content:space-between">
-        <div style="display:flex;align-items:flex-start;gap:10px;flex:1">
-          <div class="notif-dot" style="background:${n.color};margin-top:5px"></div>
-          <div class="notif-text">${n.message}</div>
-        </div>
-        <button onclick="dismissNotif('${key.replace(/'/g,'')}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 0 0 8px;flex-shrink:0;line-height:1" title="ลบการแจ้งเตือน">✕</button>
-      </div>`;
-    }).join('');
+    notifEl.innerHTML=data.notifications.map(n=>`<div class="notif-item"><div class="notif-dot" style="background:${n.color}"></div><div><div class="notif-text">${n.message}</div></div></div>`).join('');
   }else{
     notifEl.innerHTML=`<div class="notif-item"><div class="notif-dot" style="background:var(--success)"></div><div><div class="notif-text">✅ ไม่มีการแจ้งเตือน</div></div></div>`;
   }
@@ -1127,15 +950,7 @@ async function addAdminPlan(){
   const btn=document.querySelector('.add-plan-form .btn-primary');if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
   const data=await apiGet({action:'add_plan',date,shop,employee:emp,note});
   if(btn){btn.textContent='+ เพิ่มแผน';btn.disabled=false;}
-  if(data&&data.ok){
-    showToast('✓ เพิ่มแผนสำเร็จ');
-    document.getElementById('admin-note').value='';
-    // [FIX 2] ล้างช่องร้านค้าหลังเพิ่มแผนสำเร็จ
-    const shopInp=document.getElementById('admin-shop-input');if(shopInp)shopInp.value='';
-    const shopHid=document.getElementById('admin-shop');if(shopHid)shopHid.value='';
-    const shopList=document.getElementById('admin-shop-list');if(shopList)shopList.classList.remove('show');
-    renderAdminMonth();loadVisitPlan();
-  }
+  if(data&&data.ok){showToast('✓ เพิ่มแผนสำเร็จ');document.getElementById('admin-note').value='';renderAdminMonth();loadVisitPlan();}
   else showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
 }
 
@@ -1148,8 +963,8 @@ async function deletePlanItem(row,shopName,dateStr){
 
 // ══ CHECK-IN / CHECK-OUT ══
 let ciPhotoData=null;let ciGpsData={lat:null,lng:null,acquired:false};
-let activeVisits=[];let coData={};let coStep=0;let coOrderValue=0;let coGpsData={lat:null,lng:null,acquired:false};let coPhotoData=[null,null,null,null,null];let coPhotoStates=[false,false,false,false,false];
-const CO_STEPS=5;
+let activeVisits=[];let coData={};let coStep=0;let coOrderValue=0;let coGpsData={lat:null,lng:null,acquired:false};let coPhotoData=null;
+const CO_STEPS=4;
 
 async function loadActiveVisits(){
   const data=await apiGet({action:'active_visits',employee:currentUser||''});
@@ -1161,8 +976,10 @@ function renderActiveVisits(){
   const ciBtn=document.getElementById('ci-quick-btn');
 
   if(!activeVisits.length){
+    // ไม่มี active visit — เปิดปุ่ม Check-in
     el.innerHTML=`<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in วันนี้</div>`;
-    if(ciBtn){ciBtn.disabled=false;ciBtn.innerHTML='<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="18" height="18"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg> Check-in ร้านใหม่';}
+    if(ciBtn){ciBtn.disabled=false;ciBtn.textContent='📍 Check-in ร้านใหม่';}
+    // ลบข้อความแจ้งเตือนถ้ามี
     const msgEl=document.getElementById('checkin-block-msg');if(msgEl)msgEl.remove();
     return;
   }
@@ -1199,26 +1016,11 @@ function openCheckinModal(){
   createAutocomplete('ci-shop-input','ci-shop-list',ciShopItems,(val,item)=>{document.getElementById('ci-shop').value=val;if(item&&item.province)window._ciProvince=item.province;});
   const box=document.getElementById('ci-photo-box');
   if(box){box.classList.remove('has-photo');const sp=box.querySelector('span');if(sp)sp.textContent='กดเพื่อถ่ายรูป';}
-  document.getElementById('ci-gps-text').textContent='⏳ กำลังรับตำแหน่ง...';
-  // reset ปุ่ม Check-in
-  const subBtn=document.getElementById('ci-submit-btn');
-  if(subBtn){subBtn.disabled=true;subBtn.textContent='⏳ กำลังรับ GPS...';}
-  // reset GPS btn
-  const gpsBtn=document.getElementById('ci-gps-btn');
-  if(gpsBtn){gpsBtn.disabled=false;gpsBtn.textContent='📍 รับตำแหน่ง';}
-  document.getElementById('ci-modal').classList.add('show');
-  // เรียก GPS อัตโนมัติเหมือนเดิม
-  getCiGPS();
+  document.getElementById('ci-gps-text').textContent='กดรับตำแหน่ง';
+  document.getElementById('ci-modal').classList.add('show');getCiGPS();
 }
 
-function closeCiModal(){
-  document.getElementById('ci-modal').classList.remove('show');
-  // หยุด GPS watch เมื่อปิด modal
-  if(_ciGpsWatchId!==null){
-    navigator.geolocation.clearWatch(_ciGpsWatchId);
-    _ciGpsWatchId=null;
-  }
-}
+function closeCiModal(){document.getElementById('ci-modal').classList.remove('show');}
 
 function compressImage(dataUrl,maxWidth,quality,callback){
   try{const img=new Image();img.onerror=()=>callback(dataUrl);img.onload=()=>{try{const canvas=document.createElement('canvas');let w=img.width,h=img.height;if(w>maxWidth){h=Math.round(h*maxWidth/w);w=maxWidth;}canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,w,h);const result=canvas.toDataURL('image/jpeg',quality);callback(result&&result.length>100?result:dataUrl);}catch(e){callback(dataUrl);}};img.src=dataUrl;}catch(e){callback(dataUrl);}
@@ -1235,82 +1037,24 @@ function takeCiPhoto(){
   };input.click();
 }
 
-// [FIX iOS] ใช้ watchPosition เพื่อเปิด GPS ค้างไว้ ไม่ถูก iOS throttle
-let _ciGpsWatchId = null;
-
 function getCiGPS(){
-  const btn    = document.getElementById('ci-gps-btn');
-  const txt    = document.getElementById('ci-gps-text');
-  const subBtn = document.getElementById('ci-submit-btn');
-  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังรับ...';}
-  if(subBtn){subBtn.disabled=true;subBtn.textContent='⏳ กำลังรับ GPS...';}
-  if(txt)txt.textContent='⏳ กำลังรับตำแหน่ง...';
-
-  if(!navigator.geolocation){
-    if(txt)txt.textContent='เบราว์เซอร์ไม่รองรับ GPS';
-    if(btn){btn.textContent='📍 รับตำแหน่ง';btn.disabled=false;}
-    if(subBtn){subBtn.disabled=true;subBtn.textContent='📍 กรุณารับตำแหน่ง GPS ก่อน';}
-    return;
-  }
-
-  // หยุด watch เดิมก่อน (ถ้ามี)
-  if(_ciGpsWatchId!==null){
-    navigator.geolocation.clearWatch(_ciGpsWatchId);
-    _ciGpsWatchId=null;
-  }
-
-  // ตั้ง timeout fallback 12 วินาที
-  const timeoutId = setTimeout(()=>{
-    if(!ciGpsData.acquired){
-      navigator.geolocation.clearWatch(_ciGpsWatchId);
-      _ciGpsWatchId=null;
-      if(txt)txt.textContent='ไม่สามารถรับ GPS ได้';
-      if(btn){btn.textContent='📍 รับตำแหน่ง';btn.disabled=false;}
-      if(subBtn){subBtn.disabled=true;subBtn.textContent='📍 กรุณารับตำแหน่ง GPS ก่อน';}
-      showToast('ไม่สามารถรับ GPS ได้ กรุณากดรับตำแหน่งใหม่','error');
-    }
-  }, 12000);
-
-  // watchPosition — iOS ให้ permission ครั้งเดียว ใช้ได้ตลอด session
-  _ciGpsWatchId = navigator.geolocation.watchPosition(
-    p=>{
-      clearTimeout(timeoutId);
-      ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};
-      if(txt)txt.textContent=`${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;
-      if(btn){btn.textContent='🔄 รับใหม่';btn.disabled=false;}
-      if(subBtn){subBtn.disabled=false;subBtn.textContent='✓ Check-in เลย';}
-      // หยุด watch หลังได้ตำแหน่งแล้ว ประหยัดแบต
-      navigator.geolocation.clearWatch(_ciGpsWatchId);
-      _ciGpsWatchId=null;
-      showToast('✓ รับตำแหน่ง GPS สำเร็จ');
-    },
-    e=>{
-      clearTimeout(timeoutId);
-      navigator.geolocation.clearWatch(_ciGpsWatchId);
-      _ciGpsWatchId=null;
-      if(txt)txt.textContent='ไม่สามารถรับ GPS ได้';
-      if(btn){btn.textContent='📍 รับตำแหน่ง';btn.disabled=false;}
-      if(subBtn){subBtn.disabled=true;subBtn.textContent='📍 กรุณารับตำแหน่ง GPS ก่อน';}
-      showToast('ไม่สามารถรับ GPS ได้ กรุณากดรับตำแหน่งใหม่','error');
-    },
-    {enableHighAccuracy:false,timeout:12000,maximumAge:60000}
-  );
+  const btn=document.getElementById('ci-gps-btn');const txt=document.getElementById('ci-gps-text');
+  if(btn){btn.textContent='⏳ กำลังระบุ...';btn.disabled=true;}
+  const done=()=>{if(txt)txt.textContent=`${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}};
+  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};done();},()=>{ciGpsData={lat:13.756331,lng:100.501762,acquired:true};done();},{timeout:8000});}
+  else{ciGpsData={lat:13.756331,lng:100.501762,acquired:true};done();}
 }
 
 async function submitCheckin(){
-  const btn=document.getElementById('ci-submit-btn');
-  // [DEBOUNCE] ปิดปุ่มทันทีก่อนทำอะไรทั้งนั้น ป้องกันกดซ้ำ
-  if(btn&&btn.disabled)return;
-  if(btn){btn.disabled=true;btn.textContent='⏳ กำลัง Check-in...';}
-
   const shop=document.getElementById('ci-shop')?.value||document.getElementById('ci-shop-input')?.value;
-  if(!shop){showToast('กรุณาเลือกร้านค้า','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
-  if(!ciPhotoData){showToast('กรุณาถ่ายรูปหน้าร้านก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
-  if(!ciGpsData.acquired){showToast('กรุณารับตำแหน่ง GPS ก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
-
+  if(!shop){showToast('กรุณาเลือกร้านค้า','error');return;}
+  if(!ciPhotoData){showToast('กรุณาถ่ายรูปหน้าร้านก่อน','error');return;}
+  if(!ciGpsData.acquired){showToast('กรุณารับตำแหน่ง GPS ก่อน','error');return;}
+  const btn=document.getElementById('ci-submit-btn');if(btn){btn.textContent='⏳ กำลัง Check-in...';btn.disabled=true;}
   const ciShopItems2=salesShops.length>0?salesShops:masterData.shops;
   const foundShop=ciShopItems2.find(s=>(s.name||s)===shop);
   const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province:(foundShop&&foundShop.province)||window._ciProvince||'',lat:ciGpsData.lat,lng:ciGpsData.lng});
+  if(btn){btn.textContent='✓ Check-in เลย';btn.disabled=false;}
 
   // [GUARD] Backend ตอบว่า Check-in ซ้ำ
   if(data&&!data.ok&&data.reason==='already_checkin'){
@@ -1322,20 +1066,16 @@ async function submitCheckin(){
 
   if(data&&data.ok&&ciPhotoData){try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'upload_photo',row:data.row,photo1:ciPhotoData})});}catch(e){console.warn('Photo upload failed:',e);}}
   if(data&&data.ok){closeCiModal();showToast(`✅ Check-in ${shop} สำเร็จ`);loadActiveVisits();loadDashboard();}
-  else if(!data||(!data.ok&&data.reason!=='already_checkin')){
-    // error — enable ปุ่มกลับให้กดใหม่ได้
-    if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}
-    showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
-  }
+  else if(!data||(!data.ok&&data.reason!=='already_checkin'))showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
 }
 
 function openCheckout(ref,row,shop,checkinLat,checkinLng){
-  coData={ref,row,shop,checkinLat,checkinLng};coStep=0;coOrderValue=0;coPhotoData=[null,null,null,null,null];coPhotoStates=[false,false,false,false,false];coGpsData={lat:null,lng:null,acquired:false};
+  coData={ref,row,shop,checkinLat,checkinLng};coStep=0;coOrderValue=0;coPhotoData=null;coGpsData={lat:null,lng:null,acquired:false};
   document.getElementById('co-shop-title').textContent=shop;renderCoStep();document.getElementById('co-modal').classList.add('show');
 }
 function closeCoModal(){document.getElementById('co-modal').classList.remove('show');}
 
-const coStepDefs=['รูปถ่าย','ข้อมูลร้านค้า','ข้อมูลการซื้อและการจำหน่าย','ข้อมูลคู่แข่ง','สรุปผลและ Action Plan + GPS Check-out'];
+const coStepDefs=['ข้อมูลร้านค้า','ข้อมูลการซื้อและการจำหน่าย','ข้อมูลคู่แข่ง','สรุปผลและ Action Plan + GPS Check-out'];
 
 function renderCoStep(){
   const body=document.getElementById('co-form-body');if(!body)return;
@@ -1343,17 +1083,17 @@ function renderCoStep(){
   for(let i=0;i<CO_STEPS;i++)prog+=`<div style="flex:1;height:4px;border-radius:2px;background:${i<=coStep?'var(--brand)':'var(--border)'}"></div>`;
   prog+=`</div><div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px">${coStepDefs[coStep]}</div>`;
   let fields='';
-  if(coStep===0)fields=renderCoStepPhoto();if(coStep===1)fields=renderCoStep0();if(coStep===2)fields=renderCoStep1();if(coStep===3)fields=renderCoStep2();if(coStep===4)fields=renderCoStep3();
+  if(coStep===0)fields=renderCoStep0();if(coStep===1)fields=renderCoStep1();if(coStep===2)fields=renderCoStep2();if(coStep===3)fields=renderCoStep3();
   const navBtns=`<div class="form-nav" style="margin-top:16px">${coStep>0?`<button class="btn btn-secondary" onclick="coStepPrev()">← ก่อนหน้า</button>`:`<button class="btn btn-secondary" onclick="closeCoModal()">ยกเลิก</button>`}${coStep<CO_STEPS-1?`<button class="btn btn-primary" onclick="coStepNext()">ถัดไป →</button>`:`<button class="btn btn-success" id="co-submit-btn" onclick="submitCheckout()">🏁 Check-out</button>`}</div>`;
   body.innerHTML=prog+fields+navBtns;
-  if(coStep===1){document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected')));}
+  if(coStep===0){document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected')));}
   if(coStep===3)getCoGPS();
 }
 
 function renderCoStep0(){
   const lastCust=getLastCustomerName(coData.shop)||'';
   return`<div class="field-group"><label class="field-label">ประเภทร้านค้า *</label><select class="field-select" id="co-stype">${mkOpts(masterData.shopTypes)}</select></div><div class="field-group"><label class="field-label">รายละเอียดงาน *</label><div class="multi-select-group" id="co-task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}</div></div><div class="field-group"><label class="field-label">ชื่อลูกค้า *</label><input class="field-input" id="co-custname" type="text" placeholder="ชื่อผู้ติดต่อ" value="${lastCust}"></div><div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="co-other" type="text" placeholder="ชื่อผู้มีอำนาจตัดสินใจ"></div>`;}
-function renderCoStep1(){return`<div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด *</label><select class="field-select" id="co-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div><div class="field-group"><label class="field-label">ระบุเดือน ปี *</label><input class="field-input" type="date" id="co-orderdate" value="${new Date().toISOString().slice(0,10)}"></div><div class="field-group"><label class="field-label">มูลค่า (บาท)</label><div class="number-input"><button class="number-btn" type="button" onclick="changeCoVal(-1000)">−</button><input class="field-input" type="number" id="co-orderval" value="0" min="0" oninput="coOrderValue=parseInt(this.value)||0"><button class="number-btn" type="button" onclick="changeCoVal(1000)">+</button></div></div><div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" id="co-noreason" type="text"></div><div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี *</label><textarea class="field-textarea" id="co-gracz" placeholder="ระบุรุ่น..."></textarea></div>`;}
+function renderCoStep1(){return`<div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด *</label><select class="field-select" id="co-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div><div class="field-group"><label class="field-label">ระบุเดือน ปี *</label><input class="field-input" type="date" id="co-orderdate" value="${new Date().toISOString().slice(0,10)}"></div><div class="field-group"><label class="field-label">มูลค่า (บาท)</label><div class="number-input"><button class="number-btn" type="button" onclick="changeCoVal(-1000)">−</button><input class="field-input" type="number" id="co-orderval" value="0" min="0" oninput="coOrderValue=parseInt(this.value)||0"><button class="number-btn" type="button" onclick="changeCoVal(1000)">+</button></div></div><div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" id="co-noreason" type="text"></div><div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี *</label><textarea class="field-textarea" id="co-gracz" placeholder="ระบุรุ่น..."></textarea></div><div class="field-group"><label class="field-label">ถ่ายรูปเพิ่มเติม</label><div class="photo-upload" id="co-photo-box" onclick="takeCoPhoto()" style="aspect-ratio:2.5/1;flex-direction:row;gap:12px;padding:14px"><div class="photo-check">✓</div><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg><span id="co-photo-label">กดถ่ายรูป (ไม่บังคับ)</span></div></div>`;}
 function renderCoStep2(){return`<div class="field-group"><label class="field-label">แบรนด์คู่แข่งในร้าน *</label>
   <div class="multi-select-group">${['Fest','Go Eco','Chan','Leev','Aoy Plus'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}<div class="multi-chip" id="co-comp-other-chip" onclick="toggleOtherInput('co-comp-other-chip','co-comp-other-wrap')">+ อื่นๆ</div></div>
   <div id="co-comp-other-wrap" style="display:none;margin-top:8px"><input class="field-input" id="co-comp-other-input" type="text" placeholder="พิมพ์ชื่อแบรนด์เพิ่มเติม..."></div></div>
@@ -1363,59 +1103,9 @@ function renderCoStep2(){return`<div class="field-group"><label class="field-lab
   <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง *</label><textarea class="field-textarea" id="co-comppromo" placeholder="อธิบายโปรโมชั่น..."></textarea></div>`;}
 
 // [NEW] renderCoStep3 — เพิ่ม GPS Warning Banner
-function renderCoStep3(){return`<div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ *</label><textarea class="field-textarea" id="co-findings" placeholder="สรุปสิ่งที่พบ..."></textarea></div><div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ *</label><textarea class="field-textarea" id="co-action" placeholder="Action Plan..."></textarea></div><div class="field-group"><label class="field-label">GPS Check-out</label><div class="gps-field"><div class="gps-bar"><span class="gps-coords" id="co-gps-text">กำลังระบุตำแหน่ง...</span><button class="gps-btn" onclick="getCoGPS()" type="button" id="co-gps-btn">รีเฟรช</button></div></div></div>`;}
+function renderCoStep3(){return`<div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ *</label><textarea class="field-textarea" id="co-findings" placeholder="สรุปสิ่งที่พบ..."></textarea></div><div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ *</label><textarea class="field-textarea" id="co-action" placeholder="Action Plan..."></textarea></div><div class="field-group"><label class="field-label">GPS Check-out</label><div class="gps-field"><div class="gps-bar"><span class="gps-coords" id="co-gps-text">กำลังระบุตำแหน่ง...</span><button class="gps-btn" onclick="getCoGPS()" type="button" id="co-gps-btn">รีเฟรช</button></div></div><div class="gps-warning-banner" id="co-gps-warning"><span class="warn-icon">⚠️</span><span id="co-gps-warning-text">ตำแหน่งห่างจากจุด Check-in เกินกว่า 200 เมตร — ระบบจะบันทึก Log ไว้</span></div></div>`;}
 
 function changeCoVal(d){coOrderValue=Math.max(0,coOrderValue+d);const el=document.getElementById('co-orderval');if(el)el.value=coOrderValue;}
-
-
-// ── [NEW] CHECKOUT STEP 0 — ถ่ายรูป 5 รูป ──
-function renderCoStepPhoto(){
-  const labels=['รูปถ่าย 1 *','รูปถ่าย 2 *','รูปถ่ายเพิ่มเติม 3','รูปถ่ายเพิ่มเติม 4','รูปถ่ายเพิ่มเติม 5'];
-  const grid = labels.map((lbl,i)=>`
-    <div class="photo-upload ${coPhotoStates[i]?'has-photo':''}" id="co-photo-${i}" onclick="takeCoPhotoIdx(${i})" style="${i<2?'aspect-ratio:1':'aspect-ratio:2.5/1;flex-direction:row;gap:12px;padding:14px'}">
-      <div class="photo-check">✓</div>
-      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="${i<2?26:20}" height="${i<2?26:20}"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
-      <span id="co-photo-lbl-${i}">${coPhotoStates[i]?'อัปโหลดแล้ว':lbl}</span>
-    </div>`).join('');
-  return`<p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">ถ่ายรูปถ่าย 1 และ 2 จำเป็นต้องมี</p>
-  <div class="photo-grid" style="margin-bottom:10px">${[0,1].map(i=>`
-    <div class="photo-upload ${coPhotoStates[i]?'has-photo':''}" id="co-photo-${i}" onclick="takeCoPhotoIdx(${i})">
-      <div class="photo-check">✓</div>
-      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
-      <span id="co-photo-lbl-${i}">${coPhotoStates[i]?'อัปโหลดแล้ว':'รูปถ่าย '+(i+1)+' *'}</span>
-    </div>`).join('')}</div>
-  ${[2,3,4].map(i=>`
-  <div class="photo-upload ${coPhotoStates[i]?'has-photo':''}" id="co-photo-${i}" onclick="takeCoPhotoIdx(${i})" style="aspect-ratio:2.5/1;flex-direction:row;gap:12px;padding:14px;margin-bottom:8px">
-    <div class="photo-check">✓</div>
-    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
-    <span id="co-photo-lbl-${i}">${coPhotoStates[i]?'อัปโหลดแล้ว':'รูปถ่ายเพิ่มเติม '+(i+1)+' (ไม่บังคับ)'}</span>
-  </div>`).join('')}`;
-}
-
-function takeCoPhotoIdx(idx){
-  const input=document.createElement('input');input.type='file';input.accept='image/*';input.capture='environment';input.style.display='none';
-  document.body.appendChild(input);
-  input.onchange=()=>{
-    if(!input.files||!input.files[0]){document.body.removeChild(input);return;}
-    const reader=new FileReader();
-    reader.onload=e=>{
-      compressImage(e.target.result,800,0.6,compressed=>{
-        coPhotoData[idx]=compressed;coPhotoStates[idx]=true;
-        const box=document.getElementById('co-photo-'+idx);
-        if(box){
-          box.classList.add('has-photo');
-          let img=box.querySelector('img.thumb');
-          if(!img){img=document.createElement('img');img.className='thumb';img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;';box.prepend(img);}
-          img.src=compressed;
-          const sp=box.querySelector('span');if(sp)sp.style.display='none';
-          const sv=box.querySelector('svg');if(sv)sv.style.display='none';
-        }
-        showToast('✓ ถ่ายรูปที่ '+(idx+1)+' สำเร็จ');
-      });
-    };
-    reader.readAsDataURL(input.files[0]);document.body.removeChild(input);
-  };input.click();
-}
 
 function takeCoPhoto(){
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.capture='environment';input.style.display='none';
@@ -1429,7 +1119,12 @@ function getCoGPS(){
   const done=()=>{
     if(txt)txt.textContent=`${coGpsData.lat.toFixed(5)}, ${coGpsData.lng.toFixed(5)}`;
     if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}
-    // GPS distance log handled by GAS backend
+    if(coData.checkinLat&&parseFloat(coData.checkinLat)!==0&&coGpsData.acquired){
+      const dist=calcDistanceJS(parseFloat(coData.checkinLat),parseFloat(coData.checkinLng),coGpsData.lat,coGpsData.lng);
+      const warn=document.getElementById('co-gps-warning');const warnTxt=document.getElementById('co-gps-warning-text');
+      if(warn&&dist>200){if(warnTxt)warnTxt.textContent=`ตำแหน่งปัจจุบันห่างจากจุด Check-in ${Math.round(dist)} เมตร — ระบบจะบันทึก Log ไว้`;warn.classList.add('show');}
+      else if(warn)warn.classList.remove('show');
+    }
   };
   if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{coGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};done();},()=>{coGpsData={lat:13.756331,lng:100.501762,acquired:true};done();},{timeout:8000});}
   else{coGpsData={lat:13.756331,lng:100.501762,acquired:true};done();}
@@ -1439,10 +1134,6 @@ function calcDistanceJS(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Ma
 
 function coStepNext(){
   if(coStep===0){
-    // validate รูปถ่ายบังคับ 2 รูปแรก
-    if(!coPhotoStates[0]||!coPhotoStates[1]){showToast('กรุณาถ่ายรูปถ่าย 1 และ 2 ก่อน','error');return;}
-  }
-  if(coStep===1){
     const cn=document.getElementById('co-custname')?.value;
     if(!cn){showToast('กรุณากรอกชื่อลูกค้า','error');return;}
     coData.customerGroup='';
@@ -1451,8 +1142,8 @@ function coStepNext(){
     coData.customerName=cn;
     coData.otherNote=document.getElementById('co-other')?.value||'';
   }
-  if(coStep===2){coData.lastOrder=document.getElementById('co-orderstatus')?.value;coData.orderMonth=document.getElementById('co-orderdate')?.value;coData.orderValue=coOrderValue;coData.noOrderReason=document.getElementById('co-noreason')?.value||'';coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';}
-  if(coStep===3){
+  if(coStep===1){coData.lastOrder=document.getElementById('co-orderstatus')?.value;coData.orderMonth=document.getElementById('co-orderdate')?.value;coData.orderValue=coOrderValue;coData.noOrderReason=document.getElementById('co-noreason')?.value||'';coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';}
+  if(coStep===2){
     coData.competitorBrands=getBrands('#co-form-body .multi-select-group:first-of-type','co-comp-other-input').join(', ');
     coData.bestSellingBrands=getBrands('#co-form-body .multi-select-group:nth-of-type(2)','co-best-other-input').join(', ');
     coData.competitorPromo=document.getElementById('co-comppromo')?.value||'';
@@ -1466,10 +1157,10 @@ async function submitCheckout(){
   const findings=document.getElementById('co-findings')?.value;const action=document.getElementById('co-action')?.value;
   if(!findings||!action){showToast('กรุณากรอกประเด็นสำคัญและ Action Plan','error');return;}
   const btn=document.getElementById('co-submit-btn');if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
-  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,photo2:coPhotoData[0]||'',photo3:coPhotoData[1]||'',photo4:coPhotoData[2]||'',photo5:coPhotoData[3]||'',photo6:coPhotoData[4]||''};
+  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,photo2:coPhotoData||''};
   let result=null;
   try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});result={ok:true};}
-  catch(e){const sp={...payload,photo2:'',photo3:'',photo4:'',photo5:'',photo6:''};result=await apiGet(sp);}
+  catch(e){const sp={...payload,photo2:''};result=await apiGet(sp);}
   if(btn){btn.textContent='🏁 Check-out';btn.disabled=false;}
   if(result&&result.ok){closeCoModal();showToast(`✅ Check-out ${coData.shop} สำเร็จ`);loadActiveVisits();loadDashboard();}
   else showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
@@ -1526,192 +1217,6 @@ function getBrands(groupSelector, otherInputId){
   const other=(document.getElementById(otherInputId)?.value||'').trim();
   if(other)selected.push(other);
   return selected;
-}
-
-// ══ UPLOAD PLAN ══
-let uploadRows = []; // เก็บข้อมูลที่อ่านจาก xlsx
-
-function openUploadModal(){
-  resetUpload();
-  document.getElementById('upload-modal').classList.add('show');
-}
-
-function closeUploadModal(){
-  document.getElementById('upload-modal').classList.remove('show');
-  resetUpload();
-}
-
-function resetUpload(){
-  uploadRows=[];
-  document.getElementById('upload-step1').style.display='block';
-  document.getElementById('upload-step2').style.display='none';
-  document.getElementById('upload-step3').style.display='none';
-  const inp=document.getElementById('upload-file-input');if(inp)inp.value='';
-}
-
-function handleUploadFile(input){
-  if(!input.files||!input.files[0])return;
-  const file=input.files[0];
-  const isCsv=file.name.endsWith('.csv');
-  const isXlsx=file.name.endsWith('.xlsx');
-  if(!isCsv&&!isXlsx){showToast('กรุณาเลือกไฟล์ .xlsx หรือ .csv เท่านั้น','error');return;}
-  const reader=new FileReader();
-  if(isXlsx){
-    reader.onload=e=>{
-      try{
-        const data=new Uint8Array(e.target.result);
-        const wb=XLSX.read(data,{type:'array',cellDates:true});
-        const ws=wb.Sheets[wb.SheetNames[0]];
-        const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'dd/mm/yyyy'});
-        const dataRows=rows.filter((r,i)=>{
-          if(i===0&&r[0]&&String(r[0]).includes('วัน'))return false;
-          return r[0]||r[1];
-        });
-        parseAndValidate(dataRows);
-      }catch(err){showToast('ไม่สามารถอ่านไฟล์ได้ กรุณาตรวจสอบรูปแบบ','error');console.error(err);}
-    };
-    reader.readAsArrayBuffer(file);
-  } else {
-    // CSV
-    reader.onload=e=>{
-      try{
-        const text=e.target.result;
-        const lines=text.replace(/\r/g,'').split('\n').filter(l=>l.trim());
-        const rows=lines.map(l=>l.split(',').map(c=>c.trim().replace(/^"|"$/g,'')));
-        const dataRows=rows.filter((r,i)=>{
-          if(i===0&&r[0]&&(r[0].includes('วัน')||r[0].toLowerCase().includes('date')))return false;
-          return r[0]||r[1];
-        });
-        parseAndValidate(dataRows);
-      }catch(err){showToast('ไม่สามารถอ่านไฟล์ได้','error');console.error(err);}
-    };
-    reader.readAsText(file,'UTF-8');
-  }
-}
-
-function parseAndValidate(rows){
-  const allShops=( salesShops.length>0?salesShops:masterData.shops).map(s=>(s.name||s).trim());
-  const allEmps=masterData.employees.map(e=>String(e).trim());
-  const seen=new Set();
-  uploadRows=rows.map((r,i)=>{
-    const dateRaw=String(r[0]||'').trim();
-    const shop   =String(r[1]||'').trim();
-    const emp    =String(r[2]||'').trim();
-    const note   =String(r[3]||'').trim();
-    const errors=[];
-
-    // ตรวจวันที่
-    let dateISO='';
-    if(!dateRaw){errors.push('วันที่ว่าง');}
-    else{
-      // รองรับหลายรูปแบบ
-      let d=null;
-      const formats=[
-        /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,   // dd/mm/yyyy
-        /^(\d{4})-(\d{1,2})-(\d{1,2})$/,      // yyyy-mm-dd
-        /^(\d{1,2})-(\d{1,2})-(\d{4})$/,      // dd-mm-yyyy
-      ];
-      const m1=dateRaw.match(formats[0]);
-      const m2=dateRaw.match(formats[1]);
-      const m3=dateRaw.match(formats[2]);
-      if(m1)d=new Date(`${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`);
-      else if(m2)d=new Date(`${m2[1]}-${m2[2].padStart(2,'0')}-${m2[3].padStart(2,'0')}`);
-      else if(m3)d=new Date(`${m3[3]}-${m3[2].padStart(2,'0')}-${m3[1].padStart(2,'0')}`);
-      else d=new Date(dateRaw);
-      if(!d||isNaN(d)){errors.push('รูปแบบวันที่ไม่ถูกต้อง');}
-      else{dateISO=d.toISOString().slice(0,10);}
-    }
-
-    // ตรวจร้านค้า
-    if(!shop){errors.push('ชื่อร้านค้าว่าง');}
-    else if(!allShops.includes(shop)){errors.push(`ไม่พบร้าน "${shop}" ในระบบ`);}
-
-    // ตรวจพนักงาน
-    if(!emp){errors.push('ชื่อพนักงานว่าง');}
-    else if(!allEmps.includes(emp)){errors.push(`ไม่พบพนักงาน "${emp}" ในระบบ`);}
-
-    // ตรวจซ้ำในไฟล์
-    const key=`${dateISO}|${shop}|${emp}`;
-    if(dateISO&&shop&&emp){
-      if(seen.has(key)){errors.push('ซ้ำกับแถวก่อนหน้าในไฟล์');}
-      else seen.add(key);
-    }
-
-    return{row:i+2,dateRaw,dateISO,shop,emp,note,errors,valid:errors.length===0};
-  });
-
-  renderPreview();
-}
-
-function renderPreview(){
-  const valid=uploadRows.filter(r=>r.valid).length;
-  const invalid=uploadRows.filter(r=>!r.valid).length;
-  const sumEl=document.getElementById('upload-summary');
-  if(sumEl)sumEl.innerHTML=`พบ <b>${uploadRows.length}</b> รายการ — <span style="color:var(--success)">✅ ${valid} รายการถูกต้อง</span>${invalid?` <span style="color:var(--accent)">❌ ${invalid} รายการมีปัญหา</span>`:''}`;
-
-  const tbody=document.getElementById('upload-preview-body');
-  tbody.innerHTML=uploadRows.map(r=>`
-    <tr style="background:${r.valid?'#f0fdf4':'#fff5f5'};border-bottom:1px solid var(--surface3)">
-      <td style="padding:7px 6px;color:var(--text3)">${r.row}</td>
-      <td style="padding:7px 6px">${r.dateRaw||'—'}</td>
-      <td style="padding:7px 6px">${r.shop||'—'}</td>
-      <td style="padding:7px 6px">${r.emp||'—'}</td>
-      <td style="padding:7px 6px">
-        ${r.valid
-          ?'<span style="color:var(--success);font-weight:600">✅ ถูกต้อง</span>'
-          :`<span style="color:var(--accent);font-size:11px">❌ ${r.errors.join(', ')}</span>`}
-      </td>
-    </tr>`).join('');
-
-  const confirmBtn=document.getElementById('upload-confirm-btn');
-  if(confirmBtn){
-    confirmBtn.disabled=valid===0;
-    confirmBtn.textContent=valid===0?'ไม่มีรายการที่ถูกต้อง':`✅ นำเข้าเฉพาะรายการที่ถูกต้อง (${valid} รายการ)`;
-  }
-
-  document.getElementById('upload-step1').style.display='none';
-  document.getElementById('upload-step2').style.display='block';
-}
-
-async function confirmUpload(){
-  const validRows=uploadRows.filter(r=>r.valid);
-  if(!validRows.length)return;
-  const btn=document.getElementById('upload-confirm-btn');
-  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังนำเข้า...';}
-
-  let success=0,fail=0;
-  for(const r of validRows){
-    const res=await apiGet({action:'add_plan',date:r.dateISO,shop:r.shop,employee:r.emp,note:r.note});
-    if(res&&res.ok)success++;else fail++;
-  }
-
-  // แสดงผล
-  document.getElementById('upload-step2').style.display='none';
-  document.getElementById('upload-step3').style.display='block';
-  document.getElementById('upload-result-icon').textContent=fail===0?'✅':'⚠️';
-  document.getElementById('upload-result-title').textContent=fail===0?'นำเข้าสำเร็จ':'นำเข้าบางส่วน';
-  document.getElementById('upload-result-msg').textContent=`นำเข้าสำเร็จ ${success} รายการ${fail?` · ล้มเหลว ${fail} รายการ`:''}`;
-
-  if(success>0){renderAdminMonth();loadVisitPlan();}
-}
-
-// ── Download Template ──
-function downloadTemplate(){
-  try{
-    const csv=[
-      'วันที่,ชื่อร้านค้า,ชื่อพนักงาน,หมายเหตุ',
-      '15/06/2026,ท็อปส์ สาขาสีลม,สมชาย ใจดี,เน้นสินค้าใหม่',
-      '16/06/2026,บิ๊กซี สาขาลาดพร้าว,วิชัย รักงาน,',
-    ].join('\n');
-    // เพิ่ม BOM สำหรับภาษาไทยใน Excel
-    const bom='\uFEFF';
-    const blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download='VisitPlan_Template.csv';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('✓ ดาวน์โหลด Template สำเร็จ');
-  }catch(e){showToast('ไม่สามารถดาวน์โหลด Template ได้','error');}
 }
 
 let toastTimer;
