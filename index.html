@@ -483,12 +483,12 @@ label.field-label .req{color:var(--accent)}
       <label class="field-label">GPS</label>
       <div class="gps-field">
         <div class="gps-bar">
-          <span class="gps-coords" id="ci-gps-text">กดรับตำแหน่ง</span>
-          <button class="gps-btn" onclick="getCiGPS()" type="button" id="ci-gps-btn">รับตำแหน่ง</button>
+          <span class="gps-coords" id="ci-gps-text">กดปุ่ม "รับตำแหน่ง" ก่อน</span>
+          <button class="gps-btn" onclick="getCiGPS()" type="button" id="ci-gps-btn">📍 รับตำแหน่ง</button>
         </div>
       </div>
     </div>
-    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px" onclick="submitCheckin()" id="ci-submit-btn" disabled>⏳ กำลังรับ GPS...</button>
+    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px" onclick="submitCheckin()" id="ci-submit-btn" disabled>📍 กรุณารับตำแหน่ง GPS ก่อน</button>
   </div>
 </div>
 <!-- CHECKOUT MODAL -->
@@ -1169,11 +1169,15 @@ function openCheckinModal(){
   createAutocomplete('ci-shop-input','ci-shop-list',ciShopItems,(val,item)=>{document.getElementById('ci-shop').value=val;if(item&&item.province)window._ciProvince=item.province;});
   const box=document.getElementById('ci-photo-box');
   if(box){box.classList.remove('has-photo');const sp=box.querySelector('span');if(sp)sp.textContent='กดเพื่อถ่ายรูป';}
-  document.getElementById('ci-gps-text').textContent='กดรับตำแหน่ง';
-  // reset ปุ่ม Check-in
+  document.getElementById('ci-gps-text').textContent='กดปุ่ม "รับตำแหน่ง" ก่อน';
+  // reset ปุ่ม Check-in — รอให้กด GPS เอง
   const subBtn=document.getElementById('ci-submit-btn');
-  if(subBtn){subBtn.disabled=true;subBtn.textContent='⏳ กำลังรับ GPS...';}
-  document.getElementById('ci-modal').classList.add('show');getCiGPS();
+  if(subBtn){subBtn.disabled=true;subBtn.textContent='📍 กรุณารับตำแหน่ง GPS ก่อน';}
+  // reset GPS btn
+  const gpsBtn=document.getElementById('ci-gps-btn');
+  if(gpsBtn){gpsBtn.disabled=false;gpsBtn.textContent='📍 รับตำแหน่ง';}
+  document.getElementById('ci-modal').classList.add('show');
+  // ไม่เรียก getCiGPS() อัตโนมัติ — รอให้ผู้ใช้กดเอง (iOS requirement)
 }
 
 function closeCiModal(){document.getElementById('ci-modal').classList.remove('show');}
@@ -1193,41 +1197,36 @@ function takeCiPhoto(){
   };input.click();
 }
 
-function getCiGPS(retryCount=0){
+function getCiGPS(){
   const btn=document.getElementById('ci-gps-btn');
   const txt=document.getElementById('ci-gps-text');
   const subBtn=document.getElementById('ci-submit-btn');
-  if(btn){btn.textContent='⏳ กำลังระบุ...';btn.disabled=true;}
+  // [FIX] ผู้ใช้กดเอง — ปิดปุ่มระหว่างรับ
+  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังรับ...';}
   if(subBtn){subBtn.disabled=true;subBtn.textContent='⏳ กำลังรับ GPS...';}
-  if(txt)txt.textContent=retryCount>0?`⏳ ลองใหม่ครั้งที่ ${retryCount}...`:'⏳ กำลังรับตำแหน่ง...';
+  if(txt)txt.textContent='⏳ กำลังรับตำแหน่ง...';
 
   const onSuccess=()=>{
     if(txt)txt.textContent=`${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;
-    if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}
+    if(btn){btn.textContent='🔄 รับใหม่';btn.disabled=false;}
+    // GPS สำเร็จ — เปิดปุ่ม Check-in
     if(subBtn){subBtn.disabled=false;subBtn.textContent='✓ Check-in เลย';}
+    showToast('✓ รับตำแหน่ง GPS สำเร็จ');
   };
 
   const onFail=()=>{
-    // [FIX 4] retry อัตโนมัติสูงสุด 2 ครั้ง
-    if(retryCount<2){
-      if(txt)txt.textContent=`⏳ ลองใหม่ครั้งที่ ${retryCount+1}...`;
-      setTimeout(()=>getCiGPS(retryCount+1),1500);
-      return;
-    }
-    // หมด retry — แจ้งผู้ใช้
     if(txt)txt.textContent='ไม่สามารถรับ GPS ได้';
-    if(btn){btn.textContent='รับตำแหน่งใหม่';btn.disabled=false;}
-    if(subBtn){subBtn.disabled=true;subBtn.textContent='⚠️ กรุณารับ GPS ก่อน';}
+    if(btn){btn.textContent='📍 รับตำแหน่ง';btn.disabled=false;}
+    if(subBtn){subBtn.disabled=true;subBtn.textContent='📍 กรุณารับตำแหน่ง GPS ก่อน';}
     showToast('ไม่สามารถรับ GPS ได้ กรุณากดรับตำแหน่งใหม่','error');
   };
 
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(
-      p=>{ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};onSuccess();},
-      ()=>{onFail();},
-      {timeout:10000,enableHighAccuracy:false,maximumAge:30000}
-    );
-  } else {onFail();}
+  if(!navigator.geolocation){onFail();return;}
+  navigator.geolocation.getCurrentPosition(
+    p=>{ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};onSuccess();},
+    ()=>{onFail();},
+    {timeout:10000,enableHighAccuracy:false,maximumAge:30000}
+  );
 }
 
 async function submitCheckin(){
