@@ -762,21 +762,7 @@ let planData=[];
 async function loadVisitPlan(){
   const data=await apiGet({action:'visitplan',employee:currentUser||''});
   if(data&&data.plans){planData=data.plans;}
-  else{
-    const now=new Date();const y=now.getFullYear();const m=(now.getMonth()+1).toString().padStart(2,'0');
-    planData=[
-      {date:`${y}-${m}-05`,shopName:'ท็อปส์ สาขาสีลม',status:'done'},
-      {date:`${y}-${m}-05`,shopName:'บิ๊กซี สาขาลาดพร้าว',status:'done'},
-      {date:`${y}-${m}-10`,shopName:'โลตัส สาขานครปฐม',status:'late'},
-      {date:`${y}-${m}-12`,shopName:'แม็คโคร สาขาบางนา',status:'done'},
-      {date:`${y}-${m}-15`,shopName:'เทสโก้ สาขารังสิต',status:'miss'},
-      {date:`${y}-${m}-18`,shopName:'ท็อปส์ สาขาสีลม',status:'future'},
-      {date:`${y}-${m}-20`,shopName:'บิ๊กซี สาขาลาดพร้าว',status:'future'},
-      {date:`${y}-${m}-22`,shopName:'โลตัส สาขานครปฐม',status:'future'},
-      {date:`${y}-${m}-25`,shopName:'แม็คโคร สาขาบางนา',status:'future'},
-      {date:`${y}-${m}-27`,shopName:'เทสโก้ สาขารังสิต',status:'future'},
-    ];
-  }
+  else{planData=[];}
   renderCalendar();
 }
 
