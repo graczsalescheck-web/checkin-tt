@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="no">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a3a8f">
 <title>Check-in Sales TT Ver 1.1</title>
@@ -265,6 +265,13 @@ label.field-label .req{color:var(--accent)}
     <div style="font-size:11px;color:var(--text3)">ข้อมูลจะแสดงเฉพาะของคุณเท่านั้น</div>
   </div>
 </div>
+<!-- [FIX iOS GPS] แจ้งเตือนเมื่อเปิดจาก Home Screen -->
+<div id="pwa-gps-warning" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:#854f0b;color:#fff;padding:12px 16px;font-size:13px;font-family:'Sarabun',sans-serif;text-align:center;line-height:1.6">
+  ⚠️ กรุณาเปิดแอปผ่าน <b>Safari browser</b> แทนการเปิดจาก Home Screen<br>
+  เพื่อให้สามารถรับ GPS ได้
+  <button onclick="document.getElementById('pwa-gps-warning').style.display='none'" style="margin-left:10px;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:4px;padding:3px 10px;cursor:pointer;font-family:'Sarabun',sans-serif">ปิด</button>
+</div>
+
 <div class="toast" id="toast">
   <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
   <span id="toast-text"></span>
@@ -605,6 +612,29 @@ let masterData   = {
 };
 
 // ══ INIT ══
+// ── [FIX iOS GPS] ตรวจ standalone mode ──
+(function checkStandalone(){
+  const isStandalone = window.navigator.standalone === true // iOS
+    || window.matchMedia('(display-mode: standalone)').matches; // Android
+  if(isStandalone){
+    // ตรวจว่า GPS ใช้ได้ไหม
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        ()=>{}, // GPS ได้ ไม่ต้องแจ้ง
+        ()=>{
+          // GPS ไม่ได้ใน standalone — แสดง warning
+          const w=document.getElementById('pwa-gps-warning');
+          if(w)w.style.display='block';
+        },
+        {timeout:3000,maximumAge:60000}
+      );
+    } else {
+      const w=document.getElementById('pwa-gps-warning');
+      if(w)w.style.display='block';
+    }
+  }
+})();
+
 (function init(){
   const now=new Date();
   const days=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
@@ -1180,7 +1210,14 @@ function openCheckinModal(){
   // ไม่เรียก getCiGPS() อัตโนมัติ — รอให้ผู้ใช้กดเอง (iOS requirement)
 }
 
-function closeCiModal(){document.getElementById('ci-modal').classList.remove('show');}
+function closeCiModal(){
+  document.getElementById('ci-modal').classList.remove('show');
+  // หยุด GPS watch เมื่อปิด modal
+  if(_ciGpsWatchId!==null){
+    navigator.geolocation.clearWatch(_ciGpsWatchId);
+    _ciGpsWatchId=null;
+  }
+}
 
 function compressImage(dataUrl,maxWidth,quality,callback){
   try{const img=new Image();img.onerror=()=>callback(dataUrl);img.onload=()=>{try{const canvas=document.createElement('canvas');let w=img.width,h=img.height;if(w>maxWidth){h=Math.round(h*maxWidth/w);w=maxWidth;}canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,w,h);const result=canvas.toDataURL('image/jpeg',quality);callback(result&&result.length>100?result:dataUrl);}catch(e){callback(dataUrl);}};img.src=dataUrl;}catch(e){callback(dataUrl);}
@@ -1197,35 +1234,65 @@ function takeCiPhoto(){
   };input.click();
 }
 
+// [FIX iOS] ใช้ watchPosition เพื่อเปิด GPS ค้างไว้ ไม่ถูก iOS throttle
+let _ciGpsWatchId = null;
+
 function getCiGPS(){
-  const btn=document.getElementById('ci-gps-btn');
-  const txt=document.getElementById('ci-gps-text');
-  const subBtn=document.getElementById('ci-submit-btn');
-  // [FIX] ผู้ใช้กดเอง — ปิดปุ่มระหว่างรับ
+  const btn    = document.getElementById('ci-gps-btn');
+  const txt    = document.getElementById('ci-gps-text');
+  const subBtn = document.getElementById('ci-submit-btn');
   if(btn){btn.disabled=true;btn.textContent='⏳ กำลังรับ...';}
   if(subBtn){subBtn.disabled=true;subBtn.textContent='⏳ กำลังรับ GPS...';}
   if(txt)txt.textContent='⏳ กำลังรับตำแหน่ง...';
 
-  const onSuccess=()=>{
-    if(txt)txt.textContent=`${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;
-    if(btn){btn.textContent='🔄 รับใหม่';btn.disabled=false;}
-    // GPS สำเร็จ — เปิดปุ่ม Check-in
-    if(subBtn){subBtn.disabled=false;subBtn.textContent='✓ Check-in เลย';}
-    showToast('✓ รับตำแหน่ง GPS สำเร็จ');
-  };
-
-  const onFail=()=>{
-    if(txt)txt.textContent='ไม่สามารถรับ GPS ได้';
+  if(!navigator.geolocation){
+    if(txt)txt.textContent='เบราว์เซอร์ไม่รองรับ GPS';
     if(btn){btn.textContent='📍 รับตำแหน่ง';btn.disabled=false;}
     if(subBtn){subBtn.disabled=true;subBtn.textContent='📍 กรุณารับตำแหน่ง GPS ก่อน';}
-    showToast('ไม่สามารถรับ GPS ได้ กรุณากดรับตำแหน่งใหม่','error');
-  };
+    return;
+  }
 
-  if(!navigator.geolocation){onFail();return;}
-  navigator.geolocation.getCurrentPosition(
-    p=>{ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};onSuccess();},
-    ()=>{onFail();},
-    {timeout:10000,enableHighAccuracy:false,maximumAge:30000}
+  // หยุด watch เดิมก่อน (ถ้ามี)
+  if(_ciGpsWatchId!==null){
+    navigator.geolocation.clearWatch(_ciGpsWatchId);
+    _ciGpsWatchId=null;
+  }
+
+  // ตั้ง timeout fallback 12 วินาที
+  const timeoutId = setTimeout(()=>{
+    if(!ciGpsData.acquired){
+      navigator.geolocation.clearWatch(_ciGpsWatchId);
+      _ciGpsWatchId=null;
+      if(txt)txt.textContent='ไม่สามารถรับ GPS ได้';
+      if(btn){btn.textContent='📍 รับตำแหน่ง';btn.disabled=false;}
+      if(subBtn){subBtn.disabled=true;subBtn.textContent='📍 กรุณารับตำแหน่ง GPS ก่อน';}
+      showToast('ไม่สามารถรับ GPS ได้ กรุณากดรับตำแหน่งใหม่','error');
+    }
+  }, 12000);
+
+  // watchPosition — iOS ให้ permission ครั้งเดียว ใช้ได้ตลอด session
+  _ciGpsWatchId = navigator.geolocation.watchPosition(
+    p=>{
+      clearTimeout(timeoutId);
+      ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};
+      if(txt)txt.textContent=`${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;
+      if(btn){btn.textContent='🔄 รับใหม่';btn.disabled=false;}
+      if(subBtn){subBtn.disabled=false;subBtn.textContent='✓ Check-in เลย';}
+      // หยุด watch หลังได้ตำแหน่งแล้ว ประหยัดแบต
+      navigator.geolocation.clearWatch(_ciGpsWatchId);
+      _ciGpsWatchId=null;
+      showToast('✓ รับตำแหน่ง GPS สำเร็จ');
+    },
+    e=>{
+      clearTimeout(timeoutId);
+      navigator.geolocation.clearWatch(_ciGpsWatchId);
+      _ciGpsWatchId=null;
+      if(txt)txt.textContent='ไม่สามารถรับ GPS ได้';
+      if(btn){btn.textContent='📍 รับตำแหน่ง';btn.disabled=false;}
+      if(subBtn){subBtn.disabled=true;subBtn.textContent='📍 กรุณารับตำแหน่ง GPS ก่อน';}
+      showToast('ไม่สามารถรับ GPS ได้ กรุณากดรับตำแหน่งใหม่','error');
+    },
+    {enableHighAccuracy:false,timeout:12000,maximumAge:60000}
   );
 }
 
