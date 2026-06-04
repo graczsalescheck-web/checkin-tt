@@ -856,7 +856,20 @@ function showDayDetail(dateKey,dayNum){
     document.getElementById('day-detail-list').innerHTML=`<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">ไม่มีแผนวันนี้</div>`;
   }else{
     const statusMap={done:{cls:'done',badge:'badge-done',label:'✅ เข้าพบตามแผน'},late:{cls:'warn',badge:'badge-warn',label:'⚠️ ช้ากว่าแผน'},miss:{cls:'miss',badge:'badge-miss',label:'❌ พลาด'},future:{cls:'future',badge:'badge-future',label:'📅 ยังไม่ถึงกำหนด'}};
-    document.getElementById('day-detail-list').innerHTML=plans.map(p=>{const s=statusMap[p.status]||statusMap.future;return`<div class="plan-item ${s.cls}"><div class="plan-shop">${p.shopName}</div><div class="plan-meta">${p.employeeName||'—'} ${p.note?'· '+p.note:''}</div><span class="plan-badge ${s.badge}">${s.label}</span></div>`;}).join('');
+    document.getElementById('day-detail-list').innerHTML=plans.map(p=>{
+      const s=statusMap[p.status]||statusMap.future;
+      // แสดงปุ่ม Check-in เฉพาะแผนที่ยังไม่ได้ไป (future/miss)
+      const canCheckin=p.status==='future'||p.status==='miss';
+      const checkinBtn=canCheckin
+        ?`<button onclick="openCheckinModalWithShop('${p.shopName.replace(/'/g,'\\\'')}')" style="margin-top:8px;display:flex;align-items:center;gap:6px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;width:100%;justify-content:center">📍 Check-in ร้านนี้เลย</button>`
+        :'';
+      return`<div class="plan-item ${s.cls}">
+        <div class="plan-shop">${p.shopName}</div>
+        <div class="plan-meta">${p.employeeName||'—'} ${p.note?'· '+p.note:''}</div>
+        <span class="plan-badge ${s.badge}">${s.label}</span>
+        ${checkinBtn}
+      </div>`;
+    }).join('');
   }
   const panel=document.getElementById('day-detail');panel.style.display='block';panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -1185,6 +1198,25 @@ function renderActiveVisits(){
     const t=v.checkinTime?String(v.checkinTime).slice(0,5)+' น.':'—';
     return`<div class="visit-card active-ci"><div class="visit-shop">${v.shop}</div><div class="visit-time">⏰ Check-in ${t} · ${v.province||''}</div><div class="visit-actions"><button class="btn-checkout" onclick="openCheckout('${v.ref}',${v.row},'${v.shop}',${v.lat||0},${v.lng||0})">🏁 Check-out + กรอกข้อมูล</button></div></div>`;
   }).join('');
+}
+
+// เปิด Modal Check-in พร้อมกรอกชื่อร้านล่วงหน้า
+function openCheckinModalWithShop(shopName){
+  // ปิด day detail panel ก่อน
+  document.getElementById('day-detail').style.display='none';
+  // เปิด modal ปกติ
+  openCheckinModal();
+  // รอให้ autocomplete พร้อมแล้วค่อย set ค่า
+  setTimeout(()=>{
+    const inp=document.getElementById('ci-shop-input');
+    const hid=document.getElementById('ci-shop');
+    if(inp)inp.value=shopName;
+    if(hid)hid.value=shopName;
+    // ดึง province จาก salesShops หรือ masterData
+    const allShops=salesShops.length>0?salesShops:masterData.shops;
+    const found=allShops.find(s=>(s.name||s)===shopName);
+    if(found&&found.province)window._ciProvince=found.province;
+  },200);
 }
 
 function openCheckinModal(){
