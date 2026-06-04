@@ -794,6 +794,8 @@ async function loadVisitPlan(){
   if(data&&data.plans){planData=data.plans;}
   else{planData=[];}
   renderCalendar();
+  // [NEW] แจ้งเตือนแผนวันนี้หลังโหลด plan เสร็จ
+  checkTodayPlan();
 }
 
 function changeCalMonth(dir){
@@ -1062,6 +1064,21 @@ function dismissNotif(key){
   // log ไว้ใน console (GAS log ต้องการ endpoint แยก)
   console.log('dismissed notif:',key, new Date().toISOString());
   loadNotifications();
+}
+
+// [NEW] แจ้งเตือนแผนวันนี้ — เรียกหลัง loadVisitPlan โหลดเสร็จ
+function checkTodayPlan(){
+  const now=new Date();
+  const todayStr=`${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
+  const todayPlans=planData.filter(p=>p.date===todayStr);
+  if(!todayPlans.length)return;
+  const undone=todayPlans.filter(p=>p.status==='future'||p.status==='miss');
+  if(!undone.length)return;
+  // ตรวจว่าแจ้งเตือนวันนี้ไปแล้วหรือยัง
+  const key=`today-plan-${todayStr}`;
+  if(getDismissed().includes(key))return;
+  // แสดง toast แจ้งเตือน
+  showToast(`📅 วันนี้มีแผน ${undone.length} ร้านที่ยังไม่ได้ Check-in`);
 }
 
 async function loadNotifications(){
