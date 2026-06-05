@@ -1301,10 +1301,19 @@ async function submitCheckin(){
     return;
   }
 
-  if(data&&data.ok&&ciPhotoData){try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'upload_photo',row:data.row,photo1:ciPhotoData})});}catch(e){console.warn('Photo upload failed:',e);}}
-  if(data&&data.ok){closeCiModal();showToast(`✅ Check-in ${shop} สำเร็จ`);loadActiveVisits();loadDashboard();}
-  else if(!data||(!data.ok&&data.reason!=='already_checkin')){
-    // error — enable ปุ่มกลับให้กดใหม่ได้
+  if(data&&data.ok){
+    // [FIX] แจ้งสำเร็จทันที ไม่รอรูป
+    closeCiModal();
+    showToast(`✅ Check-in ${shop} สำเร็จ`);
+    loadActiveVisits();
+    loadDashboard();
+    // อัพโหลดรูปใน background ไม่ต้อง await
+    if(ciPhotoData){
+      fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({action:'upload_photo',row:data.row,photo1:ciPhotoData})
+      }).catch(e=>console.warn('Photo upload failed:',e));
+    }
+  } else if(!data||(!data.ok&&data.reason!=='already_checkin')){
     if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}
     showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
   }
