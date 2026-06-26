@@ -990,16 +990,33 @@ function takePhoto(idx){
 
 function changeVal(d){orderValue=Math.max(0,orderValue+d);const el=document.getElementById('order-val');if(el)el.value=orderValue;}
 
-function getGPS(){
-  const btn=document.querySelector('.gps-btn');if(btn){btn.textContent='⏳ กำลังระบุ...';btn.disabled=true;}
-  const done=()=>{
-    const c=document.getElementById('gps-coords');const m=document.getElementById('map-preview');
-    if(c)c.textContent=`${gpsData.lat.toFixed(6)}, ${gpsData.lng.toFixed(6)}`;
-    if(m)m.innerHTML='<div class="map-grid"></div><div class="map-dot"></div>';
-    if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}showToast('✓ รับตำแหน่ง GPS สำเร็จ');
-  };
-  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(pos=>{gpsData={lat:pos.coords.latitude,lng:pos.coords.longitude,acquired:true};done();},()=>{gpsData={lat:13.756331,lng:100.501762,acquired:true};done();},{timeout:8000});}
-  else{gpsData={lat:13.756331,lng:100.501762,acquired:true};done();}
+function getGPS() {
+  const btn = document.querySelector('.gps-btn');
+  if (btn) { btn.textContent='⏳ กำลังระบุ...'; btn.disabled=true; }
+  if (!navigator.geolocation) {
+    showToast('⚠️ Browser ไม่รองรับ GPS','error');
+    if (btn) { btn.disabled=false; }
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      gpsData = { lat:pos.coords.latitude, lng:pos.coords.longitude, acquired:true };
+      const c = document.getElementById('gps-coords');
+      const m = document.getElementById('map-preview');
+      if (c) c.textContent = `${gpsData.lat.toFixed(6)}, ${gpsData.lng.toFixed(6)}`;
+      if (m) m.innerHTML = '<div class="map-grid"></div><div class="map-dot"></div>';
+      if (btn) { btn.textContent='รีเฟรช'; btn.disabled=false; }
+      showToast('✓ รับตำแหน่ง GPS สำเร็จ');
+    },
+    err => {
+      const msg = err.code===1 ? '❌ GPS ถูก Block — Settings > Safari > Location > Allow'
+                : err.code===2 ? '❌ ไม่พบสัญญาณ GPS'
+                : '❌ GPS Timeout ลองใหม่';
+      showToast(msg, 'error');
+      if (btn) { btn.textContent='ลองใหม่'; btn.disabled=false; }
+    },
+    { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+  );
 }
 
 async function submitForm(){
@@ -1270,12 +1287,32 @@ function takeCiPhoto(){
   };input.click();
 }
 
-function getCiGPS(){
-  const btn=document.getElementById('ci-gps-btn');const txt=document.getElementById('ci-gps-text');
-  if(btn){btn.textContent='⏳ กำลังระบุ...';btn.disabled=true;}
-  const done=()=>{if(txt)txt.textContent=`${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}};
-  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{ciGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};done();},()=>{ciGpsData={lat:13.756331,lng:100.501762,acquired:true};done();},{timeout:8000});}
-  else{ciGpsData={lat:13.756331,lng:100.501762,acquired:true};done();}
+function getCiGPS() {
+  const btn = document.getElementById('ci-gps-btn');
+  const txt = document.getElementById('ci-gps-text');
+  if (btn) { btn.textContent='⏳ กำลังระบุ...'; btn.disabled=true; }
+  if (!navigator.geolocation) {
+    showToast('⚠️ Browser นี้ไม่รองรับ GPS','error');
+    if (btn) { btn.textContent='รับตำแหน่ง'; btn.disabled=false; }
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    p => {
+      ciGpsData = { lat:p.coords.latitude, lng:p.coords.longitude, acquired:true };
+      if (txt) txt.textContent = `${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;
+      if (btn) { btn.textContent='รีเฟรช'; btn.disabled=false; }
+      showToast('✓ รับตำแหน่ง GPS สำเร็จ');
+    },
+    err => {
+      const msg = err.code===1 ? '❌ ถูก Block — ไปที่ Settings > Safari > Location แล้วเปิด Allow'
+                : err.code===2 ? '❌ ไม่พบสัญญาณ GPS กรุณาลองใหม่'
+                : '❌ GPS Timeout กรุณาลองใหม่';
+      showToast(msg, 'error');
+      if (txt) txt.textContent = msg;
+      if (btn) { btn.textContent='ลองใหม่'; btn.disabled=false; }
+    },
+    { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+  );
 }
 
 async function submitCheckin(){
@@ -1413,18 +1450,41 @@ function takeCoPhoto(){
 }
 
 // [NEW] getCoGPS — แสดง Banner แทน confirm()
-function getCoGPS(){
-  const btn=document.getElementById('co-gps-btn');const txt=document.getElementById('co-gps-text');
-  if(btn){btn.textContent='⏳...';btn.disabled=true;}
-  const done=()=>{
-    if(txt)txt.textContent=`${coGpsData.lat.toFixed(5)}, ${coGpsData.lng.toFixed(5)}`;
-    if(btn){btn.textContent='รีเฟรช';btn.disabled=false;}
-    // GPS distance log handled by GAS backend
-  };
-  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{coGpsData={lat:p.coords.latitude,lng:p.coords.longitude,acquired:true};done();},()=>{coGpsData={lat:13.756331,lng:100.501762,acquired:true};done();},{timeout:8000});}
-  else{coGpsData={lat:13.756331,lng:100.501762,acquired:true};done();}
+function getCoGPS() {
+  const btn = document.getElementById('co-gps-btn');
+  const txt = document.getElementById('co-gps-text');
+  if (btn) { btn.textContent='⏳...'; btn.disabled=true; }
+  if (!navigator.geolocation) {
+    if (txt) txt.textContent = '⚠️ Browser ไม่รองรับ GPS';
+    if (btn) { btn.textContent='รีเฟรช'; btn.disabled=false; }
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    p => {
+      coGpsData = { lat:p.coords.latitude, lng:p.coords.longitude, acquired:true };
+      if (txt) txt.textContent = `${coGpsData.lat.toFixed(5)}, ${coGpsData.lng.toFixed(5)}`;
+      if (btn) { btn.textContent='รีเฟรช'; btn.disabled=false; }
+      // ตรวจสอบระยะห่าง
+      if (coData.checkinLat && coGpsData.acquired) {
+        const dist = calcDistanceJS(coData.checkinLat, coData.checkinLng, coGpsData.lat, coGpsData.lng);
+        const warn = document.getElementById('co-gps-warning');
+        if (warn) {
+          warn.style.display = dist > 200 ? 'block' : 'none';
+          if (dist > 200) warn.textContent = `⚠️ ตำแหน่งห่างจากจุด Check-in ${Math.round(dist)} เมตร เกิน 200 เมตร (จะถูก Log)`;
+        }
+      }
+    },
+    err => {
+      const msg = err.code===1 ? '❌ GPS ถูก Block — Settings > Safari > Location > Allow'
+                : err.code===2 ? '❌ ไม่พบสัญญาณ GPS'
+                : '❌ GPS Timeout ลองใหม่';
+      if (txt) txt.textContent = msg;
+      if (btn) { btn.textContent='ลองใหม่'; btn.disabled=false; }
+      showToast(msg, 'error');
+    },
+    { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+  );
 }
-
 function calcDistanceJS(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 
 function coStepNext(){
