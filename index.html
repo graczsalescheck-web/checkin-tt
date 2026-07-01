@@ -920,7 +920,7 @@ function renderStep0(){
   <div class="field-group"><label class="field-label">ประเภทของร้านค้า <span class="req">*</span></label><select class="field-select" id="f-stype">${mkOpts(masterData.shopTypes)}</select></div>
   <div class="field-group"><label class="field-label">รายละเอียดงาน <span class="req">*</span></label><div class="multi-select-group" id="task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}</div></div>
   <div class="field-group"><label class="field-label">ชื่อลูกค้า <span class="req">*</span></label><input class="field-input" id="f-custname" type="text" placeholder="ชื่อผู้ติดต่อ" value="${getLastCustomerName(formData.shopName)||''}"></div>
-  <div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="co-other" type="text" placeholder="ชื่อผู้มีอำนาจตัดสินใจ"></div>
+  <div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="f-other" type="text" placeholder="ชื่อผู้มีอำนาจตัดสินใจ"></div>`;}
 
 function initStep0(){document.querySelectorAll('#task-chips .multi-chip').forEach(c=>{c.addEventListener('click',()=>c.classList.toggle('selected'));});}
 function onShopChange(sel){const o=sel.options[sel.selectedIndex];if(o.dataset.prov){const p=document.getElementById('f-province');if(p)p.value=o.dataset.prov;}if(o.dataset.type){const t=document.getElementById('f-stype');if(t)t.value=o.dataset.type;}}
