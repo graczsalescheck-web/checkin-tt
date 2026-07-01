@@ -920,7 +920,11 @@ function renderStep0(){
   <div class="field-group"><label class="field-label">ประเภทของร้านค้า <span class="req">*</span></label><select class="field-select" id="f-stype">${mkOpts(masterData.shopTypes)}</select></div>
   <div class="field-group"><label class="field-label">รายละเอียดงาน <span class="req">*</span></label><div class="multi-select-group" id="task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}</div></div>
   <div class="field-group"><label class="field-label">ชื่อลูกค้า <span class="req">*</span></label><input class="field-input" id="f-custname" type="text" placeholder="ชื่อผู้ติดต่อ" value="${getLastCustomerName(formData.shopName)||''}"></div>
-  <div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="f-other" type="text" placeholder="ชื่อผู้มีอำนาจตัดสินใจ"></div>`;}
+  <div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="co-other" type="text" placeholder="ชื่อผู้มีอำนาจตัดสินใจ"></div>
+<div class="field-group"><label class="field-label">เบอร์โทรศัพท์</label><input class="field-input" id="co-phone" type="tel" placeholder="เช่น 081-234-5678"></div>
+<div class="field-group"><label class="field-label">ร้านหยุดวันไหน</label><div class="multi-select-group" id="co-closed-days">${['อา','จ','อ','พ','พฤ','ศ','ส'].map(d=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${d}</div>`).join('')}</div></div>
+<div class="field-group"><label class="field-label">เวลาที่ควรเข้าพบ</label><select class="field-select" id="co-visit-time"><option value="">— ไม่ระบุ —</option><option>09:00–11:00</option><option>11:00–13:00</option><option>13:00–15:00</option><option>15:00–17:00</option><option>17:00–19:00</option><option>ยืดหยุ่นได้</option></select></div>
+<div class="field-group"><label class="field-label">ต้องนัดล่วงหน้า</label><div class="multi-select-group" id="co-appt-chips"><div class="multi-chip" id="co-appt-yes" onclick="selectAppt('yes')">✅ ใช่</div><div class="multi-chip" id="co-appt-no" onclick="selectAppt('no')">❌ ไม่ใช่</div></div><div id="co-appt-detail-wrap" style="display:none;margin-top:8px"><input class="field-input" id="co-appt-detail" type="text" placeholder="รายละเอียดการนัด เช่น นัดล่วงหน้า 1 วัน..."></div></div>`;}
 
 function initStep0(){document.querySelectorAll('#task-chips .multi-chip').forEach(c=>{c.addEventListener('click',()=>c.classList.toggle('selected'));});}
 function onShopChange(sel){const o=sel.options[sel.selectedIndex];if(o.dataset.prov){const p=document.getElementById('f-province');if(p)p.value=o.dataset.prov;}if(o.dataset.type){const t=document.getElementById('f-stype');if(t)t.value=o.dataset.type;}}
@@ -1393,6 +1397,14 @@ function renderCoStep2(){return`<div class="field-group"><label class="field-lab
 function renderCoStep3(){return`<div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ *</label><textarea class="field-textarea" id="co-findings" placeholder="สรุปสิ่งที่พบ..."></textarea></div><div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ *</label><textarea class="field-textarea" id="co-action" placeholder="Action Plan..."></textarea></div><div class="field-group"><label class="field-label">GPS Check-out</label><div class="gps-field"><div class="gps-bar"><span class="gps-coords" id="co-gps-text">กำลังระบุตำแหน่ง...</span><button class="gps-btn" onclick="getCoGPS()" type="button" id="co-gps-btn">รีเฟรช</button></div></div>
 <div id="co-gps-warning" style="display:none;background:#fff9db;border:1.5px solid #f3d076;border-radius:8px;padding:10px 13px;margin-top:8px;font-size:13px;color:#854f0b;font-weight:500"></div>
 </div>`;}
+
+  function selectAppt(val){
+  document.getElementById('co-appt-yes').classList.toggle('selected', val==='yes');
+  document.getElementById('co-appt-no').classList.toggle('selected', val==='no');
+  document.getElementById('co-appt-detail-wrap').style.display = val==='yes' ? 'block' : 'none';
+  window._coAppt = val;
+}
+  
 function changeCoVal(d){coOrderValue=Math.max(0,coOrderValue+d);const el=document.getElementById('co-orderval');if(el)el.value=coOrderValue;}
 
 
@@ -1501,6 +1513,11 @@ function coStepNext(){
     coData.tasks=[...document.querySelectorAll('#co-task-chips .multi-chip.selected')].map(c=>c.dataset.val).join(', ');
     coData.customerName=cn;
     coData.otherNote=document.getElementById('co-other')?.value||'';
+    coData.phone=document.getElementById('co-phone')?.value||'';
+    coData.closedDays=[...document.querySelectorAll('#co-closed-days .multi-chip.selected')].map(c=>c.textContent).join(', ');
+    coData.visitTime=document.getElementById('co-visit-time')?.value||'';
+    coData.appointment=(window._coAppt||'')+(document.getElementById('co-appt-detail')?.value?' — '+document.getElementById('co-appt-detail').value:'');
+    window._coAppt='';
   }
   if(coStep===2){coData.lastOrder=document.getElementById('co-orderstatus')?.value;coData.orderMonth=document.getElementById('co-orderdate')?.value;coData.orderValue=coOrderValue;coData.noOrderReason=document.getElementById('co-noreason')?.value||'';coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';}
   if(coStep===3){
@@ -1517,7 +1534,7 @@ async function submitCheckout(){
   const findings=document.getElementById('co-findings')?.value;const action=document.getElementById('co-action')?.value;
   if(!findings||!action){showToast('กรุณากรอกประเด็นสำคัญและ Action Plan','error');return;}
   const btn=document.getElementById('co-submit-btn');if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
-  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,photo2:coPhotoData[0]||'',photo3:coPhotoData[1]||'',photo4:coPhotoData[2]||'',photo5:coPhotoData[3]||'',photo6:coPhotoData[4]||''};
+  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',photo2:coPhotoData[0]||'',photo3:coPhotoData[1]||'',photo4:coPhotoData[2]||'',photo5:coPhotoData[3]||'',photo6:coPhotoData[4]||''};
   let result=null;
   try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});result={ok:true};}
   catch(e){const sp={...payload,photo2:'',photo3:'',photo4:'',photo5:'',photo6:''};result=await apiGet(sp);}
@@ -1750,7 +1767,7 @@ async function confirmUpload(){
 function downloadTemplate(){
   try{
     const csv=[
-      'วันที่,ชื่อร้านค้า,ชื่อพนักงาน,หมายเหตุ',
+      'วันที่,ชื่อร้านค้า,ชื่อพนักงาน,เป้า',
       '15/06/2026,ท็อปส์ สาขาสีลม,สมชาย ใจดี,เน้นสินค้าใหม่',
       '16/06/2026,บิ๊กซี สาขาลาดพร้าว,วิชัย รักงาน,',
     ].join('\n');
