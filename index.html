@@ -562,6 +562,17 @@ label.field-label .req{color:var(--accent)}
   </div>
 </div>
 
+  <!-- EDIT CHECKIN MODAL -->
+<div class="ci-modal" id="edit-modal">
+  <div class="ci-sheet" style="max-height:92vh">
+    <div class="ci-sheet-title">
+      <span>✏️ แก้ไขข้อมูล — <span id="edit-shop-title"></span></span>
+      <span style="font-size:13px;color:var(--text3);cursor:pointer" onclick="closeEditModal()">✕</span>
+    </div>
+    <div id="edit-form-body"></div>
+  </div>
+</div>
+
 <!-- SUCCESS MODAL -->
 <div class="modal-overlay" id="modal">
   <div class="modal-card">
@@ -1057,8 +1068,9 @@ function filterHistory(){
     const empBadge=historyEmpFilter==='all'&&r.employee
       ?`<span class="htag" style="background:var(--brand-light);color:var(--brand);font-weight:600">👤 ${r.employee.split(' ')[0]}</span>`:'';
     const photoBtn=r.photo?`<a href="${r.photo}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--text2);text-decoration:none;font-family:'Sarabun',sans-serif">📷 ดูรูป</a>`:'';
+    const editBtn=r.status==='สำเร็จ'?`<button onclick="openEditModal(${r.row})" style="display:inline-flex;align-items:center;gap:4px;background:var(--brand-light);border:1.5px solid var(--brand);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--brand);cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600">✏️ แก้ไข</button>`:'';
     return`<div class="history-item"><div class="history-item-head"><div><div class="history-item-shop">${r.shop||'—'}</div><div class="history-item-date">${formatDate(r.date)}</div></div><span class="history-status ${isCiOnly?'status-pending':'status-done'}">${isCiOnly?'🟡 กำลังเยี่ยม':'✅ สำเร็จ'}</span></div>
-    <div class="history-tags">${empBadge}<span class="htag">${r.province||'—'}</span><span class="htag">${r.tasks||'—'}</span>${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}<span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span>${photoBtn}</div></div>`;
+    <div class="history-tags">${empBadge}<span class="htag">${r.province||'—'}</span><span class="htag">${r.tasks||'—'}</span>${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}<span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span>${photoBtn}${editBtn}</div></div>`;
   }).join('');
 }
 
@@ -1786,6 +1798,114 @@ function downloadTemplate(){
 }
 
 let toastTimer;
+
+  // ══ EDIT CHECKIN ══
+let editData = {};
+
+async function openEditModal(row) {
+  // โหลดข้อมูลเดิมจาก history ที่มีอยู่แล้ว
+  const r = allHistory.find(h => h.row === row);
+  editData = { row, ...(r || {}) };
+  document.getElementById('edit-shop-title').textContent = editData.shop || '—';
+  renderEditForm();
+  document.getElementById('edit-modal').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('show');
+  editData = {};
+}
+
+function renderEditForm() {
+  const d = editData;
+  document.getElementById('edit-form-body').innerHTML = `
+    <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:14px;font-size:12px;color:var(--text3)">
+      🔒 REF: ${d.ref||'—'} · ร้าน: ${d.shop||'—'} · พนักงาน: ${d.employee||'—'}
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--brand);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">📋 ข้อมูลร้านค้า</div>
+    <div class="field-group"><label class="field-label">ประเภทร้านค้า</label><select class="field-select" id="ed-stype">${mkOpts(masterData.shopTypes)}</select></div>
+    <div class="field-group"><label class="field-label">รายละเอียดงาน</label><div class="multi-select-group" id="ed-task-chips">${masterData.tasks.map(t=>`<div class="multi-chip ${(d.tasks||'').includes(t)?'selected':''}" onclick="this.classList.toggle('selected')">${t}</div>`).join('')}</div></div>
+    <div class="field-group"><label class="field-label">ชื่อลูกค้า</label><input class="field-input" id="ed-custname" type="text" value="${d.customerName||''}"></div>
+    <div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="ed-other" type="text" value="${d.otherNote||''}"></div>
+    <div class="field-group"><label class="field-label">เบอร์โทรศัพท์</label><input class="field-input" id="ed-phone" type="tel" value="${d.phone||''}"></div>
+    <div class="field-group"><label class="field-label">ร้านหยุดวันไหน</label><div class="multi-select-group" id="ed-closed-days">${['อา','จ','อ','พ','พฤ','ศ','ส'].map(day=>`<div class="multi-chip ${(d.closedDays||'').includes(day)?'selected':''}" onclick="this.classList.toggle('selected')">${day}</div>`).join('')}</div></div>
+    <div class="field-group"><label class="field-label">เวลาที่ควรเข้าพบ</label><select class="field-select" id="ed-visit-time"><option value="">— ไม่ระบุ —</option>${['09:00–11:00','11:00–13:00','13:00–15:00','15:00–17:00','17:00–19:00','ยืดหยุ่นได้'].map(t=>`<option ${(d.visitTime||'')=== t?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field-group"><label class="field-label">ต้องนัดล่วงหน้า</label><input class="field-input" id="ed-appointment" type="text" value="${d.appointment||''}" placeholder="เช่น ใช่ — นัดล่วงหน้า 1 วัน"></div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--brand);margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">🛒 ข้อมูลการซื้อ</div>
+    <div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด</label><select class="field-select" id="ed-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div>
+    <div class="field-group"><label class="field-label">ระบุเดือน ปี</label><input class="field-input" type="date" id="ed-orderdate" value="${d.orderMonth||''}"></div>
+    <div class="field-group"><label class="field-label">มูลค่า (บาท)</label><input class="field-input" type="number" id="ed-orderval" value="${d.orderValue||0}" min="0"></div>
+    <div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" id="ed-noreason" type="text" value="${d.noOrderReason||''}"></div>
+    <div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี</label><textarea class="field-textarea" id="ed-gracz">${d.bestSellingGracz||''}</textarea></div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--brand);margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">🏪 ข้อมูลคู่แข่ง</div>
+    <div class="field-group"><label class="field-label">แบรนด์คู่แข่งในร้าน</label><input class="field-input" id="ed-compbrands" type="text" value="${d.competitorBrands||''}" placeholder="เช่น Fest, Go Eco"></div>
+    <div class="field-group"><label class="field-label">แบรนด์สินค้าที่ขายดี</label><input class="field-input" id="ed-bestbrands" type="text" value="${d.bestSellingBrands||''}" placeholder="เช่น Gracz, Fest"></div>
+    <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง</label><textarea class="field-textarea" id="ed-comppromo">${d.competitorPromo||''}</textarea></div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--brand);margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">📝 สรุปผล</div>
+    <div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ</label><textarea class="field-textarea" id="ed-findings">${d.keyFindings||''}</textarea></div>
+    <div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ</label><textarea class="field-textarea" id="ed-action">${d.actionPlan||''}</textarea></div>
+
+    <div class="form-nav" style="margin-top:16px">
+      <button class="btn btn-secondary" onclick="closeEditModal()">ยกเลิก</button>
+      <button class="btn btn-primary" id="ed-submit-btn" onclick="submitEdit()">💾 บันทึก</button>
+    </div>`;
+
+  // set select values หลัง render
+  setTimeout(() => {
+    const st = document.getElementById('ed-stype');
+    if (st && d.shopType) st.value = d.shopType;
+    const os = document.getElementById('ed-orderstatus');
+    if (os && d.lastOrder) os.value = d.lastOrder;
+  }, 50);
+}
+
+async function submitEdit() {
+  const btn = document.getElementById('ed-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+
+  const tasks = [...document.querySelectorAll('#ed-task-chips .multi-chip.selected')].map(c => c.textContent).join(', ');
+  const closedDays = [...document.querySelectorAll('#ed-closed-days .multi-chip.selected')].map(c => c.textContent).join(', ');
+
+  const payload = {
+    action:           'edit_checkin',
+    row:              editData.row,
+    employee:         currentUser || '',
+    shopType:         document.getElementById('ed-stype')?.value        || '',
+    tasks,
+    customerName:     document.getElementById('ed-custname')?.value     || '',
+    otherNote:        document.getElementById('ed-other')?.value        || '',
+    phone:            document.getElementById('ed-phone')?.value        || '',
+    closedDays,
+    visitTime:        document.getElementById('ed-visit-time')?.value   || '',
+    appointment:      document.getElementById('ed-appointment')?.value  || '',
+    lastOrder:        document.getElementById('ed-orderstatus')?.value  || '',
+    orderMonth:       document.getElementById('ed-orderdate')?.value    || '',
+    orderValue:       document.getElementById('ed-orderval')?.value     || 0,
+    noOrderReason:    document.getElementById('ed-noreason')?.value     || '',
+    bestSellingGracz: document.getElementById('ed-gracz')?.value        || '',
+    competitorBrands: document.getElementById('ed-compbrands')?.value   || '',
+    bestSellingBrands:document.getElementById('ed-bestbrands')?.value   || '',
+    competitorPromo:  document.getElementById('ed-comppromo')?.value    || '',
+    keyFindings:      document.getElementById('ed-findings')?.value     || '',
+    actionPlan:       document.getElementById('ed-action')?.value       || '',
+  };
+
+  const result = await apiGet(payload);
+
+  if (btn) { btn.disabled = false; btn.textContent = '💾 บันทึก'; }
+
+  if (result && result.ok) {
+    closeEditModal();
+    showToast('✅ บันทึกข้อมูลสำเร็จ');
+    loadHistory(); // reload history
+  } else {
+    showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+  }
+}
 function showToast(msg,type='ok'){
   const t=document.getElementById('toast');document.getElementById('toast-text').textContent=msg;
   t.className='toast show'+(type==='error'?' error':'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
