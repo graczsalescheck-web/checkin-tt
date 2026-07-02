@@ -851,7 +851,8 @@ function renderCalendar(){
       else if(statuses.every(s=>s==='done')){statusClass='has-plan status-done';icon='✅';}
       else{statusClass='has-plan status-future';icon='📅';}
     }
-    const shopLines=plans.slice(0,2).map(p=>`<div class="cal-shop-dot">${p.shopName.replace(/สาขา.*/,'').trim()}</div>`).join('');
+    const shopLevelMap2={};(salesShops.length>0?salesShops:masterData.shops).forEach(s=>{if(s.level)shopLevelMap2[s.name||s]=s.level;});
+    const shopLines=plans.slice(0,2).map(p=>`<div class="cal-shop-dot" style="display:flex;align-items:center">${levelDot(shopLevelMap2[p.shopName]||'')}${p.shopName.replace(/สาขา.*/,'').trim()}</div>`).join('');
     const more=plans.length>2?`<div class="cal-more">+${plans.length-2} อื่นๆ</div>`:'';
     cells+=`<div class="cal-cell ${isToday?'today':''} ${statusClass}" onclick="showDayDetail('${key}',${d})">
       <div class="cal-date">${d}</div>${icon?`<div class="cal-status-icon">${icon}</div>`:''}
@@ -877,8 +878,8 @@ function showDayDetail(dateKey,dayNum){
       const checkinBtn=canCheckin
         ?`<button onclick="openCheckinModalWithShop('${p.shopName.replace(/'/g,'\\\'')}')" style="margin-top:8px;display:flex;align-items:center;gap:6px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;width:100%;justify-content:center">📍 Check-in ร้านนี้เลย</button>`
         :'';
-      return`<div class="plan-item ${s.cls}">
-        <div class="plan-shop">${p.shopName}${p.note?` <span style="font-size:11px;color:var(--text3);font-weight:400">(${p.note})</span>`:''}</div>
+     return`<div class="plan-item ${s.cls}">
+        <div class="plan-shop" style="display:flex;align-items:center">${levelDot(p.level||'')}${p.shopName}${p.note?` <span style="font-size:11px;color:var(--text3);font-weight:400">(${p.note})</span>`:''}</div>
 <div class="plan-meta">${p.employeeName||'—'}</div>
         <span class="plan-badge ${s.badge}">${s.label}</span>
         ${checkinBtn}
