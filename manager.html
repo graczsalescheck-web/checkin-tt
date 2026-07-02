@@ -533,7 +533,7 @@ function showMgrDay(key, day) {
         const bg=s.cls==='done'?'var(--success-light)':s.cls==='late'?'var(--warning-light)':s.cls==='miss'?'#fff0f0':'var(--surface3)';
         const cl=s.cls==='done'?'var(--success)':s.cls==='late'?'var(--warning)':s.cls==='miss'?'var(--accent)':'var(--text3)';
         return`<div class="plan-item ${s.cls}">
-          <div style="font-size:13px;font-weight:700">${p.shopName}${p.note?` <span style="font-size:11px;color:var(--text3);font-weight:400">(${p.note})</span>`:''}</div>
+         <div style="font-size:13px;font-weight:700;display:flex;align-items:center">${levelDotMgr(p.level||'')}${p.shopName}${p.note?` <span style="font-size:11px;color:var(--text3);font-weight:400">(${p.note})</span>`:''}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:3px">${p.employeeName||'—'}</div>
           <span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-top:5px;background:${bg};color:${cl}">${s.label}</span>
         </div>`;
@@ -671,6 +671,13 @@ function switchScreen(name) {
   document.getElementById('nav-'+name)?.classList.add('active');
 }
 
+ function levelDotMgr(level){
+  if(level==='red')    return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e03131;margin-right:6px;flex-shrink:0"></span>';
+  if(level==='yellow') return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f08c00;margin-right:6px;flex-shrink:0"></span>';
+  if(level==='green')  return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f9e44;margin-right:6px;flex-shrink:0"></span>';
+  return '';
+}
+  
 // ── TOAST ──
 let toastTimer;
 function showToast(msg,type='ok'){
