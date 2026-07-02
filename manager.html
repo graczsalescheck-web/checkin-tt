@@ -13,7 +13,9 @@
   --brand:#1a3a8f;--brand-mid:#2351c9;--brand-light:#e8eefb;
   --accent:#e03131;--success:#2f9e44;--success-light:#ebfbee;
   --warning:#f08c00;--warning-light:#fff9db;
-  --surface:#fff;--surface2:#f7f8fc;--surface3:#eef0f8;
+  --surface:#fff;--surface2:#f7f8fc;--surface3:#eef0f8;${photoBtn}
+      </div>
+    </div>`;
   --border:#dde2f0;--text:#1a1f36;--text2:#4a5070;--text3:#8890b0;
   --radius:14px;--radius-sm:8px;
   --shadow:0 2px 12px rgba(26,58,143,.10);
@@ -525,8 +527,19 @@ async function loadReport() {
         <span style="background:var(--surface2);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text2)">${r.province||'—'}</span>
         <span style="background:var(--surface2);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text2)">${r.tasks||'—'}</span>
         ${r.orderValue?`<span style="background:var(--success-light);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--success);font-weight:600">฿${Number(r.orderValue).toLocaleString()}</span>`:''}
-        ${photoBtn}
+      ${photoBtn}
       </div>
+      ${(r.keyFindings||r.actionPlan||r.phone||r.visitTime||r.appointment)?`
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--surface3)">
+        ${r.keyFindings?`<div style="font-size:12px;color:var(--text2);margin-bottom:6px"><span style="font-weight:700;color:var(--brand)">📋 ประเด็น:</span> ${r.keyFindings}</div>`:''}
+        ${r.actionPlan?`<div style="font-size:12px;color:var(--text2);margin-bottom:6px"><span style="font-weight:700;color:var(--success)">✅ Action:</span> ${r.actionPlan}</div>`:''}
+        ${r.phone||r.visitTime||r.closedDays||r.appointment?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+          ${r.phone?`<span style="background:var(--surface2);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text2)">📞 ${r.phone}</span>`:''}
+          ${r.visitTime?`<span style="background:var(--surface2);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text2)">🕐 ${r.visitTime}</span>`:''}
+          ${r.closedDays?`<span style="background:var(--surface2);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text2)">🚫 หยุด: ${r.closedDays}</span>`:''}
+          ${r.appointment?`<span style="background:var(--warning-light);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--warning)">📅 ${r.appointment}</span>`:''}
+        </div>`:''}
+      </div>`:''}
     </div>`;
   }).join('');
 }
