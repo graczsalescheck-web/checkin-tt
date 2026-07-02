@@ -875,8 +875,8 @@ function showDayDetail(dateKey,dayNum){
         ?`<button onclick="openCheckinModalWithShop('${p.shopName.replace(/'/g,'\\\'')}')" style="margin-top:8px;display:flex;align-items:center;gap:6px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;width:100%;justify-content:center">📍 Check-in ร้านนี้เลย</button>`
         :'';
       return`<div class="plan-item ${s.cls}">
-        <div class="plan-shop">${p.shopName}</div>
-        <div class="plan-meta">${p.employeeName||'—'} ${p.note?'· '+p.note:''}</div>
+        <div class="plan-shop">${p.shopName}${p.note?` <span style="font-size:11px;color:var(--text3);font-weight:400">(${p.note})</span>`:''}</div>
+<div class="plan-meta">${p.employeeName||'—'}</div>
         <span class="plan-badge ${s.badge}">${s.label}</span>
         ${checkinBtn}
       </div>`;
@@ -1562,7 +1562,7 @@ function createAutocomplete(inputId,listId,items,onSelect){
   let activeIdx=-1;
   inp.addEventListener('input',()=>{
     const q=inp.value.trim().toLowerCase();const filtered=q?items.filter(it=>(it.name||it).toLowerCase().includes(q)):items;
-    list.innerHTML=!filtered.length?'<div class="ac-empty">ไม่พบร้านค้า</div>':filtered.slice(0,30).map(it=>`<div class="ac-item" data-val="${it.name||it}">${it.name||it}</div>`).join('');
+    list.innerHTML=!filtered.length?'<div class="ac-empty">ไม่พบร้านค้า</div>':filtered.slice(0,30).map(it=>{const note=it.note||'';return`<div class="ac-item" data-val="${it.name||it}">${it.name||it}${note?` <span style="color:var(--text3);font-size:12px">(${note})</span>`:''}</div>`;}).join('');
     list.classList.add('show');activeIdx=-1;
     list.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();selectAcItem(inp,list,el.dataset.val,items,onSelect);}));
   });
@@ -1574,7 +1574,7 @@ function createAutocomplete(inputId,listId,items,onSelect){
     else if(e.key==='Escape')list.classList.remove('show');
   });
   inp.addEventListener('focus',()=>{
-    if(inp.value.trim()===''){list.innerHTML=items.slice(0,30).map(it=>`<div class="ac-item" data-val="${it.name||it}">${it.name||it}</div>`).join('');list.classList.add('show');list.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();selectAcItem(inp,list,el.dataset.val,items,onSelect);}));}
+    if(inp.value.trim()===''){list.innerHTML=items.slice(0,30).map(it=>{const note=it.note||'';return`<div class="ac-item" data-val="${it.name||it}">${it.name||it}${note?` <span style="color:var(--text3);font-size:12px">(${note})</span>`:''}</div>`;}).join('');list.classList.add('show');list.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();selectAcItem(inp,list,el.dataset.val,items,onSelect);}));}
   });
   document.addEventListener('click',e=>{if(!inp.contains(e.target)&&!list.contains(e.target))list.classList.remove('show');});
 }
