@@ -746,10 +746,13 @@ async function loadHistory(){
   const listEl=document.getElementById('history-list');
   if(listEl)listEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
   const data=await apiGet({action:'history'});
-  if(data&&data.rows&&data.rows.length){
-    // [NEW] โหลดทั้งหมด ไม่ filter ตาม employee
-    allHistory=data.rows;
-  }else{allHistory=[];}
+ if(data&&data.rows&&data.rows.length){
+    // map shopLevel จาก salesShops/masterData
+    const shopLevelMap={};
+    (salesShops.length>0?salesShops:masterData.shops).forEach(s=>{ if(s.level) shopLevelMap[s.name]=s.level; });
+    allHistory=data.rows.map(r=>({...r, shopLevel: shopLevelMap[r.shop]||''}));
+  }
+ else{allHistory=[];}
   buildEmpTabs();
   filterHistory();
 }
@@ -1067,7 +1070,7 @@ function filterHistory(){
       ?`<span class="htag" style="background:var(--brand-light);color:var(--brand);font-weight:600">👤 ${r.employee.split(' ')[0]}</span>`:'';
     const photoBtn=r.photo?`<a href="${r.photo}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--text2);text-decoration:none;font-family:'Sarabun',sans-serif">📷 ดูรูป</a>`:'';
     const editBtn=r.status==='สำเร็จ'?`<button onclick="openEditModal(${r.row})" style="display:inline-flex;align-items:center;gap:4px;background:var(--brand-light);border:1.5px solid var(--brand);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--brand);cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600">✏️ แก้ไข</button>`:'';
-    return`<div class="history-item"><div class="history-item-head"><div><div class="history-item-shop">${r.shop||'—'}</div><div class="history-item-date">${formatDate(r.date)}</div></div><span class="history-status ${isCiOnly?'status-pending':'status-done'}">${isCiOnly?'🟡 กำลังเยี่ยม':'✅ สำเร็จ'}</span></div>
+    return`<div class="history-item"><div class="history-item-head"><div><div class="history-item-shop" style="display:flex;align-items:center">${levelDot(r.shopLevel||'')}${r.shop||'—'}</div><div class="history-item-date">${formatDate(r.date)}</div></div><span class="history-status ${isCiOnly?'status-pending':'status-done'}">${isCiOnly?'🟡 กำลังเยี่ยม':'✅ สำเร็จ'}</span></div>
     <div class="history-tags">${empBadge}<span class="htag">${r.province||'—'}</span><span class="htag">${r.tasks||'—'}</span>${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}<span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span>${photoBtn}${editBtn}</div></div>`;
   }).join('');
 }
@@ -1567,7 +1570,7 @@ function createAutocomplete(inputId,listId,items,onSelect){
   let activeIdx=-1;
   inp.addEventListener('input',()=>{
     const q=inp.value.trim().toLowerCase();const filtered=q?items.filter(it=>(it.name||it).toLowerCase().includes(q)):items;
-    list.innerHTML=!filtered.length?'<div class="ac-empty">ไม่พบร้านค้า</div>':filtered.slice(0,30).map(it=>{const note=it.note||'';return`<div class="ac-item" data-val="${it.name||it}">${it.name||it}${note?` <span style="color:var(--text3);font-size:12px">(${note})</span>`:''}</div>`;}).join('');
+    list.innerHTML=!filtered.length?'<div class="ac-empty">ไม่พบร้านค้า</div>':filtered.slice(0,30).map(it=>{const n=it.note||'';const dot=levelDot(it.level||'');return`<div class="ac-item" data-val="${it.name||it}" style="display:flex;align-items:center">${dot}<span>${it.name||it}${n?` <span style="color:var(--text3);font-size:12px">(${n})</span>`:''}</span></div>`;}).join('')
     list.classList.add('show');activeIdx=-1;
     list.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();selectAcItem(inp,list,el.dataset.val,items,onSelect);}));
   });
@@ -1909,6 +1912,14 @@ async function submitEdit() {
     showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
   }
 }
+
+function levelDot(level){
+  if(level==='red')    return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e03131;margin-right:6px;flex-shrink:0"></span>';
+  if(level==='yellow') return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f08c00;margin-right:6px;flex-shrink:0"></span>';
+  if(level==='green')  return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f9e44;margin-right:6px;flex-shrink:0"></span>';
+  return '';
+}  
+  
 function showToast(msg,type='ok'){
   const t=document.getElementById('toast');document.getElementById('toast-text').textContent=msg;
   t.className='toast show'+(type==='error'?' error':'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
