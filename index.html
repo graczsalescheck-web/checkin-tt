@@ -1273,7 +1273,12 @@ function openCheckinModal(){
   const ciShopItems=salesShops.length>0?salesShops:masterData.shops;
   const ciShopInp=document.getElementById('ci-shop-input');const ciShopHid=document.getElementById('ci-shop');
   if(ciShopInp)ciShopInp.value='';if(ciShopHid)ciShopHid.value='';
-  createAutocomplete('ci-shop-input','ci-shop-list',ciShopItems,(val,item)=>{document.getElementById('ci-shop').value=val;if(item&&item.province)window._ciProvince=item.province;});
+  // รวม note จาก planData วันนี้เข้ากับ salesShops
+const today=new Date().toISOString().slice(0,10);
+const noteMap={};
+planData.filter(p=>p.date===today).forEach(p=>{if(p.note)noteMap[p.shopName]=p.note;});
+const ciShopItemsWithNote=ciShopItems.map(s=>({...s,note:noteMap[s.name||s]||''}));
+createAutocomplete('ci-shop-input','ci-shop-list',ciShopItemsWithNote,(val,item)=>{document.getElementById('ci-shop').value=val;if(item&&item.province)window._ciProvince=item.province;});
   const box=document.getElementById('ci-photo-box');
   if(box){box.classList.remove('has-photo');const sp=box.querySelector('span');if(sp)sp.textContent='กดเพื่อถ่ายรูป';}
   document.getElementById('ci-gps-text').textContent='กดรับตำแหน่ง';
