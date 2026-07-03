@@ -1179,8 +1179,6 @@ async function renderAdminMonth(){
   const shopLevelMap3={};
   (salesShops.length>0?salesShops:masterData.shops).forEach(s=>{if(s.level)shopLevelMap3[s.name||s]=s.level;});
   if(!plans.length){list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">ยังไม่มีแผนในเดือนนี้</div>';return;}
-  const shopLevelMap3={};
-  (salesShops.length>0?salesShops:masterData.shops).forEach(s=>{if(s.level)shopLevelMap3[s.name||s]=s.level;});
   list.innerHTML=plans.map(p=>{
     const d=new Date(p.date);const day=d.getDate().toString().padStart(2,'0');const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
     return`<div class="plan-list-item"><div><div class="plan-list-shop" style="display:flex;align-items:center">${levelDot(shopLevelMap3[p.shopName]||'')}${p.shopName}</div><div class="plan-list-meta">${p.employee||'—'} ${p.note?'· '+p.note:''}</div></div><div style="display:flex;align-items:center;gap:4px"><div class="plan-list-date">${days[d.getDay()]} ${day}</div><button class="plan-del-btn" onclick="deletePlanItem(${p.row},'${p.shopName}','${day}')" title="ลบ">✕</button></div></div>`;
