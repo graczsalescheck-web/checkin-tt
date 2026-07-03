@@ -1178,6 +1178,8 @@ async function renderAdminMonth(){
   const data=await apiGet({action:'admin_plans',month:monthStr,employee:currentUser||''});
   const plans=(data&&data.plans)?data.plans:[];
   if(!list)return;
+  const shopLevelMap3={};
+  (salesShops.length>0?salesShops:masterData.shops).forEach(s=>{if(s.level)shopLevelMap3[s.name||s]=s.level;});
   if(!plans.length){list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">ยังไม่มีแผนในเดือนนี้</div>';return;}
   list.innerHTML=plans.map(p=>{
     const d=new Date(p.date);const day=d.getDate().toString().padStart(2,'0');const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
@@ -1918,9 +1920,9 @@ async function submitEdit() {
 }
 
 function levelDot(level){
-  if(level==='red')    return '<span style="display:inline-block;width:8px;height:10px;border-radius:50%;background:#e03131;margin-right:6px;flex-shrink:0"></span>';
-  if(level==='yellow') return '<span style="display:inline-block;width:8px;height:10px;border-radius:50%;background:#f08c00;margin-right:6px;flex-shrink:0"></span>';
-  if(level==='green')  return '<span style="display:inline-block;width:8px;height:10px;border-radius:50%;background:#2f9e44;margin-right:6px;flex-shrink:0"></span>';
+if(level==='red')    return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e03131;margin-right:6px;flex-shrink:0"></span>';
+if(level==='yellow') return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f08c00;margin-right:6px;flex-shrink:0"></span>';
+if(level==='green')  return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2f9e44;margin-right:6px;flex-shrink:0"></span>';
   return '';
 }  
   
