@@ -749,7 +749,7 @@ async function loadHistory(){
  if(data&&data.rows&&data.rows.length){
     // map shopLevel จาก salesShops/masterData
     const shopLevelMap={};
-    (salesShops.length>0?salesShops:masterData.shops).forEach(s=>{ if(s.level) shopLevelMap[s.name]=s.level; });
+    masterData.shops.forEach(s=>{if(s.level)shopLevelMap[s.name||s]=s.level;});
     allHistory=data.rows.map(r=>({...r, shopLevel: shopLevelMap[r.shop]||''}));
   }
  else{allHistory=[];}
@@ -851,7 +851,7 @@ function renderCalendar(){
       else if(statuses.every(s=>s==='done')){statusClass='has-plan status-done';icon='✅';}
       else{statusClass='has-plan status-future';icon='📅';}
     }
-    const shopLevelMap2={};(salesShops.length>0?salesShops:masterData.shops).forEach(s=>{if(s.level)shopLevelMap2[s.name||s]=s.level;});
+    const shopLevelMap2={};masterData.shops.forEach(s=>{if(s.level)shopLevelMap2[s.name||s]=s.level;});
     const shopLines=plans.slice(0,2).map(p=>`<div class="cal-shop-dot" style="display:flex;align-items:center">${levelDot(shopLevelMap2[p.shopName]||'')}${p.shopName.replace(/สาขา.*/,'').trim()}</div>`).join('');
     const more=plans.length>2?`<div class="cal-more">+${plans.length-2} อื่นๆ</div>`:'';
     cells+=`<div class="cal-cell ${isToday?'today':''} ${statusClass}" onclick="showDayDetail('${key}',${d})">
@@ -1177,7 +1177,7 @@ async function renderAdminMonth(){
   const plans=(data&&data.plans)?data.plans:[];
   if(!list)return;
   const shopLevelMap3={};
-  (salesShops.length>0?salesShops:masterData.shops).forEach(s=>{if(s.level)shopLevelMap3[s.name||s]=s.level;});
+  masterData.shops.forEach(s=>{if(s.level)shopLevelMap3[s.name||s]=s.level;});
   if(!plans.length){list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">ยังไม่มีแผนในเดือนนี้</div>';return;}
   list.innerHTML=plans.map(p=>{
     const d=new Date(p.date);const day=d.getDate().toString().padStart(2,'0');const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
