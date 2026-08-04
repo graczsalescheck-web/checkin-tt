@@ -253,6 +253,16 @@ label.field-label .req{color:var(--accent)}
 .badge-warn{background:var(--warning-light);color:var(--warning)}
 .badge-miss{background:#fff0f0;color:var(--accent)}
 .badge-future{background:var(--surface3);color:var(--text3)}
+.shop-hist-modal{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end}
+.shop-hist-modal.show{display:flex}
+.shop-hist-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.shop-hist-panel{position:relative;z-index:1;background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 -8px 32px rgba(26,58,143,.18);animation:slideUpSH .28s ease}
+@keyframes slideUpSH{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.shop-hist-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.shop-hist-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px 24px;flex:1}
+.sh-row{background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--border)}
+.sh-row.done{border-left-color:var(--success)}
+.sh-row.miss{border-left-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -477,6 +487,12 @@ label.field-label .req{color:var(--accent)}
         <div class="ac-list" id="ci-shop-list"></div>
         <input type="hidden" id="ci-shop">
       </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">จังหวัด <span class="req">*</span></label>
+      <select class="field-select" id="ci-province">
+        <option value="">— เลือกจังหวัด —</option>
+      </select>
     </div>
     <div class="field-group">
       <label class="field-label">ถ่ายรูปหน้าร้าน <span class="req">*</span></label>
@@ -1066,7 +1082,7 @@ list.innerHTML=filtered.map(r=>{
       ?`<span class="htag" style="background:var(--brand-light);color:var(--brand);font-weight:600">👤 ${r.employee.split(' ')[0]}</span>`:'';
     const photoBtn=r.photo?`<a href="${r.photo}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--text2);text-decoration:none;font-family:'Sarabun',sans-serif">📷 ดูรูป</a>`:'';
     const editBtn=r.status==='สำเร็จ'?`<button onclick="openEditModal(${r.row})" style="display:inline-flex;align-items:center;gap:4px;background:var(--brand-light);border:1.5px solid var(--brand);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--brand);cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:600">✏️ แก้ไข</button>`:'';
-    return`<div class="history-item"><div class="history-item-head"><div><div class="history-item-shop" style="display:flex;align-items:center">${levelDot(r.shopLevel||'')}${r.shop||'—'}</div><div class="history-item-date">${formatDate(r.date)}</div></div><span class="history-status ${isCiOnly?'status-pending':'status-done'}">${isCiOnly?'🟡 กำลังเยี่ยม':'✅ สำเร็จ'}</span></div>
+    return`<div class="history-item"><div class="history-item-head"><div><div class="history-item-shop" style="display:flex;align-items:center;cursor:pointer" onclick="openShopHist('${(r.shop||'').replace(/'/g,"\\'")}')">${levelDot(r.shopLevel||'')}${r.shop||'—'} <span style="font-size:10px;color:var(--text3);margin-left:4px">▶</span></div><div class="history-item-date">${formatDate(r.date)}</div></div><span class="history-status ${isCiOnly?'status-pending':'status-done'}">${isCiOnly?'🟡 กำลังเยี่ยม':'✅ สำเร็จ'}</span></div>
     <div class="history-tags">${empBadge}<span class="htag">${r.province||'—'}</span><span class="htag">${r.tasks||'—'}</span>${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}<span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span>${photoBtn}${editBtn}</div></div>`;
   }).join('');
 }
@@ -1264,22 +1280,43 @@ function openCheckinModalWithShop(shopName){
   },200);
 }
 
-function openCheckinModal(){
+async function openCheckinModal(){
   // [GUARD] ตรวจสอบว่ามี active visit อยู่แล้วไหม
   if(activeVisits&&activeVisits.length>0){
     showToast(`กรุณา Check-out "${activeVisits[0].shop}" ก่อน`,'error');
     return;
+  }
+  // [GUARD] รอโหลดข้อมูลถ้ายังไม่พร้อม
+  if(!masterData.provinces.length||!salesShops.length){
+    showToast('กำลังโหลดข้อมูล กรุณารอสักครู่...','warn');
+    await Promise.all([
+      masterData.provinces.length?Promise.resolve():loadMasterData(),
+      salesShops.length?Promise.resolve():loadSalesShops()
+    ]);
   }
   ciPhotoData=null;ciGpsData={lat:null,lng:null,acquired:false};
   const ciShopItems=salesShops.length>0?salesShops:masterData.shops;
   const ciShopInp=document.getElementById('ci-shop-input');const ciShopHid=document.getElementById('ci-shop');
   if(ciShopInp)ciShopInp.value='';if(ciShopHid)ciShopHid.value='';
   // รวม note จาก planData วันนี้เข้ากับ salesShops
-const today=new Date().toISOString().slice(0,10);
-const noteMap={};
-planData.filter(p=>p.date===today).forEach(p=>{if(p.note)noteMap[p.shopName]=p.note;});
-const ciShopItemsWithNote=ciShopItems.map(s=>({...s,note:noteMap[s.name||s]||''}));
-createAutocomplete('ci-shop-input','ci-shop-list',ciShopItemsWithNote,(val,item)=>{document.getElementById('ci-shop').value=val;if(item&&item.province)window._ciProvince=item.province;});
+  const today=new Date().toISOString().slice(0,10);
+  const noteMap={};
+  planData.filter(p=>p.date===today).forEach(p=>{if(p.note)noteMap[p.shopName]=p.note;});
+  const ciShopItemsWithNote=ciShopItems.map(s=>({...s,note:noteMap[s.name||s]||''}));
+  // populate จังหวัด dropdown
+  const provSel=document.getElementById('ci-province');
+  if(provSel){
+    provSel.innerHTML='<option value="">— เลือกจังหวัด —</option>'+
+      masterData.provinces.map(p=>`<option value="${p}">${p}</option>`).join('');
+  }
+  createAutocomplete('ci-shop-input','ci-shop-list',ciShopItemsWithNote,(val,item)=>{
+    document.getElementById('ci-shop').value=val;
+    // auto-fill จังหวัดจากร้านที่เลือก
+    if(item&&item.province){
+      window._ciProvince=item.province;
+      if(provSel) provSel.value=item.province;
+    }
+  });
   const box=document.getElementById('ci-photo-box');
   if(box){box.classList.remove('has-photo');const sp=box.querySelector('span');if(sp)sp.textContent='กดเพื่อถ่ายรูป';}
   document.getElementById('ci-gps-text').textContent='กดรับตำแหน่ง';
@@ -1344,7 +1381,8 @@ async function submitCheckin(){
 
   const ciShopItems2=salesShops.length>0?salesShops:masterData.shops;
   const foundShop=ciShopItems2.find(s=>(s.name||s)===shop);
-  const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province:(foundShop&&foundShop.province)||window._ciProvince||'',lat:ciGpsData.lat,lng:ciGpsData.lng});
+  const province=document.getElementById('ci-province')?.value||(foundShop&&foundShop.province)||window._ciProvince||'';
+const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province,lat:ciGpsData.lat,lng:ciGpsData.lng});
 
   // [GUARD] Backend ตอบว่า Check-in ซ้ำ
   if(data&&!data.ok&&data.reason==='already_checkin'){
@@ -1911,6 +1949,41 @@ async function submitEdit() {
   }
 }
 
+// ── SHOP HISTORY ──
+function openShopHist(shopName) {
+  const rows = allHistory.filter(r => r.shop === shopName);
+  document.getElementById('sh-title').textContent = shopName;
+  const totalVal = rows.reduce((s,r) => s+(Number(r.orderValue)||0), 0);
+  document.getElementById('sh-sub').textContent = `${rows.length} ครั้ง · มูลค่ารวม ฿${totalVal.toLocaleString()}`;
+  const body = document.getElementById('sh-body');
+  if (!rows.length) {
+    body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">ยังไม่มีประวัติ</div>';
+  } else {
+    body.innerHTML = rows.map(r => {
+      const isDone = r.status==='สำเร็จ';
+      const sBg = isDone?'var(--success-light)':'#fff0f0';
+      const sCl = isDone?'var(--success)':'var(--accent)';
+      return `<div class="sh-row ${isDone?'done':'miss'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:12px;font-weight:700;color:var(--text2)">${r.date||'—'}</div>
+          <span style="background:${sBg};color:${sCl};border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">${r.status||'—'}</span>
+        </div>
+        ${r.tasks?`<div style="font-size:12px;color:var(--text2);margin-bottom:4px">📋 ${r.tasks}</div>`:''}
+        ${r.orderValue?`<div style="font-size:13px;font-weight:700;color:var(--success)">฿${Number(r.orderValue).toLocaleString()}</div>`:''}
+        ${r.keyFindings?`<div style="font-size:11px;color:var(--text3);margin-top:4px">💡 ${r.keyFindings}</div>`:''}
+        ${r.actionPlan?`<div style="font-size:11px;color:var(--brand);margin-top:2px">✅ ${r.actionPlan}</div>`:''}
+        ${r.photo?`<a href="${r.photo}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;color:var(--text3);text-decoration:none;background:var(--surface3);border-radius:4px;padding:2px 7px">📷 ดูรูป</a>`:''}
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('shop-hist-modal').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeShopHist() {
+  document.getElementById('shop-hist-modal').classList.remove('show');
+  document.body.style.overflow='';
+}
+
 function levelDot(level){
 if(level==='red')    return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e03131;margin-right:6px;flex-shrink:0"></span>';
 if(level==='yellow') return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f08c00;margin-right:6px;flex-shrink:0"></span>';
@@ -1923,5 +1996,20 @@ function showToast(msg,type='ok'){
   t.className='toast show'+(type==='error'?' error':'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
 }
 </script>
+<div class="shop-hist-modal" id="shop-hist-modal">
+  <div class="shop-hist-backdrop" onclick="closeShopHist()"></div>
+  <div class="shop-hist-panel">
+    <div class="shop-hist-head">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)" id="sh-title">—</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px" id="sh-sub">—</div>
+        </div>
+        <span onclick="closeShopHist()" style="font-size:18px;color:var(--text3);cursor:pointer;padding:2px 8px">✕</span>
+      </div>
+    </div>
+    <div class="shop-hist-body" id="sh-body"></div>
+  </div>
+</div>
 </body>
 </html>
