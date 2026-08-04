@@ -479,6 +479,12 @@ label.field-label .req{color:var(--accent)}
       </div>
     </div>
     <div class="field-group">
+      <label class="field-label">จังหวัด <span class="req">*</span></label>
+      <select class="field-select" id="ci-province">
+        <option value="">— เลือกจังหวัด —</option>
+      </select>
+    </div>
+    <div class="field-group">
       <label class="field-label">ถ่ายรูปหน้าร้าน <span class="req">*</span></label>
       <div class="photo-upload" id="ci-photo-box" onclick="takeCiPhoto()" style="aspect-ratio:2/1;flex-direction:row;gap:12px;padding:16px">
         <div class="photo-check">✓</div>
@@ -1279,7 +1285,20 @@ const today=new Date().toISOString().slice(0,10);
 const noteMap={};
 planData.filter(p=>p.date===today).forEach(p=>{if(p.note)noteMap[p.shopName]=p.note;});
 const ciShopItemsWithNote=ciShopItems.map(s=>({...s,note:noteMap[s.name||s]||''}));
-createAutocomplete('ci-shop-input','ci-shop-list',ciShopItemsWithNote,(val,item)=>{document.getElementById('ci-shop').value=val;if(item&&item.province)window._ciProvince=item.province;});
+// populate จังหวัด dropdown
+const provSel=document.getElementById('ci-province');
+if(provSel){
+  provSel.innerHTML='<option value="">— เลือกจังหวัด —</option>'+
+    masterData.provinces.map(p=>`<option value="${p}">${p}</option>`).join('');
+}
+createAutocomplete('ci-shop-input','ci-shop-list',ciShopItemsWithNote,(val,item)=>{
+  document.getElementById('ci-shop').value=val;
+  // auto-fill จังหวัดจากร้านที่เลือก
+  if(item&&item.province){
+    window._ciProvince=item.province;
+    if(provSel) provSel.value=item.province;
+  }
+});
   const box=document.getElementById('ci-photo-box');
   if(box){box.classList.remove('has-photo');const sp=box.querySelector('span');if(sp)sp.textContent='กดเพื่อถ่ายรูป';}
   document.getElementById('ci-gps-text').textContent='กดรับตำแหน่ง';
@@ -1344,7 +1363,8 @@ async function submitCheckin(){
 
   const ciShopItems2=salesShops.length>0?salesShops:masterData.shops;
   const foundShop=ciShopItems2.find(s=>(s.name||s)===shop);
-  const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province:(foundShop&&foundShop.province)||window._ciProvince||'',lat:ciGpsData.lat,lng:ciGpsData.lng});
+  const province=document.getElementById('ci-province')?.value||(foundShop&&foundShop.province)||window._ciProvince||'';
+const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province,lat:ciGpsData.lat,lng:ciGpsData.lng});
 
   // [GUARD] Backend ตอบว่า Check-in ซ้ำ
   if(data&&!data.ok&&data.reason==='already_checkin'){
