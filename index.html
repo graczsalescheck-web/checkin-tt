@@ -1067,10 +1067,23 @@ function formatDate(val){
 
 function filterHistory(){
   const q=(document.getElementById('search-input')?.value||'').toLowerCase();
+  const period=document.getElementById('filter-select')?.value||'ทั้งหมด';
+  const now=new Date(); now.setHours(0,0,0,0);
   const norm=s=>String(s||'').replace(/\s+/g,' ').trim();
   const filtered=allHistory.filter(r=>{
     if(historyEmpFilter!=='all'&&norm(r.employee)!==norm(historyEmpFilter))return false;
     if(q&&!(r.shop||'').toLowerCase().includes(q))return false;
+    // กรองตามช่วงเวลา
+    if(period!=='ทั้งหมด'&&r.date){
+      // r.date มาในรูป dd/MM/yyyy หรือ yyyy-MM-dd
+      let d;
+      if(r.date.includes('/')){const p=r.date.split('/');d=new Date(p[2],p[1]-1,p[0]);}
+      else{d=new Date(r.date);}
+      d.setHours(0,0,0,0);
+      if(period==='วันนี้'&&d.getTime()!==now.getTime())return false;
+      if(period==='สัปดาห์นี้'){const w=new Date(now);w.setDate(now.getDate()-now.getDay());if(d<w)return false;}
+      if(period==='เดือนนี้'){if(d.getMonth()!==now.getMonth()||d.getFullYear()!==now.getFullYear())return false;}
+    }
     return true;
   });
   const list=document.getElementById('history-list');if(!list)return;
