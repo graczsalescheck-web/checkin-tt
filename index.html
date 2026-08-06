@@ -1602,8 +1602,11 @@ function coStepNext(){
   if(coStep===3){
     const comppromo=document.getElementById('co-comppromo')?.value;
     if(!comppromo){showToast('กรุณากรอกรายละเอียดโปรโมชั่นคู่แข่ง','error');return;}
-    coData.competitorBrands=getBrands('#co-form-body .multi-select-group:first-of-type','co-comp-other-input').join(', ');
-    coData.bestSellingBrands=getBrands('#co-form-body .multi-select-group:nth-of-type(2)','co-best-other-input').join(', ');
+    const coGroups=document.querySelectorAll('#co-form-body .multi-select-group');
+const coCompGroup=coGroups[0];
+const coBestGroup=coGroups[1];
+coData.competitorBrands=[...(coCompGroup?.querySelectorAll('.multi-chip.selected')||[])].map(c=>c.textContent).concat(document.getElementById('co-comp-other-input')?.value?[document.getElementById('co-comp-other-input').value]:[]).join(', ');
+coData.bestSellingBrands=[...(coBestGroup?.querySelectorAll('.multi-chip.selected')||[])].map(c=>c.textContent).concat(document.getElementById('co-best-other-input')?.value?[document.getElementById('co-best-other-input').value]:[]).join(', ');
     coData.competitorPromo=document.getElementById('co-comppromo')?.value||'';
   }
   if(coStep<CO_STEPS-1){coStep++;renderCoStep();}
