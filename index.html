@@ -1389,12 +1389,14 @@ async function submitCheckin(){
 
   const shop=document.getElementById('ci-shop')?.value||document.getElementById('ci-shop-input')?.value;
   if(!shop){showToast('กรุณาเลือกร้านค้า','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
+  if(!province){showToast('กรุณาเลือกจังหวัด','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
   if(!ciPhotoData){showToast('กรุณาถ่ายรูปหน้าร้านก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
   if(!ciGpsData.acquired){showToast('กรุณารับตำแหน่ง GPS ก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
 
-  const ciShopItems2=salesShops.length>0?salesShops:masterData.shops;
+ const ciShopItems2=salesShops.length>0?salesShops:masterData.shops;
   const foundShop=ciShopItems2.find(s=>(s.name||s)===shop);
   const province=document.getElementById('ci-province')?.value||(foundShop&&foundShop.province)||window._ciProvince||'';
+  if(!province){showToast('กรุณาเลือกจังหวัด','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
 const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province,lat:ciGpsData.lat,lng:ciGpsData.lng});
 
   // [GUARD] Backend ตอบว่า Check-in ซ้ำ
