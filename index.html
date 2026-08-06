@@ -1575,7 +1575,11 @@ function coStepNext(){
     // validate รูปถ่ายบังคับ 2 รูปแรก
     if(!coPhotoStates[0]||!coPhotoStates[1]){showToast('กรุณาถ่ายรูปถ่าย 1 และ 2 ก่อน','error');return;}
   }
-  if(coStep===1){
+ if(coStep===1){
+    const stype=document.getElementById('co-stype')?.value;
+    if(!stype){showToast('กรุณาเลือกประเภทร้านค้า','error');return;}
+    const tasks=[...document.querySelectorAll('#co-task-chips .multi-chip.selected')].map(c=>c.dataset.val);
+    if(!tasks.length){showToast('กรุณาเลือกรายละเอียดงานอย่างน้อย 1 อย่าง','error');return;}
     const cn=document.getElementById('co-custname')?.value;
     if(!cn){showToast('กรุณากรอกชื่อลูกค้า','error');return;}
     coData.customerGroup='';
@@ -1589,8 +1593,15 @@ function coStepNext(){
     coData.appointment=(window._coAppt||'')+(document.getElementById('co-appt-detail')?.value?' — '+document.getElementById('co-appt-detail').value:'');
     window._coAppt='';
   }
-  if(coStep===2){coData.lastOrder=document.getElementById('co-orderstatus')?.value;coData.orderMonth=document.getElementById('co-orderdate')?.value;coData.orderValue=coOrderValue;coData.noOrderReason=document.getElementById('co-noreason')?.value||'';coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';}
+ if(coStep===2){
+    const lastOrder=document.getElementById('co-orderstatus')?.value;
+    if(!lastOrder){showToast('กรุณาเลือกการสั่งซื้อล่าสุด','error');return;}
+    const gracz=document.getElementById('co-gracz')?.value;
+    if(!gracz){showToast('กรุณากรอกสินค้า Gracz รุ่นที่ขายดี','error');return;}
+    coData.lastOrder=lastOrder;coData.orderMonth=document.getElementById('co-orderdate')?.value;coData.orderValue=coOrderValue;coData.noOrderReason=document.getElementById('co-noreason')?.value||'';coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';}
   if(coStep===3){
+    const comppromo=document.getElementById('co-comppromo')?.value;
+    if(!comppromo){showToast('กรุณากรอกรายละเอียดโปรโมชั่นคู่แข่ง','error');return;}
     coData.competitorBrands=getBrands('#co-form-body .multi-select-group:first-of-type','co-comp-other-input').join(', ');
     coData.bestSellingBrands=getBrands('#co-form-body .multi-select-group:nth-of-type(2)','co-best-other-input').join(', ');
     coData.competitorPromo=document.getElementById('co-comppromo')?.value||'';
