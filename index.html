@@ -1237,7 +1237,7 @@ async function deletePlanItem(row,shopName,dateStr){
 // ══ CHECK-IN / CHECK-OUT ══
 let ciPhotoData=null;let ciGpsData={lat:null,lng:null,acquired:false};
 let activeVisits=[];let coData={};let coStep=0;let coOrderValue=0;let coGpsData={lat:null,lng:null,acquired:false};let coPhotoData=[null,null,null,null,null];let coPhotoStates=[false,false,false,false,false];
-const CO_STEPS=5;
+const CO_STEPS=6;
 
 async function loadActiveVisits(){
   const data=await apiGet({action:'active_visits',employee:currentUser||''});
@@ -1429,7 +1429,7 @@ function openCheckout(ref,row,shop,checkinLat,checkinLng){
 }
 function closeCoModal(){document.getElementById('co-modal').classList.remove('show');}
 
-const coStepDefs=['รูปถ่าย','ข้อมูลร้านค้า','ข้อมูลการซื้อและการจำหน่าย','ข้อมูลคู่แข่ง','สรุปผลและ Action Plan + GPS Check-out'];
+const coStepDefs=['รูปถ่าย','ข้อมูลร้านค้า','ข้อมูลการซื้อและการจำหน่าย','ข้อมูลคู่แข่ง','Stock คงเหลือที่ร้าน','สรุปผลและ Action Plan + GPS Check-out'];
 
 function renderCoStep(){
   const body=document.getElementById('co-form-body');if(!body)return;
@@ -1437,11 +1437,12 @@ function renderCoStep(){
   for(let i=0;i<CO_STEPS;i++)prog+=`<div style="flex:1;height:4px;border-radius:2px;background:${i<=coStep?'var(--brand)':'var(--border)'}"></div>`;
   prog+=`</div><div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px">${coStepDefs[coStep]}</div>`;
   let fields='';
-  if(coStep===0)fields=renderCoStepPhoto();if(coStep===1)fields=renderCoStep0();if(coStep===2)fields=renderCoStep1();if(coStep===3)fields=renderCoStep2();if(coStep===4)fields=renderCoStep3();
+  if(coStep===0)fields=renderCoStepPhoto();if(coStep===1)fields=renderCoStep0();if(coStep===2)fields=renderCoStep1();if(coStep===3)fields=renderCoStep2();if(coStep===4)fields=renderCoStep4Stock();if(coStep===5)fields=renderCoStep3();
   const navBtns=`<div class="form-nav" style="margin-top:16px">${coStep>0?`<button class="btn btn-secondary" onclick="coStepPrev()">← ก่อนหน้า</button>`:`<button class="btn btn-secondary" onclick="closeCoModal()">ยกเลิก</button>`}${coStep<CO_STEPS-1?`<button class="btn btn-primary" onclick="coStepNext()">ถัดไป →</button>`:`<button class="btn btn-success" id="co-submit-btn" onclick="submitCheckout()">🏁 Check-out</button>`}</div>`;
   body.innerHTML=prog+fields+navBtns;
   if(coStep===1){document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected')));}
-  if(coStep===3)getCoGPS();
+  if(coStep===4){initStockStep();} 
+  if(coStep===5)getCoGPS();
 }
 
 function renderCoStep0(){
@@ -1464,6 +1465,65 @@ function renderCoStep2(){return`<div class="field-group"><label class="field-lab
   <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง *</label><textarea class="field-textarea" id="co-comppromo" placeholder="อธิบายโปรโมชั่น..."></textarea></div>`;}
   
 // [NEW] renderCoStep3 — เพิ่ม GPS Warning Banner
+// ── Stock Step ──
+function renderCoStep4Stock(){
+  return`<div class="field-group">
+    <label class="field-label">สินค้าคงเหลือที่ร้าน *</label>
+    <div id="stock-list" style="margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input class="field-input" id="stock-model-input" type="text" placeholder="ชื่อรุ่นสินค้า" style="flex:2">
+      <input class="field-input" id="stock-qty-input" type="number" min="0" placeholder="จำนวน" style="flex:1">
+      <select class="field-select" id="stock-unit-input" style="flex:1">
+        <option value="แพ็ค">แพ็ค</option>
+        <option value="ลัง">ลัง</option>
+      </select>
+      <button class="btn btn-primary" type="button" onclick="addStockItem()" style="flex-shrink:0;padding:10px 14px">+ เพิ่ม</button>
+    </div>
+  </div>
+  <div class="field-group"><label class="field-label">หมายเหตุ</label><textarea class="field-textarea" id="stock-note" placeholder="หมายเหตุเพิ่มเติม..."></textarea></div>`;
+}
+
+let stockItems=[];
+
+function initStockStep(){
+  stockItems=coData.stockItems?JSON.parse(coData.stockItems||'[]'):[];
+  renderStockList();
+}
+
+function addStockItem(){
+  const model=document.getElementById('stock-model-input')?.value?.trim();
+  const qty=document.getElementById('stock-qty-input')?.value;
+  const unit=document.getElementById('stock-unit-input')?.value||'แพ็ค';
+  if(!model){showToast('กรุณากรอกชื่อรุ่นสินค้า','error');return;}
+  if(!qty||Number(qty)<0){showToast('กรุณากรอกจำนวน','error');return;}
+  stockItems.push({model,qty:Number(qty),unit});
+  document.getElementById('stock-model-input').value='';
+  document.getElementById('stock-qty-input').value='';
+  renderStockList();
+}
+
+function removeStockItem(idx){
+  stockItems.splice(idx,1);
+  renderStockList();
+}
+
+function renderStockList(){
+  const el=document.getElementById('stock-list');
+  if(!el)return;
+  if(!stockItems.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0">ยังไม่มีสินค้า กรุณาเพิ่มอย่างน้อย 1 รุ่น</div>';
+    return;
+  }
+  el.innerHTML=stockItems.map((s,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:8px 12px;margin-bottom:6px">
+      <div>
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${s.model}</span>
+        <span style="font-size:12px;color:var(--text3);margin-left:8px">${s.qty} ${s.unit}</span>
+      </div>
+      <button onclick="removeStockItem(${i})" style="background:#fff0f0;border:none;border-radius:50%;width:24px;height:24px;color:var(--accent);cursor:pointer;font-size:13px">✕</button>
+    </div>`).join('');
+}
+
 function renderCoStep3(){return`<div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ *</label><textarea class="field-textarea" id="co-findings" placeholder="สรุปสิ่งที่พบ..."></textarea></div><div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ *</label><textarea class="field-textarea" id="co-action" placeholder="Action Plan..."></textarea></div><div class="field-group"><label class="field-label">GPS Check-out</label><div class="gps-field"><div class="gps-bar"><span class="gps-coords" id="co-gps-text">กำลังระบุตำแหน่ง...</span><button class="gps-btn" onclick="getCoGPS()" type="button" id="co-gps-btn">รีเฟรช</button></div></div>
 <div id="co-gps-warning" style="display:none;background:#fff9db;border:1.5px solid #f3d076;border-radius:8px;padding:10px 13px;margin-top:8px;font-size:13px;color:#854f0b;font-weight:500"></div>
 </div>`;}
@@ -1609,6 +1669,13 @@ coData.competitorBrands=[...(coCompGroup?.querySelectorAll('.multi-chip.selected
 coData.bestSellingBrands=[...(coBestGroup?.querySelectorAll('.multi-chip.selected')||[])].map(c=>c.textContent).concat(document.getElementById('co-best-other-input')?.value?[document.getElementById('co-best-other-input').value]:[]).join(', ');
     coData.competitorPromo=document.getElementById('co-comppromo')?.value||'';
   }
+  if(coStep===4){
+    // validate Stock — ต้องมีอย่างน้อย 1 รุ่น
+    if(!stockItems||!stockItems.length){showToast('กรุณาเพิ่มสินค้าคงเหลืออย่างน้อย 1 รุ่น','error');return;}
+    // บันทึก stockItems ลง coData
+    coData.stockItems=JSON.stringify(stockItems);
+    coData.stockNote=document.getElementById('stock-note')?.value||'';
+  }
   if(coStep<CO_STEPS-1){coStep++;renderCoStep();}
 }
 function coStepPrev(){if(coStep>0){coStep--;renderCoStep();}}
@@ -1617,8 +1684,10 @@ function coStepPrev(){if(coStep>0){coStep--;renderCoStep();}}
 async function submitCheckout(){
   const findings=document.getElementById('co-findings')?.value;const action=document.getElementById('co-action')?.value;
   if(!findings||!action){showToast('กรุณากรอกประเด็นสำคัญและ Action Plan','error');return;}
+  // แปลง stockItems เป็น text สำหรับบันทึกลง Sheet
+  const stockText=(stockItems||[]).map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', ');
   const btn=document.getElementById('co-submit-btn');if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
-  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',photo2:coPhotoData[0]||'',photo3:coPhotoData[1]||'',photo4:coPhotoData[2]||'',photo5:coPhotoData[3]||'',photo6:coPhotoData[4]||''};
+  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',stockItems:stockText,stockNote:coData.stockNote||'',photo2:coPhotoData[0]||'',photo3:coPhotoData[1]||'',photo4:coPhotoData[2]||'',photo5:coPhotoData[3]||'',photo6:coPhotoData[4]||''};
   let result=null;
   try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});result={ok:true};}
   catch(e){const sp={...payload,photo2:'',photo3:'',photo4:'',photo5:'',photo6:''};result=await apiGet(sp);}
