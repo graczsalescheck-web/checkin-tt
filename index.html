@@ -1684,8 +1684,10 @@ function coStepPrev(){if(coStep>0){coStep--;renderCoStep();}}
 async function submitCheckout(){
   const findings=document.getElementById('co-findings')?.value;const action=document.getElementById('co-action')?.value;
   if(!findings||!action){showToast('กรุณากรอกประเด็นสำคัญและ Action Plan','error');return;}
-  // แปลง stockItems เป็น text สำหรับบันทึกลง Sheet
-  const stockText=(stockItems||[]).map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', ');
+  // ดึง stockItems จาก coData ที่บันทึกไว้ใน step 4
+  let parsedStock=[];
+  try{parsedStock=JSON.parse(coData.stockItems||'[]');}catch(e){parsedStock=[];}
+  const stockText=parsedStock.length>0?parsedStock.map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', '):(stockItems||[]).map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', ');
   const btn=document.getElementById('co-submit-btn');if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
   const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',stockItems:stockText,stockNote:coData.stockNote||'',photo2:coPhotoData[0]||'',photo3:coPhotoData[1]||'',photo4:coPhotoData[2]||'',photo5:coPhotoData[3]||'',photo6:coPhotoData[4]||''};
   let result=null;
