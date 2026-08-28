@@ -1511,7 +1511,7 @@ function renderStockList(){
   const el=document.getElementById('stock-list');
   if(!el)return;
   if(!stockItems.length){
-    el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0">ยังไม่มีสินค้า กรุณาเพิ่มอย่างน้อย 1 รุ่น</div>';
+    el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0">กรุณาเพิ่มสินค้าเกรซทุกรุ่นที่มีในร้าน</div>';
     return;
   }
   el.innerHTML=stockItems.map((s,i)=>`
