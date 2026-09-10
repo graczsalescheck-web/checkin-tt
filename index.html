@@ -32,6 +32,11 @@ html,body{height:100%;overflow:hidden;background:var(--surface2);font-family:'Sa
 .name-btn{padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;background:#fff;color:var(--text);font-family:'Sarabun',sans-serif;text-align:left;transition:all .15s;display:flex;align-items:center;gap:10px}
 .name-btn:active{background:var(--brand-light);border-color:var(--brand);color:var(--brand)}
 .name-btn .avatar{width:34px;height:34px;border-radius:50%;background:var(--brand-light);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.name-btn-other{border-style:dashed;color:var(--brand)}
+.custom-name-wrap{display:none;margin:0 0 20px;text-align:left;padding:14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2)}
+.custom-name-actions{display:flex;gap:8px;margin-top:10px}
+.custom-name-actions .btn{padding:10px 12px}
+.custom-name-error{min-height:18px;margin-top:6px;color:var(--accent);font-size:11px;line-height:1.5}
 .app-header{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--brand);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
 .header-logo{display:flex;align-items:center;gap:10px}
 .header-logo-icon{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center}
@@ -272,6 +277,15 @@ label.field-label .req{color:var(--accent)}
     <div class="name-title">Check-in Sales TT</div>
     <div class="name-sub">เลือกชื่อของคุณเพื่อเข้าใช้งาน</div>
     <div class="name-grid" id="name-grid"><div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">กำลังโหลด...</div></div>
+    <div class="custom-name-wrap" id="custom-name-wrap">
+      <label class="field-label" for="custom-name-input">ชื่อ–นามสกุล</label>
+      <input class="field-input" id="custom-name-input" type="text" maxlength="80" autocomplete="name" placeholder="พิมพ์ชื่อผู้ใช้งานชั่วคราว" onkeydown="customNameKeydown(event)">
+      <div class="custom-name-error" id="custom-name-error"></div>
+      <div class="custom-name-actions">
+        <button class="btn btn-secondary" type="button" onclick="hideCustomNameInput()">ย้อนกลับ</button>
+        <button class="btn btn-primary" type="button" onclick="selectCustomName()">เข้าใช้งาน</button>
+      </div>
+    </div>
     <div style="font-size:11px;color:var(--text3)">ข้อมูลจะแสดงเฉพาะของคุณเท่านั้น</div>
   </div>
 </div>
@@ -666,14 +680,50 @@ async function loadEmployeesForSelect(){
   const data=await apiGet({action:'masterdata'});
   const emps=(data&&data.employees&&data.employees.length)?data.employees:['สมชาย ใจดี','วิชัย รักงาน','นภา มีสุข'];
   const colors=['#534AB7','#0F6E56','#993C1D','#854F0B','#1a3a8f','#2f9e44'];
-  document.getElementById('name-grid').innerHTML=emps.map((e,i)=>{
+  const employeeButtons=emps.map((e,i)=>{
     const initials=e.split(' ').map(w=>w[0]).join('').slice(0,2);
     const color=colors[i%colors.length];
     return`<button class="name-btn" onclick="selectName('${e}')"><div class="avatar" style="background:${color}20;color:${color}">${initials}</div><span>${e}</span></button>`;
   }).join('');
+  document.getElementById('name-grid').innerHTML=employeeButtons+
+    `<button class="name-btn name-btn-other" type="button" onclick="showCustomNameInput()"><div class="avatar">+</div><span>อื่นๆ — พิมพ์ชื่อเอง</span></button>`;
+  hideCustomNameInput();
 }
 
 function selectName(name){currentUser=name;localStorage.setItem('checkin_user',name);enterApp();}
+
+function showCustomNameInput(){
+  const grid=document.getElementById('name-grid');
+  const wrap=document.getElementById('custom-name-wrap');
+  const input=document.getElementById('custom-name-input');
+  const error=document.getElementById('custom-name-error');
+  if(grid)grid.style.display='none';
+  if(wrap)wrap.style.display='block';
+  if(error)error.textContent='';
+  if(input){input.value='';setTimeout(()=>input.focus(),50);}
+}
+
+function hideCustomNameInput(){
+  const grid=document.getElementById('name-grid');
+  const wrap=document.getElementById('custom-name-wrap');
+  const error=document.getElementById('custom-name-error');
+  if(grid)grid.style.display='flex';
+  if(wrap)wrap.style.display='none';
+  if(error)error.textContent='';
+}
+
+function selectCustomName(){
+  const input=document.getElementById('custom-name-input');
+  const error=document.getElementById('custom-name-error');
+  const name=String(input?.value||'').trim().replace(/\s+/g,' ');
+  if(name.length<2){if(error)error.textContent='กรุณากรอกชื่อ–นามสกุลอย่างน้อย 2 ตัวอักษร';input?.focus();return;}
+  if(/[<>]/.test(name)){if(error)error.textContent='ชื่อมีอักขระที่ไม่รองรับ';input?.focus();return;}
+  selectName(name);
+}
+
+function customNameKeydown(event){
+  if(event.key==='Enter'){event.preventDefault();selectCustomName();}
+}
 
 function enterApp(){
   document.getElementById('name-screen').style.display='none';
@@ -928,6 +978,21 @@ function renderStep(){
 }
 
 function mkOpts(arr,ph='— เลือก —'){return`<option value="">${ph}</option>`+arr.map(v=>`<option>${v}</option>`).join('')}
+function isRegisteredEmployee(name){
+  const target=String(name||'').trim().toLocaleLowerCase('th');
+  return (masterData.employees||[]).some(e=>String(e||'').trim().toLocaleLowerCase('th')===target);
+}
+function escapeOptionText(value){
+  return String(value||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function mkEmployeeOpts(){
+  let html=mkOpts(masterData.employees||[]);
+  if(currentUser&&!isRegisteredEmployee(currentUser)){
+    const safeName=escapeOptionText(currentUser);
+    html+=`<option value="${safeName}">${safeName} (Other)</option>`;
+  }
+  return html;
+}
 function mkShopOpts(){
   const list=salesShops.length>0?salesShops:masterData.shops;
   return`<option value="">— เลือกร้านค้า —</option>`+list.map(s=>`<option value="${s.name}" data-prov="${s.province||''}" data-type="${s.type||''}">${s.name}</option>`).join('');
@@ -937,7 +1002,7 @@ function renderStep0(){
   const now=new Date();
   const ts=`${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()+543}  ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
   return`<div class="field-group"><label class="field-label">วันที่ เวลา</label><input class="field-input readonly" value="${ts}" readonly></div>
-  <div class="field-group"><label class="field-label">ชื่อ นามสกุล <span class="req">*</span></label><select class="field-select" id="f-employee">${mkOpts(masterData.employees)}</select></div>
+  <div class="field-group"><label class="field-label">ชื่อ นามสกุล <span class="req">*</span></label><select class="field-select" id="f-employee">${mkEmployeeOpts()}</select></div>
   <div class="field-group"><label class="field-label">ชื่อร้านค้า <span class="req">*</span></label><select class="field-select" id="f-shop" onchange="onShopChange(this)">${mkShopOpts()}</select></div>
   <div class="field-group"><label class="field-label">จังหวัด <span class="req">*</span></label><select class="field-select" id="f-province">${mkOpts(masterData.provinces)}</select></div>
   <div class="field-group"><label class="field-label">ประเภทของร้านค้า <span class="req">*</span></label><select class="field-select" id="f-stype">${mkOpts(masterData.shopTypes)}</select></div>
@@ -945,7 +1010,13 @@ function renderStep0(){
   <div class="field-group"><label class="field-label">ชื่อลูกค้า <span class="req">*</span></label><input class="field-input" id="f-custname" type="text" placeholder="ชื่อผู้ติดต่อ" value="${getLastCustomerName(formData.shopName)||''}"></div>
   <div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="f-other" type="text" placeholder="ชื่อผู้มีอำนาจตัดสินใจ"></div>`;}
 
-function initStep0(){document.querySelectorAll('#task-chips .multi-chip').forEach(c=>{c.addEventListener('click',()=>c.classList.toggle('selected'));});}
+function initStep0(){
+  document.querySelectorAll('#task-chips .multi-chip').forEach(c=>{c.addEventListener('click',()=>c.classList.toggle('selected'));});
+  if(currentUser&&!isRegisteredEmployee(currentUser)){
+    const employeeSelect=document.getElementById('f-employee');
+    if(employeeSelect)employeeSelect.value=currentUser;
+  }
+}
 function onShopChange(sel){const o=sel.options[sel.selectedIndex];if(o.dataset.prov){const p=document.getElementById('f-province');if(p)p.value=o.dataset.prov;}if(o.dataset.type){const t=document.getElementById('f-stype');if(t)t.value=o.dataset.type;}}
 
 function renderStep1(){
