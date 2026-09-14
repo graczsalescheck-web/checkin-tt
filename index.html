@@ -509,11 +509,33 @@ label.field-label .req{color:var(--accent)}
       </select>
     </div>
     <div class="field-group">
-      <label class="field-label">ถ่ายรูปหน้าร้าน <span class="req">*</span></label>
-      <div class="photo-upload" id="ci-photo-box" onclick="takeCiPhoto()" style="aspect-ratio:2/1;flex-direction:row;gap:12px;padding:16px">
-        <div class="photo-check">✓</div>
-        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
-        <span id="ci-photo-label">กดเพื่อถ่ายรูป</span>
+      <label class="field-label">ถ่ายรูป <span class="req">*</span> <span style="font-size:11px;color:var(--text3);font-weight:400">(บังคับ 3 รูปแรก)</span></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div class="photo-upload" id="ci-photo-box-1" onclick="takeCiPhotoN(1)" style="aspect-ratio:1/1;flex-direction:column;gap:6px;padding:12px;position:relative">
+          <div class="photo-check" id="ci-photo-check-1">✓</div>
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+          <span style="font-size:11px;text-align:center">📷 หน้าร้าน *</span>
+        </div>
+        <div class="photo-upload" id="ci-photo-box-2" onclick="takeCiPhotoN(2)" style="aspect-ratio:1/1;flex-direction:column;gap:6px;padding:12px;position:relative">
+          <div class="photo-check" id="ci-photo-check-2">✓</div>
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+          <span style="font-size:11px;text-align:center">📷 เชลฟ์ Gracz *</span>
+        </div>
+        <div class="photo-upload" id="ci-photo-box-3" onclick="takeCiPhotoN(3)" style="aspect-ratio:1/1;flex-direction:column;gap:6px;padding:12px;position:relative">
+          <div class="photo-check" id="ci-photo-check-3">✓</div>
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+          <span style="font-size:11px;text-align:center">📷 เชลฟ์คู่แข่ง *</span>
+        </div>
+        <div class="photo-upload" id="ci-photo-box-4" onclick="takeCiPhotoN(4)" style="aspect-ratio:1/1;flex-direction:column;gap:6px;padding:12px;position:relative">
+          <div class="photo-check" id="ci-photo-check-4">✓</div>
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+          <span style="font-size:11px;text-align:center;color:var(--text3)">📷 เพิ่มเติม 1</span>
+        </div>
+      </div>
+      <div class="photo-upload" id="ci-photo-box-5" onclick="takeCiPhotoN(5)" style="aspect-ratio:3/1;flex-direction:row;gap:10px;padding:12px;position:relative">
+        <div class="photo-check" id="ci-photo-check-5">✓</div>
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+        <span style="font-size:11px;color:var(--text3)">📷 เพิ่มเติม 2 (ไม่บังคับ)</span>
       </div>
     </div>
     <div class="field-group">
@@ -1306,9 +1328,10 @@ async function deletePlanItem(row,shopName,dateStr){
 }
 
 // ══ CHECK-IN / CHECK-OUT ══
-let ciPhotoData=null;let ciGpsData={lat:null,lng:null,acquired:false};
+let ciPhotoData=[null,null,null,null,null]; // 5 รูป index 0-4
+let ciGpsData={lat:null,lng:null,acquired:false};
 let activeVisits=[];let coData={};let coStep=0;let coOrderValue=0;let coGpsData={lat:null,lng:null,acquired:false};let coPhotoData=[null,null,null,null,null];let coPhotoStates=[false,false,false,false,false];
-const CO_STEPS=6;
+const CO_STEPS=5;
 
 async function loadActiveVisits(){
   const data=await apiGet({action:'active_visits',employee:currentUser||''});
@@ -1378,7 +1401,7 @@ async function openCheckinModal(){
       salesShops.length?Promise.resolve():loadSalesShops()
     ]);
   }
-  ciPhotoData=null;ciGpsData={lat:null,lng:null,acquired:false};
+  ciPhotoData=[null,null,null,null,null];ciGpsData={lat:null,lng:null,acquired:false};
   const ciShopItems=salesShops.length>0?salesShops:masterData.shops;
   const ciShopInp=document.getElementById('ci-shop-input');const ciShopHid=document.getElementById('ci-shop');
   if(ciShopInp)ciShopInp.value='';if(ciShopHid)ciShopHid.value='';
@@ -1401,8 +1424,16 @@ async function openCheckinModal(){
       if(provSel) provSel.value=item.province;
     }
   });
-  const box=document.getElementById('ci-photo-box');
-  if(box){box.classList.remove('has-photo');const sp=box.querySelector('span');if(sp)sp.textContent='กดเพื่อถ่ายรูป';}
+  // reset รูปทั้ง 5 ช่อง
+  for(let i=1;i<=5;i++){
+    const box=document.getElementById('ci-photo-box-'+i);
+    if(box){
+      box.classList.remove('has-photo');
+      const img=box.querySelector('img.thumb');if(img)img.remove();
+      const sp=box.querySelector('span');if(sp)sp.style.display='';
+      const sv=box.querySelector('svg');if(sv)sv.style.display='';
+    }
+  }
   document.getElementById('ci-gps-text').textContent='กดรับตำแหน่ง';
   document.getElementById('ci-modal').classList.add('show');getCiGPS();
 }
@@ -1413,16 +1444,30 @@ function compressImage(dataUrl,maxWidth,quality,callback){
   try{const img=new Image();img.onerror=()=>callback(dataUrl);img.onload=()=>{try{const canvas=document.createElement('canvas');let w=img.width,h=img.height;if(w>maxWidth){h=Math.round(h*maxWidth/w);w=maxWidth;}canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,w,h);const result=canvas.toDataURL('image/jpeg',quality);callback(result&&result.length>100?result:dataUrl);}catch(e){callback(dataUrl);}};img.src=dataUrl;}catch(e){callback(dataUrl);}
 }
 
-function takeCiPhoto(){
+function takeCiPhotoN(n){
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.capture='environment';input.style.display='none';
   document.body.appendChild(input);
   input.onchange=()=>{
     if(!input.files||!input.files[0]){document.body.removeChild(input);return;}
     const reader=new FileReader();
-    reader.onload=e=>{compressImage(e.target.result,600,0.5,compressed=>{ciPhotoData=compressed;const box=document.getElementById('ci-photo-box');if(box){box.classList.add('has-photo');let img=box.querySelector('img.thumb');if(!img){img=document.createElement('img');img.className='thumb';img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;';box.prepend(img);}img.src=compressed;const sp=box.querySelector('span');if(sp)sp.style.display='none';const sv=box.querySelector('svg');if(sv)sv.style.display='none';}showToast('✓ ถ่ายรูปสำเร็จ');});};
+    reader.onload=e=>{compressImage(e.target.result,600,0.5,compressed=>{
+      ciPhotoData[n-1]=compressed;
+      const box=document.getElementById('ci-photo-box-'+n);
+      if(box){
+        box.classList.add('has-photo');
+        let img=box.querySelector('img.thumb');
+        if(!img){img=document.createElement('img');img.className='thumb';img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;z-index:0;';box.prepend(img);}
+        img.src=compressed;
+        const sp=box.querySelector('span');if(sp)sp.style.display='none';
+        const sv=box.querySelector('svg');if(sv)sv.style.display='none';
+      }
+      const labels=['หน้าร้าน','เชลฟ์ Gracz','เชลฟ์คู่แข่ง','เพิ่มเติม 1','เพิ่มเติม 2'];
+      showToast('✓ รูป'+labels[n-1]+' สำเร็จ');
+    });};
     reader.readAsDataURL(input.files[0]);document.body.removeChild(input);
   };input.click();
 }
+function takeCiPhoto(){takeCiPhotoN(1);}
 
 function getCiGPS() {
   const btn = document.getElementById('ci-gps-btn');
@@ -1464,7 +1509,9 @@ async function submitCheckin(){
   const foundShop=ciShopItems2.find(s=>(s.name||s)===shop);
   const province=document.getElementById('ci-province')?.value||(foundShop&&foundShop.province)||window._ciProvince||'';
   if(!province){showToast('กรุณาเลือกจังหวัด','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
-  if(!ciPhotoData){showToast('กรุณาถ่ายรูปหน้าร้านก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
+  if(!ciPhotoData[0]){showToast('กรุณาถ่ายรูปหน้าร้านก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
+  if(!ciPhotoData[1]){showToast('กรุณาถ่ายรูปเชลฟ์ Gracz ก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
+  if(!ciPhotoData[2]){showToast('กรุณาถ่ายรูปเชลฟ์คู่แข่งก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
   if(!ciGpsData.acquired){showToast('กรุณารับตำแหน่ง GPS ก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
 const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province,lat:ciGpsData.lat,lng:ciGpsData.lng});
 
@@ -1477,17 +1524,22 @@ const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,pro
   }
 
   if(data&&data.ok){
-    // [FIX] แจ้งสำเร็จทันที ไม่รอรูป
+    // แจ้งสำเร็จทันที ไม่รอรูป
     closeCiModal();
     showToast(`✅ Check-in ${shop} สำเร็จ`);
     loadActiveVisits();
     loadDashboard();
-    // อัพโหลดรูปใน background ไม่ต้อง await
-    if(ciPhotoData){
-      fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({action:'upload_photo',row:data.row,photo1:ciPhotoData})
-      }).catch(e=>console.warn('Photo upload failed:',e));
-    }
+    // อัพโหลดรูป 1-5 ใน background
+    const photoPayload={action:'upload_photo',row:data.row,
+      photo1:ciPhotoData[0]||'',
+      photo2:ciPhotoData[1]||'',
+      photo3:ciPhotoData[2]||'',
+      photo4:ciPhotoData[3]||'',
+      photo5:ciPhotoData[4]||''
+    };
+    fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify(photoPayload)
+    }).catch(e=>console.warn('Photo upload failed:',e));
   } else if(!data||(!data.ok&&data.reason!=='already_checkin')){
     if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}
     showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
@@ -1500,7 +1552,7 @@ function openCheckout(ref,row,shop,checkinLat,checkinLng){
 }
 function closeCoModal(){document.getElementById('co-modal').classList.remove('show');}
 
-const coStepDefs=['รูปถ่าย','ข้อมูลร้านค้า','ข้อมูลการซื้อและการจำหน่าย','ข้อมูลคู่แข่ง','Stock Gracz','สรุปผลและ Action Plan + GPS Check-out'];
+const coStepDefs=['ข้อมูลร้านค้า','ข้อมูลการซื้อและการจำหน่าย','ข้อมูลคู่แข่ง','Stock คงเหลือที่ร้าน','สรุปผลและ Action Plan + GPS Check-out'];
 
 function renderCoStep(){
   const body=document.getElementById('co-form-body');if(!body)return;
@@ -1508,12 +1560,12 @@ function renderCoStep(){
   for(let i=0;i<CO_STEPS;i++)prog+=`<div style="flex:1;height:4px;border-radius:2px;background:${i<=coStep?'var(--brand)':'var(--border)'}"></div>`;
   prog+=`</div><div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px">${coStepDefs[coStep]}</div>`;
   let fields='';
-  if(coStep===0)fields=renderCoStepPhoto();if(coStep===1)fields=renderCoStep0();if(coStep===2)fields=renderCoStep1();if(coStep===3)fields=renderCoStep2();if(coStep===4)fields=renderCoStep4Stock();if(coStep===5)fields=renderCoStep3();
+  if(coStep===0)fields=renderCoStep0();if(coStep===1)fields=renderCoStep1();if(coStep===2)fields=renderCoStep2();if(coStep===3)fields=renderCoStep4Stock();if(coStep===4)fields=renderCoStep3();
   const navBtns=`<div class="form-nav" style="margin-top:16px">${coStep>0?`<button class="btn btn-secondary" onclick="coStepPrev()">← ก่อนหน้า</button>`:`<button class="btn btn-secondary" onclick="closeCoModal()">ยกเลิก</button>`}${coStep<CO_STEPS-1?`<button class="btn btn-primary" onclick="coStepNext()">ถัดไป →</button>`:`<button class="btn btn-success" id="co-submit-btn" onclick="submitCheckout()">🏁 Check-out</button>`}</div>`;
   body.innerHTML=prog+fields+navBtns;
   if(coStep===1){document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected')));}
-  if(coStep===4){initStockStep();} 
-  if(coStep===5)getCoGPS();
+  if(coStep===3){initStockStep();} 
+  if(coStep===4)getCoGPS();
 }
 
 function renderCoStep0(){
@@ -1703,8 +1755,7 @@ function calcDistanceJS(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Ma
 
 function coStepNext(){
   if(coStep===0){
-    // validate รูปถ่ายบังคับ 2 รูปแรก
-    if(!coPhotoStates[0]||!coPhotoStates[1]){showToast('กรุณาถ่ายรูปถ่าย 1 และ 2 ก่อน','error');return;}
+    // [รูปถ่ายย้ายไป Check-in แล้ว ไม่ต้อง validate ที่นี่]
   }
  if(coStep===1){
     const stype=document.getElementById('co-stype')?.value;
@@ -1760,7 +1811,7 @@ async function submitCheckout(){
   try{parsedStock=JSON.parse(coData.stockItems||'[]');}catch(e){parsedStock=[];}
   const stockText=parsedStock.length>0?parsedStock.map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', '):(stockItems||[]).map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', ');
   const btn=document.getElementById('co-submit-btn');if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
-  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',stockItems:stockText,stockNote:coData.stockNote||'',photo2:coPhotoData[0]||'',photo3:coPhotoData[1]||'',photo4:coPhotoData[2]||'',photo5:coPhotoData[3]||'',photo6:coPhotoData[4]||''};
+  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',stockItems:stockText,stockNote:coData.stockNote||''};
   let result=null;
   try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});result={ok:true};}
   catch(e){const sp={...payload,photo2:'',photo3:'',photo4:'',photo5:'',photo6:''};result=await apiGet(sp);}
