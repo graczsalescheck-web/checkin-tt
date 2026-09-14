@@ -1563,7 +1563,7 @@ function renderCoStep(){
   if(coStep===0)fields=renderCoStep0();if(coStep===1)fields=renderCoStep1();if(coStep===2)fields=renderCoStep2();if(coStep===3)fields=renderCoStep4Stock();if(coStep===4)fields=renderCoStep3();
   const navBtns=`<div class="form-nav" style="margin-top:16px">${coStep>0?`<button class="btn btn-secondary" onclick="coStepPrev()">← ก่อนหน้า</button>`:`<button class="btn btn-secondary" onclick="closeCoModal()">ยกเลิก</button>`}${coStep<CO_STEPS-1?`<button class="btn btn-primary" onclick="coStepNext()">ถัดไป →</button>`:`<button class="btn btn-success" id="co-submit-btn" onclick="submitCheckout()">🏁 Check-out</button>`}</div>`;
   body.innerHTML=prog+fields+navBtns;
-  if(coStep===1){document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected')));}
+  if(coStep===0){document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected')));}
   if(coStep===3){initStockStep();} 
   if(coStep===4)getCoGPS();
 }
@@ -1757,7 +1757,7 @@ function coStepNext(){
   if(coStep===0){
     // [รูปถ่ายย้ายไป Check-in แล้ว ไม่ต้อง validate ที่นี่]
   }
- if(coStep===1){
+ if(coStep===0){
     const stype=document.getElementById('co-stype')?.value;
     if(!stype){showToast('กรุณาเลือกประเภทร้านค้า','error');return;}
     const tasks=[...document.querySelectorAll('#co-task-chips .multi-chip.selected')].map(c=>c.dataset.val);
@@ -1775,13 +1775,13 @@ function coStepNext(){
     coData.appointment=(window._coAppt||'')+(document.getElementById('co-appt-detail')?.value?' — '+document.getElementById('co-appt-detail').value:'');
     window._coAppt='';
   }
- if(coStep===2){
+ if(coStep===1){
     const lastOrder=document.getElementById('co-orderstatus')?.value;
     if(!lastOrder){showToast('กรุณาเลือกการสั่งซื้อล่าสุด','error');return;}
     const gracz=document.getElementById('co-gracz')?.value;
     if(!gracz){showToast('กรุณากรอกสินค้า Gracz รุ่นที่ขายดี','error');return;}
     coData.lastOrder=lastOrder;coData.orderMonth=document.getElementById('co-orderdate')?.value;coData.orderValue=coOrderValue;coData.noOrderReason=document.getElementById('co-noreason')?.value||'';coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';}
-  if(coStep===3){
+  if(coStep===2){
     const comppromo=document.getElementById('co-comppromo')?.value;
     if(!comppromo){showToast('กรุณากรอกรายละเอียดโปรโมชั่นคู่แข่ง','error');return;}
     const coGroups=document.querySelectorAll('#co-form-body .multi-select-group');
@@ -1791,7 +1791,7 @@ coData.competitorBrands=[...(coCompGroup?.querySelectorAll('.multi-chip.selected
 coData.bestSellingBrands=[...(coBestGroup?.querySelectorAll('.multi-chip.selected')||[])].map(c=>c.textContent).concat(document.getElementById('co-best-other-input')?.value?[document.getElementById('co-best-other-input').value]:[]).join(', ');
     coData.competitorPromo=document.getElementById('co-comppromo')?.value||'';
   }
-  if(coStep===4){
+  if(coStep===3){
     // validate Stock — ต้องมีอย่างน้อย 1 รุ่น
     if(!stockItems||!stockItems.length){showToast('กรุณาเพิ่มสินค้าคงเหลืออย่างน้อย 1 รุ่น','error');return;}
     // บันทึก stockItems ลง coData
