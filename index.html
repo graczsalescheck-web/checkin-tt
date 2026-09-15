@@ -8,8 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a3a8f">
 <title>Check-in Sales TT Ver 1.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --brand:#1a3a8f; --brand-mid:#2351c9; --brand-light:#e8eefb;
@@ -733,9 +734,10 @@ async function loadEmployeesForSelect(){
   const emps=(data&&data.employees&&data.employees.length)?data.employees:['สมชาย ใจดี','วิชัย รักงาน','นภา มีสุข'];
   const colors=['#534AB7','#0F6E56','#993C1D','#854F0B','#1a3a8f','#2f9e44'];
   const employeeButtons=emps.map((e,i)=>{
-    const initials=e.split(' ').map(w=>w[0]).join('').slice(0,2);
+    const employeeName=String(e||'');
+    const initials=employeeName.split(' ').map(w=>w[0]).join('').slice(0,2);
     const color=colors[i%colors.length];
-    return`<button class="name-btn" onclick="selectName('${e}')"><div class="avatar" style="background:${color}20;color:${color}">${initials}</div><span>${e}</span></button>`;
+    return`<button class="name-btn" data-name="${encodeDataValue(employeeName)}" onclick="selectName(decodeURIComponent(this.dataset.name))"><div class="avatar" style="background:${color}20;color:${color}">${escapeHtml(initials)}</div><span>${escapeHtml(employeeName)}</span></button>`;
   }).join('');
   document.getElementById('name-grid').innerHTML=employeeButtons+
     `<button class="name-btn name-btn-other" type="button" onclick="showCustomNameInput()"><div class="avatar">+</div><span>อื่นๆ — พิมพ์ชื่อเอง</span></button>`;
@@ -806,7 +808,17 @@ async function refreshHomeData(){
   const btn=document.getElementById('refresh-btn');
   if(btn)btn.classList.add('spinning');
   showToast('🔄 กำลังรีเฟรชข้อมูล...');
-  await Promise.all([loadActiveVisits(),loadDashboard(),loadVisitPlan(),loadNotifications()]);
+  const homeData=await apiGet({action:'home',employee:currentUser||'',period:currentPeriod});
+  if(homeData&&homeData.ok){
+    await Promise.all([
+      loadActiveVisits(homeData.activeVisits),
+      loadDashboard(homeData.dashboard),
+      loadVisitPlan(homeData.visitplan),
+      loadNotifications(homeData.notifications)
+    ]);
+  }else{
+    await Promise.all([loadActiveVisits(),loadDashboard(),loadVisitPlan(),loadNotifications()]);
+  }
   document.getElementById('last-sync').textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
   if(btn)btn.classList.remove('spinning');
   showToast('✅ รีเฟรชข้อมูลสำเร็จ');
@@ -814,17 +826,19 @@ async function refreshHomeData(){
 
 // ══ API ══
 async function apiGet(params){
+  let timer;
   try{
     const sp=new URLSearchParams();
     for(const [k,v] of Object.entries(params))sp.append(k,v===null||v===undefined?'':String(v));
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),20000);
+    timer=setTimeout(()=>controller.abort(),20000);
     const res=await fetch(GAS_URL+'?'+sp.toString(),{redirect:'follow',signal:controller.signal});
-    clearTimeout(timer);
     return JSON.parse(await res.text());
   }catch(e){
     if(e.name==='AbortError')showToast('เครือข่ายช้า กรุณาลองใหม่','error');
     console.warn('apiGet error:',e);return null;
+  }finally{
+    if(timer)clearTimeout(timer);
   }
 }
 
@@ -885,35 +899,13 @@ async function flushPendingUploads(){
 }
 
 async function loadSalesShops(preData){
-  // Cache 3 ชั่วโมง
-  const cKey='ss_cache_'+currentUser;
-  const cTime=localStorage.getItem(cKey+'_t');
-  const cData=localStorage.getItem(cKey);
-  if(!preData&&cData&&cTime&&(Date.now()-Number(cTime))<3*60*60*1000){
-    try{const parsed=JSON.parse(cData);if(parsed&&parsed.length){salesShops=parsed;return;}}catch(e){}
-  }
   const data=preData!==undefined?preData:await apiGet({action:'salesshops',employee:currentUser||''});
   salesShops=(data&&data.shops&&data.shops.length)?data.shops:[];
-  if(salesShops.length){
-    try{localStorage.setItem(cKey,JSON.stringify(salesShops));localStorage.setItem(cKey+'_t',String(Date.now()));}catch(e){}
-  }
 }
 
 async function loadMasterData(preData){
-  // Cache 6 ชั่วโมง
-  if(!preData){
-    const cTime=localStorage.getItem('md_cache_t');
-    const cData=localStorage.getItem('md_cache');
-    if(cData&&cTime&&(Date.now()-Number(cTime))<6*60*60*1000){
-      try{const parsed=JSON.parse(cData);if(parsed&&parsed.employees&&parsed.employees.length){masterData=parsed;showToast('✓ โหลดข้อมูลจาก Cache');document.getElementById('last-sync').textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});return;}}catch(e){}
-    }
-  }
   const data=preData!==undefined?preData:await apiGet({action:'masterdata'});
-  if(data&&data.employees&&data.employees.length){
-    masterData=data;
-    showToast('✓ โหลดข้อมูลจาก Database สำเร็จ');
-    try{localStorage.setItem('md_cache',JSON.stringify(data));localStorage.setItem('md_cache_t',String(Date.now()));}catch(e){}
-  }
+  if(data&&data.employees&&data.employees.length){masterData=data;showToast('✓ โหลดข้อมูลจาก Database สำเร็จ');}
   document.getElementById('last-sync').textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 }
 
@@ -978,12 +970,12 @@ function buildEmpTabs(){
   let html=`<div class="filter-chip ${historyEmpFilter==='all'?'active':''}" onclick="setEmpTab('all',this)">ทั้งหมด</div>`;
   // ปุ่มชื่อตัวเองก่อน
   if(currentUser&&emps.includes(currentUser)){
-    html+=`<div class="filter-chip ${historyEmpFilter===currentUser?'active':''}" onclick="setEmpTab('${currentUser}',this)" style="background:${historyEmpFilter===currentUser?'var(--brand)':'var(--success-light)'};color:${historyEmpFilter===currentUser?'#fff':'var(--success)'};border-color:${historyEmpFilter===currentUser?'var(--brand)':'var(--success)'}">⭐ ของฉัน</div>`;
+    html+=`<div class="filter-chip ${historyEmpFilter===currentUser?'active':''}" data-emp="${encodeDataValue(currentUser)}" onclick="setEmpTab(decodeURIComponent(this.dataset.emp),this)" style="background:${historyEmpFilter===currentUser?'var(--brand)':'var(--success-light)'};color:${historyEmpFilter===currentUser?'#fff':'var(--success)'};border-color:${historyEmpFilter===currentUser?'var(--brand)':'var(--success)'}">⭐ ของฉัน</div>`;
   }
   // พนักงานคนอื่น
   emps.filter(e=>e!==currentUser).forEach(e=>{
     const first=e.split(' ')[0];
-    html+=`<div class="filter-chip ${historyEmpFilter===e?'active':''}" onclick="setEmpTab('${e}',this)">${first}</div>`;
+    html+=`<div class="filter-chip ${historyEmpFilter===e?'active':''}" data-emp="${encodeDataValue(e)}" onclick="setEmpTab(decodeURIComponent(this.dataset.emp),this)">${escapeHtml(first)}</div>`;
   });
   tabsEl.innerHTML=html;
 }
@@ -1385,9 +1377,9 @@ async function loadNotifications(preData){
       return`<div class="notif-item" style="justify-content:space-between">
         <div style="display:flex;align-items:flex-start;gap:10px;flex:1">
           <div class="notif-dot" style="background:${n.color};margin-top:5px"></div>
-          <div class="notif-text">${n.message}</div>
+          <div class="notif-text">${escapeHtml(n.message)}</div>
         </div>
-        <button onclick="dismissNotif('${key.replace(/'/g,'')}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 0 0 8px;flex-shrink:0;line-height:1" title="ลบการแจ้งเตือน">✕</button>
+        <button data-key="${encodeDataValue(key)}" onclick="dismissNotif(decodeURIComponent(this.dataset.key))" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 0 0 8px;flex-shrink:0;line-height:1" title="ลบการแจ้งเตือน">✕</button>
       </div>`;
     }).join('');
   }else{
@@ -1494,7 +1486,7 @@ function renderActiveVisits(){
 
   el.innerHTML=activeVisits.map(v=>{
     const t=v.checkinTime?String(v.checkinTime).slice(0,5)+' น.':'—';
-    return`<div class="visit-card active-ci"><div class="visit-shop">${v.shop}</div><div class="visit-time">⏰ Check-in ${t} · ${v.province||''}</div><div class="visit-actions"><button class="btn-checkout" onclick="openCheckout('${v.ref}',${v.row},'${v.shop}',${v.lat||0},${v.lng||0})">🏁 Check-out + กรอกข้อมูล</button></div></div>`;
+    return`<div class="visit-card active-ci"><div class="visit-shop">${escapeHtml(v.shop)}</div><div class="visit-time">⏰ Check-in ${escapeHtml(t)} · ${escapeHtml(v.province||'')}</div><div class="visit-actions"><button class="btn-checkout" data-ref="${encodeDataValue(v.ref)}" data-row="${Number(v.row)||0}" data-shop="${encodeDataValue(v.shop)}" data-lat="${Number(v.lat)||0}" data-lng="${Number(v.lng)||0}" onclick="openCheckout(decodeURIComponent(this.dataset.ref),Number(this.dataset.row),decodeURIComponent(this.dataset.shop),Number(this.dataset.lat),Number(this.dataset.lng))">🏁 Check-out + กรอกข้อมูล</button></div></div>`;
   }).join('');
 }
 
@@ -1956,14 +1948,39 @@ async function submitCheckout(){
 }
 
 // ══ AUTOCOMPLETE ══
+function escapeHtml(value){
+  return String(value??'').replace(/[&<>"']/g,ch=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[ch]);
+}
+
+function encodeDataValue(value){
+  return encodeURIComponent(String(value??'')).replace(/'/g,'%27');
+}
+
 function createAutocomplete(inputId,listId,items,onSelect){
   const inp=document.getElementById(inputId);const list=document.getElementById(listId);if(!inp||!list)return;
+  inp._autocompleteState={items:Array.isArray(items)?items:[],onSelect};
+  if(inp.dataset.autocompleteBound==='1')return;
+  inp.dataset.autocompleteBound='1';
   let activeIdx=-1;
+
+  const renderItems=(source,withDot)=>{
+    list.innerHTML=!source.length?'<div class="ac-empty">ไม่พบร้านค้า</div>':source.slice(0,30).map(it=>{
+      const name=String(it.name||it||'');
+      const note=String(it.note||'');
+      const dot=withDot?levelDot(it.level||''):'';
+      return`<div class="ac-item" data-val="${escapeHtml(name)}" style="display:flex;align-items:center">${dot}<span>${escapeHtml(name)}${note?` <span style="color:var(--text3);font-size:12px">(${escapeHtml(note)})</span>`:''}</span></div>`;
+    }).join('');
+    list.classList.add('show');
+    activeIdx=-1;
+  };
+
   inp.addEventListener('input',()=>{
-    const q=inp.value.trim().toLowerCase();const filtered=q?items.filter(it=>(it.name||it).toLowerCase().includes(q)):items;
-    list.innerHTML=!filtered.length?'<div class="ac-empty">ไม่พบร้านค้า</div>':filtered.slice(0,30).map(it=>{const n=it.note||'';const dot=levelDot(it.level||'');return`<div class="ac-item" data-val="${it.name||it}" style="display:flex;align-items:center">${dot}<span>${it.name||it}${n?` <span style="color:var(--text3);font-size:12px">(${n})</span>`:''}</span></div>`;}).join('')
-    list.classList.add('show');activeIdx=-1;
-    list.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();selectAcItem(inp,list,el.dataset.val,items,onSelect);}));
+    const state=inp._autocompleteState;
+    const q=inp.value.trim().toLowerCase();
+    const filtered=q?state.items.filter(it=>String(it.name||it||'').toLowerCase().includes(q)):state.items;
+    renderItems(filtered,true);
   });
   inp.addEventListener('keydown',e=>{
     const items2=list.querySelectorAll('.ac-item');
@@ -1973,7 +1990,14 @@ function createAutocomplete(inputId,listId,items,onSelect){
     else if(e.key==='Escape')list.classList.remove('show');
   });
   inp.addEventListener('focus',()=>{
-    if(inp.value.trim()===''){list.innerHTML=items.slice(0,30).map(it=>{const note=it.note||'';return`<div class="ac-item" data-val="${it.name||it}">${it.name||it}${note?` <span style="color:var(--text3);font-size:12px">(${note})</span>`:''}</div>`;}).join('');list.classList.add('show');list.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();selectAcItem(inp,list,el.dataset.val,items,onSelect);}));}
+    if(inp.value.trim()==='')renderItems(inp._autocompleteState.items,false);
+  });
+  list.addEventListener('mousedown',e=>{
+    const el=e.target.closest('.ac-item');
+    if(!el||!list.contains(el))return;
+    e.preventDefault();
+    const state=inp._autocompleteState;
+    selectAcItem(inp,list,el.dataset.val,state.items,state.onSelect);
   });
   document.addEventListener('click',e=>{if(!inp.contains(e.target)&&!list.contains(e.target))list.classList.remove('show');});
 }
@@ -2029,7 +2053,21 @@ function resetUpload(){
   const inp=document.getElementById('upload-file-input');if(inp)inp.value='';
 }
 
-function handleUploadFile(input){
+let xlsxLoaderPromise=null;
+function ensureXlsxLoaded(){
+  if(window.XLSX)return Promise.resolve(window.XLSX);
+  if(xlsxLoaderPromise)return xlsxLoaderPromise;
+  xlsxLoaderPromise=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload=()=>window.XLSX?resolve(window.XLSX):reject(new Error('XLSX library not available'));
+    script.onerror=()=>reject(new Error('โหลดตัวอ่านไฟล์ XLSX ไม่สำเร็จ'));
+    document.head.appendChild(script);
+  });
+  return xlsxLoaderPromise;
+}
+
+async function handleUploadFile(input){
   if(!input.files||!input.files[0])return;
   const file=input.files[0];
   const isCsv=file.name.endsWith('.csv');
@@ -2037,6 +2075,14 @@ function handleUploadFile(input){
   if(!isCsv&&!isXlsx){showToast('กรุณาเลือกไฟล์ .xlsx หรือ .csv เท่านั้น','error');return;}
   const reader=new FileReader();
   if(isXlsx){
+    try{
+      await ensureXlsxLoaded();
+    }catch(err){
+      xlsxLoaderPromise=null;
+      showToast('โหลดตัวอ่านไฟล์ Excel ไม่สำเร็จ กรุณาลองใหม่','error');
+      console.error(err);
+      return;
+    }
     reader.onload=e=>{
       try{
         const data=new Uint8Array(e.target.result);
