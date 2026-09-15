@@ -885,13 +885,35 @@ async function flushPendingUploads(){
 }
 
 async function loadSalesShops(preData){
+  // Cache 3 ชั่วโมง
+  const cKey='ss_cache_'+currentUser;
+  const cTime=localStorage.getItem(cKey+'_t');
+  const cData=localStorage.getItem(cKey);
+  if(!preData&&cData&&cTime&&(Date.now()-Number(cTime))<3*60*60*1000){
+    try{const parsed=JSON.parse(cData);if(parsed&&parsed.length){salesShops=parsed;return;}}catch(e){}
+  }
   const data=preData!==undefined?preData:await apiGet({action:'salesshops',employee:currentUser||''});
   salesShops=(data&&data.shops&&data.shops.length)?data.shops:[];
+  if(salesShops.length){
+    try{localStorage.setItem(cKey,JSON.stringify(salesShops));localStorage.setItem(cKey+'_t',String(Date.now()));}catch(e){}
+  }
 }
 
 async function loadMasterData(preData){
+  // Cache 6 ชั่วโมง
+  if(!preData){
+    const cTime=localStorage.getItem('md_cache_t');
+    const cData=localStorage.getItem('md_cache');
+    if(cData&&cTime&&(Date.now()-Number(cTime))<6*60*60*1000){
+      try{const parsed=JSON.parse(cData);if(parsed&&parsed.employees&&parsed.employees.length){masterData=parsed;showToast('✓ โหลดข้อมูลจาก Cache');document.getElementById('last-sync').textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});return;}}catch(e){}
+    }
+  }
   const data=preData!==undefined?preData:await apiGet({action:'masterdata'});
-  if(data&&data.employees&&data.employees.length){masterData=data;showToast('✓ โหลดข้อมูลจาก Database สำเร็จ');}
+  if(data&&data.employees&&data.employees.length){
+    masterData=data;
+    showToast('✓ โหลดข้อมูลจาก Database สำเร็จ');
+    try{localStorage.setItem('md_cache',JSON.stringify(data));localStorage.setItem('md_cache_t',String(Date.now()));}catch(e){}
+  }
   document.getElementById('last-sync').textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 }
 
