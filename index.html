@@ -827,7 +827,6 @@ async function apiGet(params){
     console.warn('apiGet error:',e);return null;
   }
 }
-}
 
 // ══ [FIX] RELIABLE BACKGROUND UPLOAD (รูปถ่าย / Line report) ══
 // ปัญหาเดิม: fetch(mode:'no-cors') แบบไม่ await + ไม่มี retry -> ถ้าเน็ตหลุด/แอพถูกพักระหว่างพิมพ์
