@@ -268,6 +268,10 @@ label.field-label .req{color:var(--accent)}
 .sh-row{background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--border)}
 .sh-row.done{border-left-color:var(--success)}
 .sh-row.miss{border-left-color:var(--accent)}
+.line-item-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.line-photo-box{border:2px dashed var(--border);border-radius:var(--radius-sm);aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:var(--surface2);position:relative;overflow:hidden;transition:all .2s;margin-bottom:10px}
+.line-photo-box.has-photo{border-style:solid;border-color:var(--success);background:var(--success-light)}
+.line-photo-box span{font-size:12px;color:var(--text3)}
 </style>
 </head>
 <body>
@@ -483,6 +487,9 @@ label.field-label .req{color:var(--accent)}
   <button class="nav-btn" id="nav-history" onclick="switchScreen('history'); loadHistory();">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span>ประวัติ</span>
   </button>
+  <button class="nav-btn" id="nav-line" onclick="switchScreen('line'); initLineReport();">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span>Line</span>
+  </button>
   <button class="nav-btn" id="nav-dashboard" onclick="switchScreen('dashboard'); loadDashboard();">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Dashboard</span>
   </button>
@@ -490,6 +497,29 @@ label.field-label .req{color:var(--accent)}
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><line x1="19" y1="8" x2="21" y2="8"/><line x1="19" y1="11" x2="21" y2="11"/></svg><span>แผนงาน</span>
   </button>
 </nav>
+  <!-- LINE REPORT SCREEN -->
+  <div class="screen" id="screen-line">
+    <div style="padding:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)">📱 รายงาน Line</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px" id="line-date-lbl">—</div>
+        </div>
+        <button onclick="addLineItem()" style="background:var(--brand);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;display:flex;align-items:center;gap:6px">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>เพิ่มร้าน
+        </button>
+      </div>
+      <div id="line-items-list"></div>
+      <button id="line-submit-btn" onclick="submitLineReport()" style="width:100%;padding:14px;background:var(--success);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;margin-top:8px;display:none">
+        📤 ส่งรายงาน Line
+      </button>
+      <div id="line-history-section" style="margin-top:20px">
+        <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px">รายงานที่ส่งแล้ววันนี้</div>
+        <div id="line-history-list"><div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">ยังไม่มีรายการ</div></div>
+      </div>
+    </div>
+  </div>
+
 <!-- QUICK CHECK-IN MODAL -->
 <div class="ci-modal" id="ci-modal">
   <div class="ci-sheet">
@@ -2202,6 +2232,151 @@ function openShopHist(shopName) {
 function closeShopHist() {
   document.getElementById('shop-hist-modal').classList.remove('show');
   document.body.style.overflow='';
+}
+
+// ── LINE REPORT ──
+let lineItems = []; // [{shop:'', detail:'', photo:null}]
+
+function initLineReport() {
+  const now = new Date();
+  const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const lbl = document.getElementById('line-date-lbl');
+  if(lbl) lbl.textContent = `วัน${days[now.getDay()]}ที่ ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()+543}`;
+  if(!lineItems.length) lineItems = [];
+  renderLineItems();
+  loadLineHistory();
+}
+
+function addLineItem() {
+  lineItems.push({shop:'',detail:'',photo:null});
+  renderLineItems();
+}
+
+function removeLineItem(idx) {
+  lineItems.splice(idx,1);
+  renderLineItems();
+}
+
+function renderLineItems() {
+  const list = document.getElementById('line-items-list');
+  const submitBtn = document.getElementById('line-submit-btn');
+  if(!list) return;
+  if(!lineItems.length) {
+    list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius)">กด <b>+ เพิ่มร้าน</b> เพื่อเริ่มรายงาน</div>`;
+    if(submitBtn) submitBtn.style.display='none';
+    return;
+  }
+  const shops = salesShops.length>0 ? salesShops.map(s=>s.name||s) : masterData.shops.map(s=>s.name||s);
+  list.innerHTML = lineItems.map((item,i) => `
+    <div class="line-item-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--brand)">ร้านที่ ${i+1}</div>
+        <button onclick="removeLineItem(${i})" style="background:#fff0f0;border:none;border-radius:6px;padding:4px 10px;color:var(--accent);font-size:12px;cursor:pointer;font-family:'Sarabun',sans-serif">ลบ</button>
+      </div>
+      <div class="field-group">
+        <label class="field-label">ร้านค้า *</label>
+        <select class="field-select" id="line-shop-${i}" onchange="lineItems[${i}].shop=this.value">
+          <option value="">— เลือกร้าน —</option>
+          ${shops.map(s=>`<option value="${s}" ${item.shop===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">รูปหน้าจอ Line *</label>
+        <div class="line-photo-box ${item.photo?'has-photo':''}" id="line-photo-box-${i}" onclick="takeLinePhoto(${i})">
+          ${item.photo?`<img src="${item.photo}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`:
+          `<svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="28" height="28"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+          <span>กดเพื่ออัพโหลดรูป</span>`}
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">รายละเอียด</label>
+        <textarea class="field-textarea" id="line-detail-${i}" placeholder="เช่น ส่งโปรโมชั่น, ติดตามออเดอร์..." onchange="lineItems[${i}].detail=this.value" style="min-height:70px">${item.detail||''}</textarea>
+      </div>
+    </div>`).join('');
+  if(submitBtn) submitBtn.style.display='block';
+}
+
+function takeLinePhoto(idx) {
+  const input = document.createElement('input');
+  input.type='file'; input.accept='image/*'; input.capture='environment'; input.style.display='none';
+  document.body.appendChild(input);
+  input.onchange = () => {
+    if(!input.files||!input.files[0]){document.body.removeChild(input);return;}
+    const reader = new FileReader();
+    reader.onload = e => {
+      compressImage(e.target.result,800,0.6,compressed=>{
+        lineItems[idx].photo = compressed;
+        renderLineItems();
+        showToast('✓ อัพโหลดรูปสำเร็จ');
+      });
+    };
+    reader.readAsDataURL(input.files[0]);
+    document.body.removeChild(input);
+  };
+  input.click();
+}
+
+async function submitLineReport() {
+  // sync ค่าจาก DOM ก่อน submit
+  lineItems.forEach((item,i)=>{
+    const shopEl=document.getElementById('line-shop-'+i);
+    const detailEl=document.getElementById('line-detail-'+i);
+    if(shopEl) item.shop=shopEl.value;
+    if(detailEl) item.detail=detailEl.value;
+  });
+
+  // validate
+  for(let i=0;i<lineItems.length;i++){
+    if(!lineItems[i].shop){showToast(`กรุณาเลือกร้านค้า ร้านที่ ${i+1}`,'error');return;}
+    if(!lineItems[i].photo){showToast(`กรุณาอัพโหลดรูป Line ร้านที่ ${i+1}`,'error');return;}
+  }
+  if(!lineItems.length){showToast('กรุณาเพิ่มรายการร้านอย่างน้อย 1 ร้าน','error');return;}
+
+  const btn=document.getElementById('line-submit-btn');
+  if(btn){btn.textContent='⏳ กำลังส่ง...';btn.disabled=true;}
+
+  const payload={
+    action:'save_line_report',
+    employee:currentUser||'',
+    items:JSON.stringify(lineItems.map(item=>({shop:item.shop,detail:item.detail,photo:item.photo||''})))
+  };
+
+  try {
+    const res = await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    showToast(`✅ ส่งรายงาน Line ${lineItems.length} ร้านสำเร็จ`);
+    lineItems=[];
+    renderLineItems();
+    loadLineHistory();
+  } catch(e) {
+    showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
+  }
+  if(btn){btn.textContent='📤 ส่งรายงาน Line';btn.disabled=false;}
+}
+
+async function loadLineHistory() {
+  const histEl=document.getElementById('line-history-list');
+  if(!histEl) return;
+  const now=new Date();
+  const dd=String(now.getDate()).padStart(2,'0');
+  const mm=String(now.getMonth()+1).padStart(2,'0');
+  const yyyy=now.getFullYear();
+  const today=`${dd}/${mm}/${yyyy}`;
+  const data=await apiGet({action:'line_reports',employee:currentUser||'',date:today});
+  const rows=data?.rows||[];
+  if(!rows.length){
+    histEl.innerHTML='<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">ยังไม่มีรายการวันนี้</div>';
+    return;
+  }
+  histEl.innerHTML=rows.map(r=>`
+    <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      ${r.photo?`<a href="${r.photo}" target="_blank"><img src="${r.photo}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0"></a>`:'<div style="width:56px;height:56px;background:var(--surface2);border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">📱</div>'}
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${r.shop||'—'}</div>
+        ${r.detail?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${r.detail}</div>`:''}
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">✅ ส่งแล้ว</div>
+      </div>
+    </div>`).join('');
 }
 
 function levelDot(level){
