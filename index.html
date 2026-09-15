@@ -2276,10 +2276,11 @@ function renderLineItems() {
       </div>
       <div class="field-group">
         <label class="field-label">ร้านค้า *</label>
-        <select class="field-select" id="line-shop-${i}" onchange="lineItems[${i}].shop=this.value">
-          <option value="">— เลือกร้าน —</option>
-          ${shops.map(s=>`<option value="${s}" ${item.shop===s?'selected':''}>${s}</option>`).join('')}
-        </select>
+        <div class="ac-wrap">
+          <input class="ac-input" id="line-shop-input-${i}" placeholder="พิมพ์หรือค้นหาชื่อร้าน..." autocomplete="off" value="${item.shop||''}">
+          <div class="ac-list" id="line-shop-list-${i}"></div>
+          <input type="hidden" id="line-shop-${i}" value="${item.shop||''}">
+        </div>
       </div>
       <div class="field-group">
         <label class="field-label">รูปหน้าจอ Line *</label>
@@ -2295,6 +2296,23 @@ function renderLineItems() {
       </div>
     </div>`).join('');
   if(submitBtn) submitBtn.style.display='block';
+
+  // setup autocomplete สำหรับแต่ละร้าน
+  lineItems.forEach((_,i)=>{
+    const shopList = salesShops.length>0 ? salesShops.map(s=>s.name||s) : masterData.shops.map(s=>s.name||s);
+    createAutocomplete('line-shop-input-'+i,'line-shop-list-'+i,shopList,(val)=>{
+      lineItems[i].shop=val;
+      const hid=document.getElementById('line-shop-'+i);
+      if(hid) hid.value=val;
+    });
+    // พิมพ์เองก็เก็บค่า
+    const inp=document.getElementById('line-shop-input-'+i);
+    if(inp) inp.addEventListener('input',()=>{
+      lineItems[i].shop=inp.value;
+      const hid=document.getElementById('line-shop-'+i);
+      if(hid) hid.value=inp.value;
+    });
+  });
 }
 
 function takeLinePhoto(idx) {
