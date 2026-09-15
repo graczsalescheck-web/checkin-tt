@@ -777,12 +777,28 @@ function customNameKeydown(event){
   if(event.key==='Enter'){event.preventDefault();selectCustomName();}
 }
 
-function enterApp(){
+async function enterApp(){
   document.getElementById('name-screen').style.display='none';
   const first=(currentUser||'').split(' ')[0];
   document.getElementById('hero-name').textContent=first;
   document.getElementById('user-name-short').textContent=first;
-  loadMasterData();loadSalesShops();loadActiveVisits();loadDashboard();loadVisitPlan();loadNotifications();
+
+  // [PERF] เดิมยิง 6 API call แยกกันตอนเปิดแอพ (masterdata, salesshops, active_visits,
+  // dashboard, visitplan, notifications) แต่ละอันเปิดสเปรดชีตใหม่ทุกครั้ง ทำให้หน้าแรกโหลดช้า
+  // ตอนนี้ลองรวมเป็น 1 call เดียว (action=init) ก่อน ถ้า backend ยังไม่ได้ deploy โค้ดใหม่
+  // (หรือ error ใดๆ) จะ fallback กลับไปยิงแยกทีละตัวเหมือนเดิมทันที เพื่อไม่ให้แอพพัง
+  const initData=await apiGet({action:'init',employee:currentUser||'',period:currentPeriod});
+  if(initData&&initData.ok){
+    loadMasterData(initData.masterdata);
+    loadSalesShops(initData.salesshops);
+    loadActiveVisits(initData.activeVisits);
+    loadDashboard(initData.dashboard);
+    loadVisitPlan(initData.visitplan);
+    loadNotifications(initData.notifications);
+  } else {
+    loadMasterData();loadSalesShops();loadActiveVisits();loadDashboard();loadVisitPlan();loadNotifications();
+  }
+  flushPendingUploads(); // [FIX] ลองส่งรูป/รายงานที่ค้างจากครั้งก่อนซ้ำอีกครั้ง
 }
 
 // ══ [NEW] REFRESH HOME DATA ══
@@ -806,22 +822,78 @@ async function apiGet(params){
   }catch(e){console.warn('apiGet error:',e);return null;}
 }
 
-async function loadSalesShops(){
-  const data=await apiGet({action:'salesshops',employee:currentUser||''});
+// ══ [FIX] RELIABLE BACKGROUND UPLOAD (รูปถ่าย / Line report) ══
+// ปัญหาเดิม: fetch(mode:'no-cors') แบบไม่ await + ไม่มี retry -> ถ้าเน็ตหลุด/แอพถูกพักระหว่างพิมพ์
+// (เช่น สลับแอพหลัง Check-in เสร็จ) รูปที่ถ่ายไว้จะหายไปเงียบๆ โดยไม่มีการแจ้งเตือนหรือกู้คืน
+// ทางแก้: await การส่งเสมอ, retry อัตโนมัติ, และถ้าสุดท้ายยังไม่สำเร็จให้เก็บลง localStorage
+// เพื่อลองส่งซ้ำอัตโนมัติในครั้งถัดไปที่เปิดแอพ (flushPendingUploads)
+const PENDING_UPLOAD_KEY='pendingUploads_v1';
+
+function getPendingUploads(){
+  try{return JSON.parse(localStorage.getItem(PENDING_UPLOAD_KEY)||'[]');}catch(e){return [];}
+}
+function setPendingUploads(list){
+  try{localStorage.setItem(PENDING_UPLOAD_KEY,JSON.stringify(list));}catch(e){/* storage full/blocked - ignore */}
+}
+function queuePendingUpload(payload){
+  const list=getPendingUploads();
+  list.push({payload,queuedAt:Date.now()});
+  setPendingUploads(list);
+}
+
+// ส่ง POST ไปยัง GAS พร้อม retry (mode:no-cors ทำให้อ่าน response ไม่ได้ จึงพึ่งพา try/catch ของ network error เป็นหลัก)
+async function postToGAS(payload,retries){
+  retries = retries===undefined ? 2 : retries;
+  for(let attempt=0; attempt<=retries; attempt++){
+    try{
+      await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+      return true;
+    }catch(e){
+      console.warn('postToGAS attempt '+attempt+' failed:',e);
+      if(attempt<retries) await new Promise(r=>setTimeout(r,800*(attempt+1)));
+    }
+  }
+  return false;
+}
+
+// ใช้แทน fetch(...).catch(...) แบบเดิมสำหรับ payload ที่ "ต้องไม่หาย" เช่น รูปถ่าย
+async function postReliable(payload){
+  const ok=await postToGAS(payload,2);
+  if(!ok) queuePendingUpload(payload);
+  return ok;
+}
+
+// ลองส่งรายการที่ค้างซ้ำอีกครั้ง เรียกตอนเปิดแอพ/เข้าหน้าแรก
+async function flushPendingUploads(){
+  const list=getPendingUploads();
+  if(!list.length) return;
+  const stillPending=[];
+  for(const item of list){
+    const ok=await postToGAS(item.payload,1);
+    if(!ok) stillPending.push(item);
+  }
+  setPendingUploads(stillPending);
+  if(list.length && stillPending.length<list.length){
+    showToast('📤 ส่งรูปที่ค้างอยู่สำเร็จ '+(list.length-stillPending.length)+' รายการ');
+  }
+}
+
+async function loadSalesShops(preData){
+  const data=preData!==undefined?preData:await apiGet({action:'salesshops',employee:currentUser||''});
   salesShops=(data&&data.shops&&data.shops.length)?data.shops:[];
 }
 
-async function loadMasterData(){
-  const data=await apiGet({action:'masterdata'});
+async function loadMasterData(preData){
+  const data=preData!==undefined?preData:await apiGet({action:'masterdata'});
   if(data&&data.employees&&data.employees.length){masterData=data;showToast('✓ โหลดข้อมูลจาก Database สำเร็จ');}
   document.getElementById('last-sync').textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 }
 
 // ══ [NEW] DASHBOARD รองรับ period ══
-async function loadDashboard(){
+async function loadDashboard(preData){
   renderDashKPI(0,0,0,0,0);
   buildBarChart(null);
-  const data=await apiGet({action:'dashboard',employee:currentUser||'',period:currentPeriod});
+  const data=preData!==undefined?preData:await apiGet({action:'dashboard',employee:currentUser||'',period:currentPeriod});
   if(data&&(data.totalCheckins!==undefined||data.totalMonth!==undefined)){
     const total=data.totalCheckins!==undefined?data.totalCheckins:(data.totalMonth||0);
     renderDashKPI(total,data.totalValue||0,data.uniqueShops||0,data.successRate||0,data.todayCount||0);
@@ -913,8 +985,8 @@ let calYear=new Date().getFullYear();
 let calMonth=new Date().getMonth();
 let planData=[];
 
-async function loadVisitPlan(){
-  const data=await apiGet({action:'visitplan',employee:currentUser||''});
+async function loadVisitPlan(preData){
+  const data=preData!==undefined?preData:await apiGet({action:'visitplan',employee:currentUser||''});
   if(data&&data.plans){planData=data.plans;}
   else{planData=[];}
   renderCalendar();
@@ -1259,8 +1331,8 @@ function checkTodayPlan(){
   showToast(`📅 วันนี้มีแผน ${undone.length} ร้านที่ยังไม่ได้ Check-in`);
 }
 
-async function loadNotifications(){
-  const data=await apiGet({action:'notifications',employee:currentUser||''});
+async function loadNotifications(preData){
+  const data=preData!==undefined?preData:await apiGet({action:'notifications',employee:currentUser||''});
   const notifEl=document.getElementById('notif-list');if(!notifEl)return;
   const dismissed=getDismissed();
 
@@ -1363,8 +1435,8 @@ let ciGpsData={lat:null,lng:null,acquired:false};
 let activeVisits=[];let coData={};let coStep=0;let coOrderValue=0;let coGpsData={lat:null,lng:null,acquired:false};let coPhotoData=[null,null,null,null,null];let coPhotoStates=[false,false,false,false,false];
 const CO_STEPS=5;
 
-async function loadActiveVisits(){
-  const data=await apiGet({action:'active_visits',employee:currentUser||''});
+async function loadActiveVisits(preData){
+  const data=preData!==undefined?preData:await apiGet({action:'active_visits',employee:currentUser||''});
   activeVisits=(data&&data.visits)?data.visits:[];renderActiveVisits();
 }
 
@@ -1560,6 +1632,9 @@ const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,pro
     loadActiveVisits();
     loadDashboard();
     // อัพโหลดรูป 1-5 ใน background
+    // [FIX] เดิมยิง fetch แบบไม่ await + ไม่มี retry -> ถ้าเน็ตหลุดหรือผู้ใช้สลับแอพทันทีหลัง Check-in
+    // (ซึ่งเกิดขึ้นบ่อยเพราะ toast แจ้งสำเร็จไปแล้ว) รูปจะหายไปเงียบๆ ไม่มีทางกู้คืน
+    // ตอนนี้: await + retry 2 ครั้ง + ถ้ายังไม่สำเร็จจะ queue ไว้ส่งซ้ำอัตโนมัติตอนเปิดแอพครั้งถัดไป
     const photoPayload={action:'upload_photo',row:data.row,
       photo1:ciPhotoData[0]||'',
       photo2:ciPhotoData[1]||'',
@@ -1567,9 +1642,9 @@ const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,pro
       photo4:ciPhotoData[3]||'',
       photo5:ciPhotoData[4]||''
     };
-    fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify(photoPayload)
-    }).catch(e=>console.warn('Photo upload failed:',e));
+    postReliable(photoPayload).then(ok=>{
+      if(!ok) showToast('⚠️ รูปกำลังส่งในพื้นหลัง จะลองใหม่อัตโนมัติเมื่อเปิดแอพครั้งถัดไป','error');
+    });
   } else if(!data||(!data.ok&&data.reason!=='already_checkin')){
     if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}
     showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
@@ -1691,7 +1766,11 @@ function renderCoStep3(){return`<div class="field-group"><label class="field-lab
 function changeCoVal(d){coOrderValue=Math.max(0,coOrderValue+d);const el=document.getElementById('co-orderval');if(el)el.value=coOrderValue;}
 
 
-// ── [NEW] CHECKOUT STEP 0 — ถ่ายรูป 5 รูป ──
+// ── [DEAD CODE - ไม่ได้ถูกเรียกใช้แล้ว] เดิมเป็น CHECKOUT STEP ถ่ายรูป 5 รูป ──
+// [หมายเหตุ] ฟังก์ชันนี้ (และ takeCoPhotoIdx / coPhotoData / coPhotoStates ด้านล่าง)
+// ไม่ได้ถูกเรียกใน renderCoStep() อีกต่อไป เพราะ backend ย้ายการบันทึกรูปไปที่ Check-in
+// ทั้งหมดแล้ว (ดูคอมเมนต์ "รูปถ่ายย้ายไป Check-in แล้ว" ใน saveCheckout ฝั่ง Apps Script)
+// เก็บไว้เผื่ออ้างอิง แต่ไม่ควรเรียกใช้ซ้ำ เพราะรูปที่ถ่ายผ่านฟังก์ชันนี้จะไม่ถูกส่งไปบันทึกที่ไหนเลย
 function renderCoStepPhoto(){
   const labels=['รูปถ่าย 1 *','รูปถ่าย 2 *','รูปถ่ายเพิ่มเติม 3','รูปถ่ายเพิ่มเติม 4','รูปถ่ายเพิ่มเติม 5'];
   const grid = labels.map((lbl,i)=>`
@@ -1842,9 +1921,15 @@ async function submitCheckout(){
   const stockText=parsedStock.length>0?parsedStock.map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', '):(stockItems||[]).map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', ');
   const btn=document.getElementById('co-submit-btn');if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
   const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',stockItems:stockText,stockNote:coData.stockNote||''};
+  // [FIX] เดิมลอง POST 1 ครั้ง ถ้า throw ค่อย fallback เป็น GET (ไม่มี retry ระหว่างทาง)
+  // ตอนนี้ลอง POST พร้อม retry ก่อน แล้วค่อย fallback เป็น GET เป็นทางสุดท้าย
   let result=null;
-  try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});result={ok:true};}
-  catch(e){const sp={...payload,photo2:'',photo3:'',photo4:'',photo5:'',photo6:''};result=await apiGet(sp);}
+  const posted=await postToGAS(payload,1);
+  if(posted){
+    result={ok:true};
+  } else {
+    result=await apiGet(payload);
+  }
   if(btn){btn.textContent='🏁 Check-out';btn.disabled=false;}
   if(result&&result.ok){closeCoModal();showToast(`✅ Check-out ${coData.shop} สำเร็จ`);loadActiveVisits();loadDashboard();}
   else showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
@@ -2360,15 +2445,18 @@ async function submitLineReport() {
     items:JSON.stringify(lineItems.map(item=>({shop:item.shop,detail:item.detail,photo:item.photo||''})))
   };
 
-  try {
-    const res = await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+  // [FIX] เดิม await fetch ครั้งเดียวแล้วขึ้น "สำเร็จ" ทันที ทั้งที่ mode:no-cors อ่าน response ไม่ได้เลย
+  // (ถ้า GAS error หรือรูป Drive อัพโหลดไม่ผ่าน ผู้ใช้จะไม่มีทางรู้) ตอนนี้ใช้ postReliable ที่ retry
+  // และ queue ไว้ส่งซ้ำอัตโนมัติถ้าเน็ตหลุดจริงๆ
+  const ok = await postReliable(payload);
+  if(ok){
     showToast(`✅ ส่งรายงาน Line ${lineItems.length} ร้านสำเร็จ`);
-    lineItems=[];
-    renderLineItems();
-    loadLineHistory();
-  } catch(e) {
-    showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
+  } else {
+    showToast('⚠️ เน็ตไม่เสถียร ระบบจะส่งรายงานซ้ำอัตโนมัติเมื่อเปิดแอพครั้งถัดไป');
   }
+  lineItems=[];
+  renderLineItems();
+  loadLineHistory();
   if(btn){btn.textContent='📤 ส่งรายงาน Line';btn.disabled=false;}
 }
 
