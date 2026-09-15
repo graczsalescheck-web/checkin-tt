@@ -817,9 +817,16 @@ async function apiGet(params){
   try{
     const sp=new URLSearchParams();
     for(const [k,v] of Object.entries(params))sp.append(k,v===null||v===undefined?'':String(v));
-    const res=await fetch(GAS_URL+'?'+sp.toString(),{redirect:'follow'});
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),20000);
+    const res=await fetch(GAS_URL+'?'+sp.toString(),{redirect:'follow',signal:controller.signal});
+    clearTimeout(timer);
     return JSON.parse(await res.text());
-  }catch(e){console.warn('apiGet error:',e);return null;}
+  }catch(e){
+    if(e.name==='AbortError')showToast('เครือข่ายช้า กรุณาลองใหม่','error');
+    console.warn('apiGet error:',e);return null;
+  }
+}
 }
 
 // ══ [FIX] RELIABLE BACKGROUND UPLOAD (รูปถ่าย / Line report) ══
@@ -1921,15 +1928,7 @@ async function submitCheckout(){
   const stockText=parsedStock.length>0?parsedStock.map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', '):(stockItems||[]).map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', ');
   const btn=document.getElementById('co-submit-btn');if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
   const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',stockItems:stockText,stockNote:coData.stockNote||''};
-  // [FIX] เดิมลอง POST 1 ครั้ง ถ้า throw ค่อย fallback เป็น GET (ไม่มี retry ระหว่างทาง)
-  // ตอนนี้ลอง POST พร้อม retry ก่อน แล้วค่อย fallback เป็น GET เป็นทางสุดท้าย
-  let result=null;
-  const posted=await postToGAS(payload,1);
-  if(posted){
-    result={ok:true};
-  } else {
-    result=await apiGet(payload);
-  }
+  const result=await apiGet(payload);
   if(btn){btn.textContent='🏁 Check-out';btn.disabled=false;}
   if(result&&result.ok){closeCoModal();showToast(`✅ Check-out ${coData.shop} สำเร็จ`);loadActiveVisits();loadDashboard();}
   else showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
