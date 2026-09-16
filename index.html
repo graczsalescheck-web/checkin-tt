@@ -1662,7 +1662,6 @@ function getCiGPS() {
 
 async function submitCheckin(){
   const btn=document.getElementById('ci-submit-btn');
-  // [DEBOUNCE] ปิดปุ่มทันทีก่อนทำอะไรทั้งนั้น ป้องกันกดซ้ำ
   if(btn&&btn.disabled)return;
   if(btn){btn.disabled=true;btn.textContent='⏳ กำลัง Check-in...';}
 
@@ -1676,26 +1675,24 @@ async function submitCheckin(){
   if(!ciPhotoData[1]){showToast('กรุณาถ่ายรูปเชลฟ์ Gracz ก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
   if(!ciPhotoData[2]){showToast('กรุณาถ่ายรูปเชลฟ์คู่แข่งก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
   if(!ciGpsData.acquired){showToast('กรุณารับตำแหน่ง GPS ก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
-const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province,lat:ciGpsData.lat,lng:ciGpsData.lng});
 
-  // [GUARD] Backend ตอบว่า Check-in ซ้ำ
+  // [A] Optimistic UI — ปิด Modal + แจ้งสำเร็จทันที ไม่รอ GAS
+  closeCiModal();
+  showToast(`✅ Check-in ${shop} สำเร็จ`);
+  loadActiveVisits();
+  loadDashboard();
+
+  // ส่งข้อมูลจริงใน background
+  const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province,lat:ciGpsData.lat,lng:ciGpsData.lng});
+
   if(data&&!data.ok&&data.reason==='already_checkin'){
-    closeCiModal();
-    showToast(`กรุณา Check-out "${data.shop||'ร้านที่กำลังเยี่ยม'}" ก่อน`,'error');
+    showToast(`⚠️ มีการ Check-in "${data.shop||shop}" อยู่แล้ว`,'error');
     loadActiveVisits();
     return;
   }
 
   if(data&&data.ok){
-    // แจ้งสำเร็จทันที ไม่รอรูป
-    closeCiModal();
-    showToast(`✅ Check-in ${shop} สำเร็จ`);
-    loadActiveVisits();
-    loadDashboard();
-    // อัพโหลดรูป 1-5 ใน background
-    // [FIX] เดิมยิง fetch แบบไม่ await + ไม่มี retry -> ถ้าเน็ตหลุดหรือผู้ใช้สลับแอพทันทีหลัง Check-in
-    // (ซึ่งเกิดขึ้นบ่อยเพราะ toast แจ้งสำเร็จไปแล้ว) รูปจะหายไปเงียบๆ ไม่มีทางกู้คืน
-    // ตอนนี้: await + retry 2 ครั้ง + ถ้ายังไม่สำเร็จจะ queue ไว้ส่งซ้ำอัตโนมัติตอนเปิดแอพครั้งถัดไป
+    // อัพโหลดรูป background
     const photoPayload={action:'upload_photo',row:data.row,
       photo1:ciPhotoData[0]||'',
       photo2:ciPhotoData[1]||'',
@@ -1706,9 +1703,9 @@ const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,pro
     postReliable(photoPayload).then(ok=>{
       if(!ok) showToast('⚠️ รูปกำลังส่งในพื้นหลัง จะลองใหม่อัตโนมัติเมื่อเปิดแอพครั้งถัดไป','error');
     });
-  } else if(!data||(!data.ok&&data.reason!=='already_checkin')){
-    if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}
-    showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
+  } else if(data&&!data.ok){
+    showToast('⚠️ Check-in อาจไม่สำเร็จ กรุณาตรวจสอบประวัติ','error');
+    loadActiveVisits();
   }
 }
 
@@ -1980,12 +1977,20 @@ async function submitCheckout(){
   let parsedStock=[];
   try{parsedStock=JSON.parse(coData.stockItems||'[]');}catch(e){parsedStock=[];}
   const stockText=parsedStock.length>0?parsedStock.map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', '):(stockItems||[]).map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', ');
-  const btn=document.getElementById('co-submit-btn');if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
   const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',stockItems:stockText,stockNote:coData.stockNote||''};
-  const result=await apiGet(payload);
-  if(btn){btn.textContent='🏁 Check-out';btn.disabled=false;}
-  if(result&&result.ok){closeCoModal();showToast(`✅ Check-out ${coData.shop} สำเร็จ`);loadActiveVisits();loadDashboard();}
-  else showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
+
+  // [A] Optimistic UI — ปิด Modal + แจ้งสำเร็จทันที ไม่รอ GAS
+  closeCoModal();
+  showToast(`✅ Check-out ${coData.shop} สำเร็จ`);
+  loadActiveVisits();
+  loadDashboard();
+
+  // ส่งข้อมูลจริงใน background
+  apiGet(payload).then(result=>{
+    if(!result||!result.ok){
+      showToast('⚠️ Check-out อาจไม่สำเร็จ กรุณาตรวจสอบประวัติ','error');
+    }
+  });
 }
 
 // ══ AUTOCOMPLETE ══
