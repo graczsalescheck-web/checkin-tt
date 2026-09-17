@@ -720,22 +720,38 @@ let masterData   = {
   }
 })();
 
-(function init(){
+// [FIX สำคัญ] เดิมเรียก init() ทันทีตรงนี้ ขณะที่ตัวแปร let ด้านล่าง (toastTimer, activeVisits, planData ฯลฯ)
+// ยังไม่ถูกประกาศ (Temporal Dead Zone) → showToast() ใน enterApp() โยน ReferenceError
+// → enterApp หยุดทำงานทันที: ไม่โหลดข้อมูลหน้าแรก, ไม่โหลดร้านค้า, ไม่แสดงรายการ Check-out
+// (ผู้ใช้ต้องรอโหลดตอนกด Check-in และไม่เห็นปุ่ม Check-out จนกว่าจะกดรีเฟรช)
+// ตอนนี้รอให้สคริปต์ทั้งหมดโหลดเสร็จก่อน
+function init(){
   const now=new Date();
   const days=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
   const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   document.getElementById('hero-date').textContent=`วัน${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()+543}`;
   if(currentUser){enterApp();}else{loadEmployeesForSelect();}
-})();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+else setTimeout(init,0);
 
+let employeeChoices=[];
 async function loadEmployeesForSelect(){
-  const data=await apiGet({action:'masterdata'});
-  const emps=(data&&data.employees&&data.employees.length)?data.employees:['สมชาย ใจดี','วิชัย รักงาน','นภา มีสุข'];
+  // [PERF] แสดงรายชื่อจากข้อมูลในเครื่องก่อน แล้วค่อยอัปเดตจาก server
+  if(loadMasterDataFromCache())renderEmployeeChoices();
+  await loadMasterData(undefined);
+  if(!(masterData.employees||[]).length)await loadMasterData(await apiGet({action:'masterdata'},{silent:true}));
+  if(!currentUser)renderEmployeeChoices();
+}
+function renderEmployeeChoices(){
+  const emps=(masterData.employees||[]).length?masterData.employees:['สมชาย ใจดี','วิชัย รักงาน','นภา มีสุข'];
+  employeeChoices=emps.map(e=>String(e));
   const colors=['#534AB7','#0F6E56','#993C1D','#854F0B','#1a3a8f','#2f9e44'];
-  const employeeButtons=emps.map((e,i)=>{
-    const initials=e.split(' ').map(w=>w[0]).join('').slice(0,2);
+  // [FIX] เดิมใส่ชื่อลงใน onclick ตรงๆ → ชื่อที่มีเครื่องหมาย ' กดไม่ได้
+  const employeeButtons=employeeChoices.map((e,i)=>{
+    const initials=e.split(' ').map(w=>w[0]||'').join('').slice(0,2);
     const color=colors[i%colors.length];
-    return`<button class="name-btn" onclick="selectName('${e}')"><div class="avatar" style="background:${color}20;color:${color}">${initials}</div><span>${e}</span></button>`;
+    return`<button class="name-btn" onclick="selectName(employeeChoices[${i}])"><div class="avatar" style="background:${color}20;color:${color}">${esc(initials)}</div><span>${esc(e)}</span></button>`;
   }).join('');
   document.getElementById('name-grid').innerHTML=employeeButtons+
     `<button class="name-btn name-btn-other" type="button" onclick="showCustomNameInput()"><div class="avatar">+</div><span>อื่นๆ — พิมพ์ชื่อเอง</span></button>`;
@@ -783,75 +799,136 @@ async function enterApp(){
   document.getElementById('hero-name').textContent=first;
   document.getElementById('user-name-short').textContent=first;
 
-  // แสดง loading ทันที ไม่รอ API
-  showToast('⏳ กำลังโหลดข้อมูล...');
+  // ล้างสถานะของผู้ใช้ก่อนหน้า (กรณีกด "เปลี่ยน" ชื่อ)
+  activeVisits=[];planData=[];salesShops=[];salesShopsLoaded=false;allHistory=[];
 
-  // โหลดแบบ parallel ไม่รอรวม — แต่ละตัวโหลดอิสระ ไม่บล็อคหน้าจอ
-  const loadAll = () => {
-    loadMasterData();
-    loadSalesShops();
-    Promise.all([loadActiveVisits(),loadDashboard(),loadVisitPlan(),loadNotifications()]);
-  };
-
-  // ลอง init รวม (เร็วกว่าถ้า GAS ไม่ cold start)
-  // แต่ถ้าช้าเกิน 8 วิ ให้ fallback โหลดแยกทันที
-  let initDone = false;
-  const timeout = setTimeout(()=>{
-    if(!initDone){
-      console.warn('init timeout — fallback to separate calls');
-      loadAll();
-    }
-  }, 8000);
-
-  try{
-    const initData = await apiGet({action:'init',employee:currentUser||'',period:currentPeriod});
-    initDone = true;
-    clearTimeout(timeout);
-    if(initData&&initData.ok){
-      loadMasterData(initData.masterdata);
-      loadSalesShops(initData.salesshops);
-      loadActiveVisits(initData.activeVisits);
-      loadDashboard(initData.dashboard);
-      loadVisitPlan(initData.visitplan);
-      loadNotifications(initData.notifications);
-    } else {
-      loadAll();
-    }
-  } catch(e){
-    initDone = true;
-    clearTimeout(timeout);
-    loadAll();
+  // [PERF] ใช้ข้อมูลที่เก็บไว้ในเครื่องก่อน → หน้าจอพร้อมใช้ทันที ไม่ต้องรอ Google Sheet
+  loadMasterDataFromCache();
+  loadSalesShopsFromCache();
+  const snap=loadHomeSnapshot();
+  if(snap){
+    applyHomeData(snap,{fromCache:true,seq:homeSeq});
+    setSyncLabel('ข้อมูลเมื่อ '+hhmm(new Date(snap.t))+' · กำลังอัปเดต...');
+  }else{
+    renderActiveVisits();
+    showToast('⏳ กำลังโหลดข้อมูล...');
   }
 
-  flushPendingUploads();
+  // [PERF] เดิม: ถ้า init ช้าเกิน 8 วิ จะยิงอีก 6 request ซ้อน (ขณะที่ init ยังทำงานอยู่)
+  // → GAS ต้องทำงานซ้ำ 2 เท่า ยิ่งช้า ตอนนี้ใช้ init ตัวเดียว (timeout 60 วิ) fallback เฉพาะเมื่อ init ล้มเหลว
+  syncHome(false).finally(()=>{
+    flushPendingCheckouts();
+    flushPendingUploads();
+  });
+}
+
+// ══ HOME SYNC / SNAPSHOT ══
+let homeSeq=0;                 // เพิ่มทุกครั้งที่มีการเปลี่ยนแปลงในเครื่อง (check-in/out)
+function markHomeMutation(){homeSeq++;}
+function homeCacheKey(){return 'home_cache_v2_'+(currentUser||'');}
+function saveHomeSnapshot(d){
+  lsSet(homeCacheKey(),{t:Date.now(),activeVisits:d.activeVisits,dashboard:d.dashboard,visitplan:d.visitplan,notifications:d.notifications});
+}
+function loadHomeSnapshot(){
+  const s=lsGet(homeCacheKey(),null);
+  return (s&&s.t&&Date.now()-s.t<24*60*60*1000)?s:null;
+}
+function applyHomeData(d,opts){
+  opts=opts||{};
+  if(d.activeVisits)loadActiveVisits(d.activeVisits,opts.seq);
+  if(d.dashboard)loadDashboard(d.dashboard);
+  if(d.visitplan)loadVisitPlan(d.visitplan,opts.fromCache);
+  if(d.notifications)loadNotifications(d.notifications);
+}
+
+let homeSyncPromise=null,homeSyncSeq=-1;
+function syncHome(noCache){
+  // ใช้ request ที่กำลังวิ่งอยู่ซ้ำ ถ้าเริ่มหลังการเปลี่ยนแปลงล่าสุดแล้ว
+  if(homeSyncPromise&&homeSyncSeq===homeSeq&&!noCache)return homeSyncPromise;
+  const seq=homeSeq;
+  const p=(async()=>{
+    const initData=await apiGet({action:'init',employee:currentUser||'',period:currentPeriod,nocache:noCache?'1':''},{timeout:60000,silent:true});
+    if(initData&&initData.ok){
+      if(initData.masterdata)loadMasterData(initData.masterdata);
+      if(initData.salesshops)loadSalesShops(initData.salesshops);
+      applyHomeData(initData,{seq});
+      if(seq===homeSeq)saveHomeSnapshot(initData);
+      setSyncLabel(hhmm());
+      return true;
+    }
+    if(navigator.onLine===false){
+      setSyncLabel('ออฟไลน์ · ใช้ข้อมูลในเครื่อง');
+      return false;
+    }
+    // fallback: backend รุ่นเก่า/init ล้มเหลว → โหลดแยก
+    await Promise.all([loadMasterData(),loadSalesShops(),loadActiveVisits(),loadDashboard(),loadVisitPlan(),loadNotifications()]);
+    setSyncLabel(hhmm());
+    return false;
+  })();
+  homeSyncPromise=p;homeSyncSeq=seq;
+  p.finally(()=>{if(homeSyncPromise===p)homeSyncPromise=null;});
+  return p;
+}
+
+// หลังบันทึกสำเร็จ: ดึงข้อมูลหน้าแรกใหม่ (server cache ถูกล้างอัตโนมัติเมื่อมีการเขียน)
+function refreshAfterWrite(){
+  syncHome(false);
 }
 
 // ══ [NEW] REFRESH HOME DATA ══
 async function refreshHomeData(){
   const btn=document.getElementById('refresh-btn');
-  if(btn)btn.classList.add('spinning');
+  if(btn){if(btn.classList.contains('spinning'))return;btn.classList.add('spinning');}
   showToast('🔄 กำลังรีเฟรชข้อมูล...');
-  await Promise.all([loadActiveVisits(),loadDashboard(),loadVisitPlan(),loadNotifications()]);
-  document.getElementById('last-sync').textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  const ok=await syncHome(true);
   if(btn)btn.classList.remove('spinning');
-  showToast('✅ รีเฟรชข้อมูลสำเร็จ');
+  showToast(ok?'✅ รีเฟรชข้อมูลสำเร็จ':'⚠️ รีเฟรชไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต',ok?'ok':'error');
+  flushPendingCheckouts();
 }
 
 // ══ API ══
-async function apiGet(params){
+// [FIX] timeout เดิม 20 วิ และ clearTimeout ก่อนอ่าน body (อ่าน body ค้างได้ไม่จำกัด)
+// GAS cold start + อ่านชีตใหญ่ใช้เวลาเกิน 20 วิได้ → ถูกยกเลิกทั้งที่ฝั่ง server บันทึกสำเร็จแล้ว
+async function apiGet(params,opts){
+  opts=opts||{};
+  const sp=new URLSearchParams();
+  for(const [k,v] of Object.entries(params))sp.append(k,v===null||v===undefined?'':String(v));
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),opts.timeout||30000);
   try{
-    const sp=new URLSearchParams();
-    for(const [k,v] of Object.entries(params))sp.append(k,v===null||v===undefined?'':String(v));
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),20000);
     const res=await fetch(GAS_URL+'?'+sp.toString(),{redirect:'follow',signal:controller.signal});
-    clearTimeout(timer);
-    return JSON.parse(await res.text());
+    const text=await res.text();
+    try{return JSON.parse(text);}
+    catch(pe){console.warn('apiGet non-JSON response',res.status,text.slice(0,200));return null;}
   }catch(e){
-    if(e.name==='AbortError')showToast('เครือข่ายช้า กรุณาลองใหม่','error');
+    if(e.name==='AbortError'&&!opts.silent)showToast('เครือข่ายช้า กรุณาลองใหม่','error');
     console.warn('apiGet error:',e);return null;
-  }
+  }finally{clearTimeout(timer);}
 }
+
+// [FIX] POST ที่อ่านผลลัพธ์ได้ (text/plain = simple request ไม่มี preflight, GAS redirect → JSON + CORS)
+// ใช้กับข้อมูลยาว (Check-out) แทน GET — URL ยาวเกินจะถูก Google ปฏิเสธ
+async function apiPost(payload,opts){
+  opts=opts||{};
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),opts.timeout||45000);
+  try{
+    const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload),redirect:'follow',signal:controller.signal});
+    const text=await res.text();
+    try{return JSON.parse(text);}
+    catch(pe){console.warn('apiPost non-JSON response',res.status,text.slice(0,200));return null;}
+  }catch(e){
+    console.warn('apiPost error:',e);return null;
+  }finally{clearTimeout(timer);}
+}
+
+// ── helpers ──
+function esc(v){return escapeOptionText(v);}
+function localISODate(d){d=d||new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function hhmm(d){d=d||new Date();return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function setSyncLabel(text){const el=document.getElementById('last-sync');if(el)el.textContent=text;}
+function lsGet(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:JSON.parse(v);}catch(e){return fallback;}}
+function lsSet(key,val){try{localStorage.setItem(key,JSON.stringify(val));return true;}catch(e){return false;}}
 
 // ══ [FIX] RELIABLE BACKGROUND UPLOAD (รูปถ่าย / Line report) ══
 // ปัญหาเดิม: fetch(mode:'no-cors') แบบไม่ await + ไม่มี retry -> ถ้าเน็ตหลุด/แอพถูกพักระหว่างพิมพ์
@@ -872,17 +949,27 @@ function queuePendingUpload(payload){
   setPendingUploads(list);
 }
 
-// ส่ง POST ไปยัง GAS พร้อม retry (mode:no-cors ทำให้อ่าน response ไม่ได้ จึงพึ่งพา try/catch ของ network error เป็นหลัก)
+// ส่ง POST ไปยัง GAS พร้อม retry
+// [FIX] เดิมใช้ mode:no-cors อย่างเดียว → อ่านผลไม่ได้ ถ้า GAS error (เช่น หาแถวไม่เจอ) ก็ถือว่าสำเร็จ
+// ตอนนี้อ่านผลลัพธ์ก่อน ถ้าเบราว์เซอร์อ่านไม่ได้ค่อยถอยไปใช้ no-cors แบบเดิม
 async function postToGAS(payload,retries){
   retries = retries===undefined ? 2 : retries;
   for(let attempt=0; attempt<=retries; attempt++){
-    try{
-      await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
-      return true;
-    }catch(e){
-      console.warn('postToGAS attempt '+attempt+' failed:',e);
-      if(attempt<retries) await new Promise(r=>setTimeout(r,800*(attempt+1)));
+    const res=await apiPost(payload,{timeout:90000});
+    if(res&&res.ok)return true;
+    if(res&&res.ok===false&&!res.busy){
+      console.warn('postToGAS rejected by server:',res.error);
+      return 'rejected';
     }
+    if(!res){
+      try{
+        await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+        return true;
+      }catch(e){
+        console.warn('postToGAS attempt '+attempt+' failed:',e);
+      }
+    }
+    if(attempt<retries) await new Promise(r=>setTimeout(r,800*(attempt+1)));
   }
   return false;
 }
@@ -895,81 +982,94 @@ async function postReliable(payload){
 }
 
 // ลองส่งรายการที่ค้างซ้ำอีกครั้ง เรียกตอนเปิดแอพ/เข้าหน้าแรก
+let flushingUploads=false;
 async function flushPendingUploads(){
+  if(flushingUploads)return;
   const list=getPendingUploads();
   if(!list.length) return;
+  flushingUploads=true;
+  try{
   const stillPending=[];
   for(const item of list){
+    // เก็บไว้ไม่เกิน 7 วัน
+    if(Date.now()-(item.queuedAt||0)>7*24*60*60*1000)continue;
     const ok=await postToGAS(item.payload,1);
     if(!ok) stillPending.push(item);
   }
-  setPendingUploads(stillPending);
+  // รวมรายการที่ถูกเพิ่มเข้ามาระหว่างส่ง
+  const latest=getPendingUploads();
+  const added=latest.filter(x=>!list.some(y=>y.queuedAt===x.queuedAt));
+  setPendingUploads(stillPending.concat(added));
   if(list.length && stillPending.length<list.length){
     showToast('📤 ส่งรูปที่ค้างอยู่สำเร็จ '+(list.length-stillPending.length)+' รายการ');
   }
+  }finally{flushingUploads=false;}
+}
+
+// [FIX] เดิม: ถ้าพนักงานไม่มีร้านใน SalesShops (ผลว่าง) จะไม่ถูก cache
+// → ทุกครั้งที่กด Check-in ต้องรอโหลดจาก Google Sheet ใหม่ (สาเหตุ Check-in ช้า)
+const SALES_SHOPS_TTL=3*60*60*1000;
+const MASTER_DATA_TTL=6*60*60*1000;
+let salesShopsLoaded=false;
+
+function loadSalesShopsFromCache(){
+  const c=lsGet('ss_cache_v2_'+(currentUser||''),null);
+  if(c&&Array.isArray(c.shops)&&Date.now()-c.t<SALES_SHOPS_TTL){
+    salesShops=c.shops;salesShopsLoaded=true;return true;
+  }
+  return false;
 }
 
 async function loadSalesShops(preData){
-  // Cache 3 ชั่วโมง
-  const cKey='ss_cache_'+(currentUser||'');
-  const cTime=localStorage.getItem(cKey+'_t');
-  const cData=localStorage.getItem(cKey);
-  if(!preData&&cData&&cTime&&(Date.now()-Number(cTime))<3*60*60*1000){
-    try{const parsed=JSON.parse(cData);if(parsed&&parsed.length){salesShops=parsed;return;}}catch(e){}
+  if(preData===undefined&&loadSalesShopsFromCache())return;
+  const data=preData!==undefined?preData:await apiGet({action:'salesshops',employee:currentUser||''},{silent:true});
+  if(!data||!Array.isArray(data.shops))return; // เน็ตล้มเหลว: เก็บข้อมูลเดิมไว้
+  salesShops=data.shops;salesShopsLoaded=true;
+  lsSet('ss_cache_v2_'+(currentUser||''),{t:Date.now(),shops:salesShops});
+}
+
+function loadMasterDataFromCache(){
+  const c=lsGet('md_cache_v2',null);
+  if(c&&c.data&&Array.isArray(c.data.employees)&&c.data.employees.length&&Date.now()-c.t<MASTER_DATA_TTL){
+    masterData=Object.assign({},masterData,c.data);return true;
   }
-  const data=preData!==undefined?preData:await apiGet({action:'salesshops',employee:currentUser||''});
-  salesShops=(data&&data.shops&&data.shops.length)?data.shops:[];
-  if(salesShops.length){
-    try{localStorage.setItem(cKey,JSON.stringify(salesShops));localStorage.setItem(cKey+'_t',String(Date.now()));}catch(e){}
-  }
+  return false;
 }
 
 async function loadMasterData(preData){
-  // Cache 6 ชั่วโมง
-  if(!preData){
-    const cTime=localStorage.getItem('md_cache_t');
-    const cData=localStorage.getItem('md_cache');
-    if(cData&&cTime&&(Date.now()-Number(cTime))<6*60*60*1000){
-      try{
-        const parsed=JSON.parse(cData);
-        if(parsed&&parsed.employees&&parsed.employees.length){
-          masterData=parsed;
-          showToast('✓ โหลดข้อมูลสำเร็จ');
-          document.getElementById('last-sync').textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
-          return;
-        }
-      }catch(e){}
-    }
+  if(preData===undefined&&loadMasterDataFromCache())return;
+  const data=preData!==undefined?preData:await apiGet({action:'masterdata'},{silent:true});
+  if(data&&Array.isArray(data.employees)&&data.employees.length){
+    masterData=Object.assign({},masterData,data);
+    lsSet('md_cache_v2',{t:Date.now(),data});
   }
-  const data=preData!==undefined?preData:await apiGet({action:'masterdata'});
-  if(data&&data.employees&&data.employees.length){
-    masterData=data;
-    showToast('✓ โหลดข้อมูลจาก Database สำเร็จ');
-    try{localStorage.setItem('md_cache',JSON.stringify(data));localStorage.setItem('md_cache_t',String(Date.now()));}catch(e){}
-  }
-  document.getElementById('last-sync').textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 }
 
 // ══ [NEW] DASHBOARD รองรับ period ══
 async function loadDashboard(preData){
-  renderDashKPI(0,0,0,0,0);
-  buildBarChart(null);
-  const data=preData!==undefined?preData:await apiGet({action:'dashboard',employee:currentUser||'',period:currentPeriod});
+  let data=preData;
+  if(data===undefined){
+    renderDashKPI(0,0,0,0,0);
+    buildBarChart(null);
+    data=await apiGet({action:'dashboard',employee:currentUser||'',period:currentPeriod},{silent:true});
+  }
   if(data&&(data.totalCheckins!==undefined||data.totalMonth!==undefined)){
     const total=data.totalCheckins!==undefined?data.totalCheckins:(data.totalMonth||0);
-    renderDashKPI(total,data.totalValue||0,data.uniqueShops||0,data.successRate||0,data.todayCount||0);
+    renderDashKPI(total,data.totalValue||0,data.uniqueShops||0,data.successRate||0,data.todayCount||0,data.monthCount);
     buildBarChart(data.daily);
   }
 }
 
-function renderDashKPI(total,value,shops,rate,today){
+function renderDashKPI(total,value,shops,rate,today,monthCount){
   const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   s('kpi-total',total||'—');
   s('kpi-value',value?'฿'+(value/1000).toFixed(0)+'K':'—');
   s('kpi-shops',shops||'—');
   s('kpi-rate',rate?rate+'%':'—');
   s('stat-today',today||'—');
-  s('stat-month',total||'—');
+  // [FIX] "เดือนนี้" เดิมแสดงยอดตามช่วงที่เลือกใน Dashboard (ค่าเริ่มต้น = 7 วัน)
+  if(monthCount!==undefined)s('stat-month',monthCount||'—');
+  else if(currentPeriod==='month')s('stat-month',total||'—');
   s('stat-rate',rate?rate+'%':'—');
 }
 
@@ -1046,13 +1146,13 @@ let calYear=new Date().getFullYear();
 let calMonth=new Date().getMonth();
 let planData=[];
 
-async function loadVisitPlan(preData){
-  const data=preData!==undefined?preData:await apiGet({action:'visitplan',employee:currentUser||''});
-  if(data&&data.plans){planData=data.plans;}
-  else{planData=[];}
+async function loadVisitPlan(preData,quiet){
+  const data=preData!==undefined?preData:await apiGet({action:'visitplan',employee:currentUser||''},{silent:true});
+  if(data&&Array.isArray(data.plans)){planData=data.plans;}
+  else if(preData!==undefined){planData=[];}
   renderCalendar();
   // [NEW] แจ้งเตือนแผนวันนี้หลังโหลด plan เสร็จ
-  checkTodayPlan();
+  if(!quiet)checkTodayPlan();
 }
 
 function changeCalMonth(dir){
@@ -1134,7 +1234,12 @@ function showDayDetail(dateKey,dayNum){
   const panel=document.getElementById('day-detail');panel.style.display='block';panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-function changeName(){localStorage.removeItem('checkin_user');currentUser=null;document.getElementById('name-screen').style.display='flex';loadEmployeesForSelect();}
+function changeName(){
+  localStorage.removeItem('checkin_user');currentUser=null;
+  activeVisits=[];planData=[];salesShops=[];salesShopsLoaded=false;allHistory=[];coData={};
+  markHomeMutation();
+  document.getElementById('name-screen').style.display='flex';loadEmployeesForSelect();
+}
 
 function switchScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1215,7 +1320,7 @@ function renderStep1(){
 
 function renderStep2(){
   return`<div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด <span class="req">*</span></label><select class="field-select" id="f-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div>
-  <div class="field-group"><label class="field-label">ระบุเดือน ปี <span class="req">*</span></label><input class="field-input" type="date" id="f-orderdate" value="${new Date().toISOString().slice(0,10)}"></div>
+  <div class="field-group"><label class="field-label">ระบุเดือน ปี <span class="req">*</span></label><input class="field-input" type="date" id="f-orderdate" value="${localISODate()}"></div>
   <div class="field-group"><label class="field-label">มูลค่า (บาท)</label><div class="number-input"><button class="number-btn" type="button" onclick="changeVal(-1000)">−</button><input class="field-input" type="number" id="order-val" value="0" min="0" oninput="orderValue=parseInt(this.value)||0"><button class="number-btn" type="button" onclick="changeVal(1000)">+</button></div></div>
   <div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" type="text" id="f-noreason" placeholder="กรณีไม่สั่งซื้อ"></div>
   <div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี <span class="req">*</span></label><textarea class="field-textarea" id="f-gracz" placeholder="ระบุรุ่นที่ขายดีในร้านนี้..."></textarea></div>`;}
@@ -1388,6 +1493,8 @@ function checkTodayPlan(){
   // ตรวจว่าแจ้งเตือนวันนี้ไปแล้วหรือยัง
   const key=`today-plan-${todayStr}`;
   if(getDismissed().includes(key))return;
+  if(window._todayPlanShown===todayStr)return;
+  window._todayPlanShown=todayStr;
   // แสดง toast แจ้งเตือน
   showToast(`📅 วันนี้มีแผน ${undone.length} ร้านที่ยังไม่ได้ Check-in`);
 }
@@ -1438,7 +1545,7 @@ function populateAdminDropdowns(){
   if(adminInp)adminInp.value='';if(adminHid)adminHid.value='';
   setTimeout(()=>{createAutocomplete('admin-shop-input','admin-shop-list',myShops,(val)=>{const h=document.getElementById('admin-shop');if(h)h.value=val;});},100);
   const empSel=document.getElementById('admin-employee');if(empSel)empSel.value=currentUser||'';
-  const di=document.getElementById('admin-date');if(di&&!di.value)di.value=new Date().toISOString().slice(0,10);
+  const di=document.getElementById('admin-date');if(di&&!di.value)di.value=localISODate();
 }
 
 function changeAdminMonth(dir){
@@ -1458,9 +1565,11 @@ async function renderAdminMonth(){
   const shopLevelMap3={};
   masterData.shops.forEach(s=>{if(s.level)shopLevelMap3[s.name||s]=s.level;});
   if(!plans.length){list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">ยังไม่มีแผนในเดือนนี้</div>';return;}
-  list.innerHTML=plans.map(p=>{
-    const d=new Date(p.date);const day=d.getDate().toString().padStart(2,'0');const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
-    return`<div class="plan-list-item"><div><div class="plan-list-shop" style="display:flex;align-items:center">${levelDot(shopLevelMap3[p.shopName]||'')}${p.shopName}</div><div class="plan-list-meta">${p.employee||'—'} ${p.note?'· '+p.note:''}</div></div><div style="display:flex;align-items:center;gap:4px"><div class="plan-list-date">${days[d.getDay()]} ${day}</div><button class="plan-del-btn" onclick="deletePlanItem(${p.row},'${p.shopName}','${day}')" title="ลบ">✕</button></div></div>`;
+  adminPlans=plans;
+  list.innerHTML=plans.map((p,i)=>{
+    const [py,pm,pd]=String(p.date).split('-').map(Number);
+    const d=new Date(py,(pm||1)-1,pd||1);const day=d.getDate().toString().padStart(2,'0');const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
+    return`<div class="plan-list-item"><div><div class="plan-list-shop" style="display:flex;align-items:center">${levelDot(shopLevelMap3[p.shopName]||'')}${esc(p.shopName)}</div><div class="plan-list-meta">${esc(p.employee||'—')} ${p.note?'· '+esc(p.note):''}</div></div><div style="display:flex;align-items:center;gap:4px"><div class="plan-list-date">${days[d.getDay()]} ${day}</div><button class="plan-del-btn" onclick="deletePlanAt(${i})" title="ลบ">✕</button></div></div>`;
   }).join('');
 }
 
@@ -1483,9 +1592,15 @@ async function addAdminPlan(){
   else showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
 }
 
-async function deletePlanItem(row,shopName,dateStr){
+let adminPlans=[];
+function deletePlanAt(i){
+  const p=adminPlans[i];if(!p)return;
+  deletePlanItem(p.row,p.shopName,String(p.date).slice(8,10),p);
+}
+async function deletePlanItem(row,shopName,dateStr,plan){
   if(!confirm(`ลบแผน "${shopName}" วันที่ ${dateStr} ใช่ไหม?\nการลบไม่สามารถเรียกคืนได้`))return;
-  const data=await apiGet({action:'delete_plan',row});
+  // [FIX] ส่งข้อมูลแผนไปด้วย ให้ server ตรวจว่าแถวนั้นยังเป็นแผนเดิม (แถวเลื่อนได้หลังมีการเพิ่มแผน)
+  const data=await apiGet({action:'delete_plan',row,date:plan?plan.date:'',shop:plan?plan.shopName:shopName,employee:plan?plan.employee:''});
   if(data&&data.ok){showToast('✓ ลบแผนแล้ว');renderAdminMonth();loadVisitPlan();}
   else showToast('เกิดข้อผิดพลาด','error');
 }
@@ -1496,17 +1611,52 @@ let ciGpsData={lat:null,lng:null,acquired:false};
 let activeVisits=[];let coData={};let coStep=0;let coOrderValue=0;let coGpsData={lat:null,lng:null,acquired:false};let coPhotoData=[null,null,null,null,null];let coPhotoStates=[false,false,false,false,false];
 const CO_STEPS=5;
 
-async function loadActiveVisits(preData){
-  const data=preData!==undefined?preData:await apiGet({action:'active_visits',employee:currentUser||''});
-  activeVisits=(data&&data.visits)?data.visits:[];renderActiveVisits();
+// ref ที่เพิ่ง Check-out สำเร็จ — กันข้อมูลเก่าที่ตอบกลับช้าทำให้การ์ดโผล่กลับมา
+const recentlyCheckedOut={};
+function markRecentlyCheckedOut(ref){recentlyCheckedOut[ref]=Date.now();}
+function isRecentlyCheckedOut(ref){const t=recentlyCheckedOut[ref];return !!t&&Date.now()-t<5*60*1000;}
+
+// [FIX] เดิม: เรียก loadActiveVisits() ทันทีหลังกด Check-out (ก่อน server บันทึกเสร็จ)
+// → ได้ข้อมูลเก่ากลับมา การ์ดร้านเดิมโผล่กลับ → ผู้ใช้กดใหม่แล้วต้องกรอกข้อมูลใหม่ทั้งหมด
+// ตอนนี้: ตัดรายการที่กำลังส่ง Check-out / เพิ่ง Check-out ออก และไม่ใช้ผลลัพธ์ที่เริ่มก่อนการเปลี่ยนแปลงล่าสุด
+async function loadActiveVisits(preData,seqAtStart){
+  let seq=seqAtStart;
+  let data=preData;
+  if(data===undefined){
+    seq=homeSeq;
+    data=await apiGet({action:'active_visits',employee:currentUser||''},{silent:true});
+  }
+  if(seq!==undefined&&seq!==homeSeq){renderActiveVisits();return;} // ข้อมูลเก่ากว่าสถานะในเครื่อง
+  if(!data||!Array.isArray(data.visits)){renderActiveVisits();return;} // เน็ตล้มเหลว: ไม่ล้างรายการเดิม
+  const pendingRefs=new Set(getPendingCheckouts().map(x=>x.ref));
+  const server=data.visits.filter(v=>!pendingRefs.has(v.ref)&&!isRecentlyCheckedOut(v.ref));
+  const localPending=activeVisits.filter(v=>v._pending&&!server.some(s=>s.shop===v.shop));
+  activeVisits=server.concat(localPending);
+  renderActiveVisits();
+}
+
+function visitTimeText(v){
+  let t=v.checkinHHmm||'';
+  let dStr=v.checkinDate||'';
+  if(!t&&v.checkinTime){
+    const d=new Date(v.checkinTime);
+    if(!isNaN(d)){t=hhmm(d);dStr=localISODate(d);}
+    else{const m=String(v.checkinTime).match(/(\d{1,2}):(\d{2})/);if(m)t=m[1].padStart(2,'0')+':'+m[2];}
+  }
+  if(!t)return '—';
+  if(dStr&&dStr!==localISODate()){const p=dStr.split('-');return `${Number(p[2])}/${Number(p[1])} ${t} น.`;}
+  return t+' น.';
 }
 
 function renderActiveVisits(){
   const el=document.getElementById('active-visits-list');if(!el)return;
   const ciBtn=document.getElementById('ci-quick-btn');
 
+  const pendingCo=getPendingCheckouts();
+  const pendingHtml=pendingCo.map(p=>`<div class="checkin-block-msg" style="justify-content:space-between"><span>📶 รอส่ง Check-out: <b>${esc(p.shop)}</b></span><button onclick="flushPendingCheckouts(true)" style="background:#fff;border:1px solid #f3d076;border-radius:6px;padding:4px 10px;font-size:12px;color:#854f0b;cursor:pointer;font-family:'Sarabun',sans-serif;flex-shrink:0">ส่งอีกครั้ง</button></div>`).join('');
+
   if(!activeVisits.length){
-    el.innerHTML=`<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in วันนี้</div>`;
+    el.innerHTML=pendingHtml+`<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in วันนี้</div>`;
     if(ciBtn){ciBtn.disabled=false;ciBtn.innerHTML='<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="18" height="18"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg> Check-in ร้านใหม่';}
     const msgEl=document.getElementById('checkin-block-msg');if(msgEl)msgEl.remove();
     return;
@@ -1525,80 +1675,130 @@ function renderActiveVisits(){
     ciBtn?ciBtn.insertAdjacentElement('afterend',msg):el.insertAdjacentElement('beforebegin',msg);
   }
 
-  el.innerHTML=activeVisits.map(v=>{
-    const t=v.checkinTime?String(v.checkinTime).slice(0,5)+' น.':'—';
-    return`<div class="visit-card active-ci"><div class="visit-shop">${v.shop}</div><div class="visit-time">⏰ Check-in ${t} · ${v.province||''}</div><div class="visit-actions"><button class="btn-checkout" onclick="openCheckout('${v.ref}',${v.row},'${v.shop}',${v.lat||0},${v.lng||0})">🏁 Check-out + กรอกข้อมูล</button></div></div>`;
+  // [FIX] เดิมใส่ชื่อร้านลงใน onclick ตรงๆ → ร้านที่มีเครื่องหมาย ' ทำให้ปุ่ม Check-out กดไม่ได้เลย
+  // [FIX] เวลาเดิมใช้ String(checkinTime).slice(0,5) → ได้ "2026-" แทนเวลา
+  el.innerHTML=pendingHtml+activeVisits.map((v,i)=>{
+    const draft=v.ref?getCoDraft(v.ref):null;
+    const btn=v._pending
+      ?`<button class="btn-checkout" disabled style="opacity:.6;cursor:wait">⏳ กำลังบันทึก Check-in...</button>`
+      :`<button class="btn-checkout" onclick="openCheckoutAt(${i})">🏁 ${draft?'Check-out (กรอกต่อจากเดิม)':'Check-out + กรอกข้อมูล'}</button>`;
+    return`<div class="visit-card active-ci"><div class="visit-shop">${esc(v.shop)}</div><div class="visit-time">⏰ Check-in ${esc(visitTimeText(v))} · ${esc(v.province||'')}</div>${draft?`<div style="font-size:11px;color:var(--brand);margin-top:4px">📝 มีข้อมูลที่กรอกค้างไว้ (ขั้นที่ ${(draft.coStep||0)+1}/${CO_STEPS})</div>`:''}<div class="visit-actions">${btn}</div></div>`;
   }).join('');
 }
 
-// เปิด Modal Check-in พร้อมกรอกชื่อร้านล่วงหน้า
-function openCheckinModalWithShop(shopName){
-  // ปิด day detail panel ก่อน
-  document.getElementById('day-detail').style.display='none';
-  // เปิด modal ปกติ
-  openCheckinModal();
-  // รอให้ autocomplete พร้อมแล้วค่อย set ค่า
-  setTimeout(()=>{
-    const inp=document.getElementById('ci-shop-input');
-    const hid=document.getElementById('ci-shop');
-    if(inp)inp.value=shopName;
-    if(hid)hid.value=shopName;
-    // ดึง province จาก salesShops หรือ masterData
-    const allShops=salesShops.length>0?salesShops:masterData.shops;
-    const found=allShops.find(s=>(s.name||s)===shopName);
-    if(found&&found.province)window._ciProvince=found.province;
-  },200);
+function openCheckoutAt(i){
+  const v=activeVisits[i];
+  if(!v||v._pending)return;
+  openCheckout(v.ref,v.row,v.shop,Number(v.lat)||0,Number(v.lng)||0);
 }
 
-async function openCheckinModal(){
-  // [GUARD] ตรวจสอบว่ามี active visit อยู่แล้วไหม
-  if(activeVisits&&activeVisits.length>0){
-    showToast(`กรุณา Check-out "${activeVisits[0].shop}" ก่อน`,'error');
+// เปิด Modal Check-in พร้อมกรอกชื่อร้านล่วงหน้า
+async function openCheckinModalWithShop(shopName){
+  // ปิด day detail panel ก่อน
+  document.getElementById('day-detail').style.display='none';
+  const allShops=salesShops.length>0?salesShops:masterData.shops;
+  const found=allShops.find(s=>(s.name||s)===shopName);
+  await openCheckinModal({shop:shopName,province:(found&&found.province)||''});
+}
+
+function ciShopItems(){
+  return salesShops.length>0?salesShops:(masterData.shops||[]);
+}
+
+function populateCiProvinces(selected){
+  const provSel=document.getElementById('ci-province');
+  if(!provSel)return;
+  const current=selected!==undefined?selected:provSel.value;
+  const list=(masterData.provinces||[]).slice();
+  if(current&&!list.includes(current))list.unshift(current);
+  provSel.innerHTML='<option value="">— เลือกจังหวัด —</option>'+list.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  provSel.value=current||'';
+}
+
+function setCiPhotoBox(n,dataUrl){
+  const box=document.getElementById('ci-photo-box-'+n);
+  if(!box)return;
+  let img=box.querySelector('img.thumb');
+  const sp=box.querySelector('span');const sv=box.querySelector('svg');
+  if(!dataUrl){
+    box.classList.remove('has-photo');
+    if(img)img.remove();
+    if(sp)sp.style.display='';if(sv)sv.style.display='';
     return;
   }
-  // [GUARD] รอโหลดข้อมูลถ้ายังไม่พร้อม
-  if(!masterData.provinces.length||!salesShops.length){
-    showToast('กำลังโหลดข้อมูล กรุณารอสักครู่...','warn');
-    await Promise.all([
-      masterData.provinces.length?Promise.resolve():loadMasterData(),
-      salesShops.length?Promise.resolve():loadSalesShops()
-    ]);
+  box.classList.add('has-photo');
+  if(!img){img=document.createElement('img');img.className='thumb';img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;z-index:0;';box.prepend(img);}
+  img.src=dataUrl;
+  if(sp)sp.style.display='none';if(sv)sv.style.display='none';
+}
+
+// restore = {shop, province, photos:[5], gps:{lat,lng}} — ใช้กู้ข้อมูลเมื่อส่งไม่สำเร็จ (ไม่ต้องถ่ายรูปใหม่)
+async function openCheckinModal(restore){
+  restore=restore&&typeof restore==='object'&&!(restore instanceof Event)?restore:null;
+  // [GUARD] ตรวจสอบว่ามี active visit อยู่แล้วไหม
+  if(activeVisits&&activeVisits.length>0){
+    const v=activeVisits[0];
+    showToast(v._pending?`กำลังบันทึก Check-in "${v.shop}" กรุณารอสักครู่`:`กรุณา Check-out "${v.shop}" ก่อน`,'error');
+    return;
   }
-  ciPhotoData=[null,null,null,null,null];ciGpsData={lat:null,lng:null,acquired:false};
-  const ciShopItems=salesShops.length>0?salesShops:masterData.shops;
+  // [GUARD] มี Check-out ค้างส่ง → ต้องส่งให้สำเร็จก่อน ไม่งั้น server จะปฏิเสธ Check-in ใหม่
+  if(getPendingCheckouts().length){
+    showToast('⏳ กำลังส่ง Check-out ที่ค้างอยู่...');
+    await flushPendingCheckouts();
+    if(getPendingCheckouts().length){
+      showToast(`📶 ยังส่ง Check-out "${getPendingCheckouts()[0].shop}" ไม่สำเร็จ กรุณาเชื่อมต่อเน็ตแล้วลองใหม่`,'error');
+      return;
+    }
+  }
+  // [PERF] เดิมรอโหลด masterdata + salesShops ทุกครั้งที่ salesShops ว่าง (พนักงานไม่มีร้านใน SalesShops = รอทุกครั้ง)
+  // ตอนนี้เปิดทันทีด้วยข้อมูลที่มี แล้วโหลดส่วนที่ขาดในพื้นหลัง
+  if(!ciShopItems().length){
+    showToast('กำลังโหลดรายชื่อร้านค้า...');
+    await Promise.all([loadMasterData(),loadSalesShops()]);
+  }else{
+    if(!(masterData.provinces||[]).length)loadMasterData().then(()=>populateCiProvinces());
+    if(!salesShopsLoaded)loadSalesShops().then(()=>bindCiAutocomplete());
+  }
+
+  ciPhotoData=restore&&restore.photos?restore.photos.slice():[null,null,null,null,null];
+  ciGpsData=restore&&restore.gps&&restore.gps.lat!=null?{lat:restore.gps.lat,lng:restore.gps.lng,acquired:true}:{lat:null,lng:null,acquired:false};
+  window._ciProvince=restore?restore.province||'':'';
+
   const ciShopInp=document.getElementById('ci-shop-input');const ciShopHid=document.getElementById('ci-shop');
-  if(ciShopInp)ciShopInp.value='';if(ciShopHid)ciShopHid.value='';
+  if(ciShopInp)ciShopInp.value=restore?restore.shop||'':'';
+  if(ciShopHid)ciShopHid.value=restore?restore.shop||'':'';
+  populateCiProvinces(restore?restore.province||'':'');
+  bindCiAutocomplete();
+
+  // reset / restore รูปทั้ง 5 ช่อง
+  for(let i=1;i<=5;i++)setCiPhotoBox(i,ciPhotoData[i-1]);
+
+  const btn=document.getElementById('ci-submit-btn');
+  if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}
+  document.getElementById('ci-modal').classList.add('show');
+  if(ciGpsData.acquired){
+    document.getElementById('ci-gps-text').textContent=`${ciGpsData.lat.toFixed(5)}, ${ciGpsData.lng.toFixed(5)}`;
+    const gb=document.getElementById('ci-gps-btn');if(gb){gb.textContent='รีเฟรช';gb.disabled=false;}
+  }else{
+    document.getElementById('ci-gps-text').textContent='กดรับตำแหน่ง';
+    getCiGPS();
+  }
+}
+
+function bindCiAutocomplete(){
   // รวม note จาก planData วันนี้เข้ากับ salesShops
-  const today=new Date().toISOString().slice(0,10);
+  const today=localISODate();
   const noteMap={};
   planData.filter(p=>p.date===today).forEach(p=>{if(p.note)noteMap[p.shopName]=p.note;});
-  const ciShopItemsWithNote=ciShopItems.map(s=>({...s,note:noteMap[s.name||s]||''}));
-  // populate จังหวัด dropdown
-  const provSel=document.getElementById('ci-province');
-  if(provSel){
-    provSel.innerHTML='<option value="">— เลือกจังหวัด —</option>'+
-      masterData.provinces.map(p=>`<option value="${p}">${p}</option>`).join('');
-  }
-  createAutocomplete('ci-shop-input','ci-shop-list',ciShopItemsWithNote,(val,item)=>{
+  const items=ciShopItems().map(s=>(typeof s==='object'?{...s,note:noteMap[s.name]||''}:{name:s,note:noteMap[s]||''}));
+  createAutocomplete('ci-shop-input','ci-shop-list',items,(val,item)=>{
     document.getElementById('ci-shop').value=val;
     // auto-fill จังหวัดจากร้านที่เลือก
     if(item&&item.province){
       window._ciProvince=item.province;
-      if(provSel) provSel.value=item.province;
+      populateCiProvinces(item.province);
     }
   });
-  // reset รูปทั้ง 5 ช่อง
-  for(let i=1;i<=5;i++){
-    const box=document.getElementById('ci-photo-box-'+i);
-    if(box){
-      box.classList.remove('has-photo');
-      const img=box.querySelector('img.thumb');if(img)img.remove();
-      const sp=box.querySelector('span');if(sp)sp.style.display='';
-      const sv=box.querySelector('svg');if(sv)sv.style.display='';
-    }
-  }
-  document.getElementById('ci-gps-text').textContent='กดรับตำแหน่ง';
-  document.getElementById('ci-modal').classList.add('show');getCiGPS();
 }
 
 function closeCiModal(){document.getElementById('ci-modal').classList.remove('show');}
@@ -1615,15 +1815,7 @@ function takeCiPhotoN(n){
     const reader=new FileReader();
     reader.onload=e=>{compressImage(e.target.result,600,0.5,compressed=>{
       ciPhotoData[n-1]=compressed;
-      const box=document.getElementById('ci-photo-box-'+n);
-      if(box){
-        box.classList.add('has-photo');
-        let img=box.querySelector('img.thumb');
-        if(!img){img=document.createElement('img');img.className='thumb';img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;z-index:0;';box.prepend(img);}
-        img.src=compressed;
-        const sp=box.querySelector('span');if(sp)sp.style.display='none';
-        const sv=box.querySelector('svg');if(sv)sv.style.display='none';
-      }
+      setCiPhotoBox(n,compressed);
       const labels=['หน้าร้าน','เชลฟ์ Gracz','เชลฟ์คู่แข่ง','เพิ่มเติม 1','เพิ่มเติม 2'];
       showToast('✓ รูป'+labels[n-1]+' สำเร็จ');
     });};
@@ -1663,57 +1855,125 @@ function getCiGPS() {
 async function submitCheckin(){
   const btn=document.getElementById('ci-submit-btn');
   if(btn&&btn.disabled)return;
+  const resetBtn=()=>{if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}};
   if(btn){btn.disabled=true;btn.textContent='⏳ กำลัง Check-in...';}
 
-  const shop=document.getElementById('ci-shop')?.value||document.getElementById('ci-shop-input')?.value;
-  if(!shop){showToast('กรุณาเลือกร้านค้า','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
-  const ciShopItems2=salesShops.length>0?salesShops:masterData.shops;
-  const foundShop=ciShopItems2.find(s=>(s.name||s)===shop);
+  // [FIX] ใช้ค่าที่อยู่ในช่องค้นหาเป็นหลัก — hidden field อาจค้างค่าร้านที่เลือกไว้ก่อนแก้ข้อความ
+  const shop=(document.getElementById('ci-shop-input')?.value||document.getElementById('ci-shop')?.value||'').trim();
+  if(!shop){showToast('กรุณาเลือกร้านค้า','error');resetBtn();return;}
+  const foundShop=ciShopItems().find(s=>(s.name||s)===shop);
   const province=document.getElementById('ci-province')?.value||(foundShop&&foundShop.province)||window._ciProvince||'';
-  if(!province){showToast('กรุณาเลือกจังหวัด','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
-  if(!ciPhotoData[0]){showToast('กรุณาถ่ายรูปหน้าร้านก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
-  if(!ciPhotoData[1]){showToast('กรุณาถ่ายรูปเชลฟ์ Gracz ก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
-  if(!ciPhotoData[2]){showToast('กรุณาถ่ายรูปเชลฟ์คู่แข่งก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
-  if(!ciGpsData.acquired){showToast('กรุณารับตำแหน่ง GPS ก่อน','error');if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}return;}
+  if(!province){showToast('กรุณาเลือกจังหวัด','error');resetBtn();return;}
+  if(!ciPhotoData[0]){showToast('กรุณาถ่ายรูปหน้าร้านก่อน','error');resetBtn();return;}
+  if(!ciPhotoData[1]){showToast('กรุณาถ่ายรูปเชลฟ์ Gracz ก่อน','error');resetBtn();return;}
+  if(!ciPhotoData[2]){showToast('กรุณาถ่ายรูปเชลฟ์คู่แข่งก่อน','error');resetBtn();return;}
+  if(!ciGpsData.acquired){showToast('กรุณารับตำแหน่ง GPS ก่อน','error');resetBtn();return;}
+  if(activeVisits.length){showToast(`กรุณา Check-out "${activeVisits[0].shop}" ก่อน`,'error');resetBtn();return;}
 
-  // [A] Optimistic UI — ปิด Modal + แจ้งสำเร็จทันที ไม่รอ GAS
+  const lat=ciGpsData.lat,lng=ciGpsData.lng;
+  const photos=ciPhotoData.slice();
+  const nowD=new Date();
+  const localId='local-'+nowD.getTime();
+  const base={shop,province,lat,lng,employee:currentUser||'',checkinHHmm:hhmm(nowD),checkinDate:localISODate(nowD),status:'check-in'};
+
+  // [A] Optimistic UI — ปิด Modal ทันที แสดงการ์ด "กำลังบันทึก" (ปุ่ม Check-out รอจนได้เลขแถวจริง)
+  // [FIX] เดิมเรียก loadActiveVisits() ก่อน server บันทึกเสร็จ และไม่โหลดใหม่หลังบันทึกเสร็จ
+  // → ไม่มีการ์ดให้กด Check-out และปุ่ม Check-in ยังกดซ้ำได้
+  markHomeMutation();
+  activeVisits=activeVisits.concat([{...base,_pending:true,_localId:localId,ref:'',row:0}]);
+  renderActiveVisits();
   closeCiModal();
-  showToast(`✅ Check-in ${shop} สำเร็จ`);
-  loadActiveVisits();
-  loadDashboard();
+  resetBtn();
+  showToast(`⏳ กำลังบันทึก Check-in ${shop}...`);
 
-  // ส่งข้อมูลจริงใน background
-  const data=await apiGet({action:'checkin_only',employee:currentUser||'',shop,province,lat:ciGpsData.lat,lng:ciGpsData.lng});
+  const req={action:'checkin_only',employee:currentUser||'',shop,province,lat,lng};
+  let data=await apiGet(req,{timeout:45000,silent:true});
+  if(!data||data.busy){
+    // เน็ตหลุด/ระบบไม่ว่าง → ลองใหม่ 1 ครั้ง (server ป้องกันการบันทึกซ้ำร้านเดิมแล้ว)
+    await new Promise(r=>setTimeout(r,1500));
+    data=await apiGet(req,{timeout:45000,silent:true});
+  }
 
-  if(data&&!data.ok&&data.reason==='already_checkin'){
-    showToast(`⚠️ มีการ Check-in "${data.shop||shop}" อยู่แล้ว`,'error');
+  markHomeMutation();
+  activeVisits=activeVisits.filter(v=>v._localId!==localId);
+
+  if(data&&data.ok&&data.row){
+    activeVisits.push({...base,ref:data.ref,row:data.row});
+    renderActiveVisits();
+    showToast(`✅ Check-in ${shop} สำเร็จ`);
+    uploadCheckinPhotos(data.row,data.ref,photos);
+    refreshAfterWrite();
+    return;
+  }
+
+  renderActiveVisits();
+
+  if(data&&data.reason==='already_checkin'){
+    showToast(`⚠️ มีการ Check-in "${data.shop||shop}" ค้างอยู่ กรุณา Check-out ก่อน`,'error');
     loadActiveVisits();
     return;
   }
 
-  if(data&&data.ok){
-    // อัพโหลดรูป background
-    const photoPayload={action:'upload_photo',row:data.row,
-      photo1:ciPhotoData[0]||'',
-      photo2:ciPhotoData[1]||'',
-      photo3:ciPhotoData[2]||'',
-      photo4:ciPhotoData[3]||'',
-      photo5:ciPhotoData[4]||''
-    };
-    postReliable(photoPayload).then(ok=>{
-      if(!ok) showToast('⚠️ รูปกำลังส่งในพื้นหลัง จะลองใหม่อัตโนมัติเมื่อเปิดแอพครั้งถัดไป','error');
-    });
-  } else if(data&&!data.ok){
-    showToast('⚠️ Check-in อาจไม่สำเร็จ กรุณาตรวจสอบประวัติ','error');
-    loadActiveVisits();
-  }
+  // ล้มเหลว → เปิดฟอร์มพร้อมข้อมูลเดิม (รูป/GPS ไม่หาย) ให้กดส่งอีกครั้ง
+  showToast('❌ Check-in ไม่สำเร็จ'+(data&&data.error?': '+data.error:' (เครือข่ายขัดข้อง)')+' — กรุณากดส่งอีกครั้ง','error');
+  loadActiveVisits();
+  openCheckinModal({shop,province,photos,gps:{lat,lng}});
 }
 
-function openCheckout(ref,row,shop,checkinLat,checkinLng){
-  coData={ref,row,shop,checkinLat,checkinLng};coStep=0;coOrderValue=0;coPhotoData=[null,null,null,null,null];coPhotoStates=[false,false,false,false,false];coGpsData={lat:null,lng:null,acquired:false};
-  document.getElementById('co-shop-title').textContent=shop;renderCoStep();document.getElementById('co-modal').classList.add('show');
+// อัปโหลดรูปหลัง Check-in (อ่านผลลัพธ์ได้ + retry + เก็บคิวไว้ส่งซ้ำ)
+async function uploadCheckinPhotos(row,ref,photos){
+  const payload={action:'upload_photo',row,ref,
+    photo1:photos[0]||'',photo2:photos[1]||'',photo3:photos[2]||'',photo4:photos[3]||'',photo5:photos[4]||''};
+  const ok=await postReliable(payload);
+  if(ok==='rejected')showToast('⚠️ บันทึกรูปไม่สำเร็จ (ไม่พบรายการ Check-in) กรุณาแจ้งผู้ดูแล','error');
+  else if(!ok)showToast('⚠️ รูปยังส่งไม่สำเร็จ ระบบจะส่งให้อัตโนมัติเมื่อเน็ตกลับมา','error');
 }
-function closeCoModal(){document.getElementById('co-modal').classList.remove('show');}
+
+// ══ CHECK-OUT DRAFT ══
+// [FIX] เดิม: ปิดฟอร์ม / กด "ก่อนหน้า" / Check-out ไม่สำเร็จ → ข้อมูลที่กรอกหายหมด ต้องกรอกใหม่ทั้ง 5 ขั้น
+// ตอนนี้เก็บข้อมูลที่กรอกไว้ในเครื่อง (ต่อ REF) และเติมกลับให้อัตโนมัติ
+const CO_DRAFT_KEY='coDrafts_v1';
+const CO_DRAFT_TTL=3*24*60*60*1000;
+function getCoDrafts(){const d=lsGet(CO_DRAFT_KEY,{});return d&&typeof d==='object'?d:{};}
+function getCoDraft(ref){const d=getCoDrafts()[ref];return d&&Date.now()-(d.t||0)<CO_DRAFT_TTL?d:null;}
+function saveCoDraft(){
+  if(!coData||!coData.ref)return;
+  const all=getCoDrafts();
+  Object.keys(all).forEach(k=>{if(Date.now()-(all[k].t||0)>CO_DRAFT_TTL)delete all[k];});
+  all[coData.ref]={t:Date.now(),coStep,coData,coGpsData};
+  lsSet(CO_DRAFT_KEY,all);
+}
+function clearCoDraft(ref){const all=getCoDrafts();if(all[ref]){delete all[ref];lsSet(CO_DRAFT_KEY,all);}}
+
+function openCheckout(ref,row,shop,checkinLat,checkinLng){
+  const draft=ref?getCoDraft(ref):null;
+  if(coData&&coData.ref&&coData.ref===ref){
+    // ฟอร์มเดิมที่ยังค้างอยู่ในหน่วยความจำ
+    coData.row=row||coData.row;
+  }else if(draft&&draft.coData){
+    coData={...draft.coData,ref,row:row||draft.coData.row,shop,checkinLat,checkinLng};
+    coStep=Math.min(Math.max(draft.coStep||0,0),CO_STEPS-1);
+    coGpsData=draft.coGpsData||{lat:null,lng:null,acquired:false};
+    showToast('📝 กู้ข้อมูลที่กรอกค้างไว้แล้ว');
+  }else{
+    coData={ref,row,shop,checkinLat,checkinLng};coStep=0;
+    coGpsData={lat:null,lng:null,acquired:false};
+  }
+  coOrderValue=Number(coData.orderValue)||0;
+  coPhotoData=[null,null,null,null,null];coPhotoStates=[false,false,false,false,false];
+  document.getElementById('co-shop-title').textContent=shop;
+  renderCoStep();
+  document.getElementById('co-modal').classList.add('show');
+}
+function closeCoModal(){
+  const modal=document.getElementById('co-modal');
+  if(modal.classList.contains('show')&&coData&&coData.ref){
+    collectCoStep(coStep);
+    saveCoDraft();
+  }
+  modal.classList.remove('show');
+  renderActiveVisits();
+}
 
 const coStepDefs=['ข้อมูลร้านค้า','ข้อมูลการซื้อและการจำหน่าย','ข้อมูลคู่แข่ง','Stock คงเหลือที่ร้าน','สรุปผลและ Action Plan + GPS Check-out'];
 
@@ -1721,35 +1981,138 @@ function renderCoStep(){
   const body=document.getElementById('co-form-body');if(!body)return;
   let prog=`<div style="display:flex;gap:4px;margin-bottom:16px">`;
   for(let i=0;i<CO_STEPS;i++)prog+=`<div style="flex:1;height:4px;border-radius:2px;background:${i<=coStep?'var(--brand)':'var(--border)'}"></div>`;
-  prog+=`</div><div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px">${coStepDefs[coStep]}</div>`;
+  prog+=`</div><div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px">${coStepDefs[coStep]} <span style="font-weight:400;color:var(--text3)">(${coStep+1}/${CO_STEPS})</span></div>`;
   let fields='';
   if(coStep===0)fields=renderCoStep0();if(coStep===1)fields=renderCoStep1();if(coStep===2)fields=renderCoStep2();if(coStep===3)fields=renderCoStep4Stock();if(coStep===4)fields=renderCoStep3();
-  const navBtns=`<div class="form-nav" style="margin-top:16px">${coStep>0?`<button class="btn btn-secondary" onclick="coStepPrev()">← ก่อนหน้า</button>`:`<button class="btn btn-secondary" onclick="closeCoModal()">ยกเลิก</button>`}${coStep<CO_STEPS-1?`<button class="btn btn-primary" onclick="coStepNext()">ถัดไป →</button>`:`<button class="btn btn-success" id="co-submit-btn" onclick="submitCheckout()">🏁 Check-out</button>`}</div>`;
+  const navBtns=`<div class="form-nav" style="margin-top:16px">${coStep>0?`<button class="btn btn-secondary" onclick="coStepPrev()">← ก่อนหน้า</button>`:`<button class="btn btn-secondary" onclick="closeCoModal()">ปิด (เก็บข้อมูลไว้)</button>`}${coStep<CO_STEPS-1?`<button class="btn btn-primary" onclick="coStepNext()">ถัดไป →</button>`:`<button class="btn btn-success" id="co-submit-btn" onclick="submitCheckout()">🏁 Check-out</button>`}</div>`;
   body.innerHTML=prog+fields+navBtns;
   if(coStep===0){document.querySelectorAll('#co-task-chips .multi-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('selected')));}
-  if(coStep===3){initStockStep();} 
-  if(coStep===4)getCoGPS();
+  if(coStep===3){initStockStep();}
+  fillCoStep(coStep);
+  // บันทึก draft ระหว่างพิมพ์/กดเลือก (หน่วงเวลาเล็กน้อย)
+  const queueDraft=()=>{clearTimeout(window._coDraftTimer);window._coDraftTimer=setTimeout(()=>{collectCoStep(coStep);saveCoDraft();},600);};
+  body.oninput=queueDraft;
+  body.onclick=queueDraft;
+  if(coStep===4){
+    if(coGpsData.acquired){const t=document.getElementById('co-gps-text');if(t)t.textContent=`${coGpsData.lat.toFixed(5)}, ${coGpsData.lng.toFixed(5)}`;}
+    getCoGPS();
+  }
+  const sheet=body.closest('.ci-sheet');if(sheet)sheet.scrollTop=0;
+}
+
+function setVal(id,v){const el=document.getElementById(id);if(el&&v!==undefined&&v!==null)el.value=v;}
+function splitList(v){return String(v||'').split(',').map(x=>x.trim()).filter(Boolean);}
+function selectChips(selector,values,attr){
+  const set=new Set(values||[]);
+  document.querySelectorAll(selector).forEach(c=>{
+    const key=attr?c.dataset[attr]:c.textContent.trim();
+    c.classList.toggle('selected',set.has(key));
+  });
+}
+
+// เติมค่าที่เคยกรอกกลับเข้าฟอร์ม
+function fillCoStep(step){
+  const d=coData||{};
+  if(step===0){
+    setVal('co-stype',d.shopType);
+    if(d.tasks!==undefined)selectChips('#co-task-chips .multi-chip',splitList(d.tasks),'val');
+    if(d.customerName!==undefined)setVal('co-custname',d.customerName);
+    setVal('co-other',d.otherNote);
+    setVal('co-phone',d.phone);
+    if(d.closedDays!==undefined)selectChips('#co-closed-days .multi-chip',splitList(d.closedDays));
+    setVal('co-visit-time',d.visitTime);
+    if(d._appt)selectAppt(d._appt);
+    setVal('co-appt-detail',d._apptDetail);
+  }
+  if(step===1){
+    setVal('co-orderstatus',d.lastOrder);
+    setVal('co-orderdate',d.orderMonth);
+    setVal('co-orderval',coOrderValue);
+    setVal('co-noreason',d.noOrderReason);
+    setVal('co-gracz',d.bestSellingGracz);
+  }
+  if(step===2){
+    if(d._comp)selectChips('#co-comp-chips .multi-chip:not([id])',d._comp);
+    if(d._best)selectChips('#co-best-chips .multi-chip:not([id])',d._best);
+    if(d._compOther){setVal('co-comp-other-input',d._compOther);document.getElementById('co-comp-other-wrap').style.display='block';document.getElementById('co-comp-other-chip')?.classList.add('selected');}
+    if(d._bestOther){setVal('co-best-other-input',d._bestOther);document.getElementById('co-best-other-wrap').style.display='block';document.getElementById('co-best-other-chip')?.classList.add('selected');}
+    setVal('co-comppromo',d.competitorPromo);
+  }
+  if(step===3){
+    setVal('stock-note',d.stockNote);
+  }
+  if(step===4){
+    setVal('co-findings',d.keyFindings);
+    setVal('co-action',d.actionPlan);
+  }
+}
+
+// อ่านค่าจากฟอร์มของขั้นปัจจุบันเก็บลง coData (ไม่ตรวจความถูกต้อง)
+function collectCoStep(step){
+  if(!coData)return;
+  const val=id=>{const el=document.getElementById(id);return el?el.value:undefined;};
+  if(step===0&&document.getElementById('co-stype')){
+    coData.customerGroup='';
+    coData.shopType=val('co-stype')||'';
+    coData.tasks=[...document.querySelectorAll('#co-task-chips .multi-chip.selected')].map(c=>c.dataset.val).join(', ');
+    coData.customerName=(val('co-custname')||'').trim();
+    coData.otherNote=val('co-other')||'';
+    coData.phone=val('co-phone')||'';
+    coData.closedDays=[...document.querySelectorAll('#co-closed-days .multi-chip.selected')].map(c=>c.textContent.trim()).join(', ');
+    coData.visitTime=val('co-visit-time')||'';
+    coData._apptDetail=val('co-appt-detail')||'';
+    // รูปแบบเดิม: 'yes'/'no' + ' — รายละเอียด'
+    coData.appointment=(coData._appt||'')+(coData._appt==='yes'&&coData._apptDetail?' — '+coData._apptDetail:'');
+  }
+  if(step===1&&document.getElementById('co-orderstatus')){
+    coData.lastOrder=val('co-orderstatus')||'';
+    coData.orderMonth=val('co-orderdate')||'';
+    coOrderValue=Math.max(0,parseInt(val('co-orderval'),10)||0);
+    coData.orderValue=coOrderValue;
+    coData.noOrderReason=val('co-noreason')||'';
+    coData.bestSellingGracz=val('co-gracz')||'';
+  }
+  if(step===2&&document.getElementById('co-comppromo')){
+    // [FIX] เดิมรวมชิป "+ อื่นๆ" เข้าไปในรายชื่อแบรนด์ด้วย
+    coData._comp=[...document.querySelectorAll('#co-comp-chips .multi-chip.selected:not([id])')].map(c=>c.textContent.trim());
+    coData._best=[...document.querySelectorAll('#co-best-chips .multi-chip.selected:not([id])')].map(c=>c.textContent.trim());
+    const compOn=document.getElementById('co-comp-other-wrap')?.style.display!=='none';
+    const bestOn=document.getElementById('co-best-other-wrap')?.style.display!=='none';
+    coData._compOther=compOn?(val('co-comp-other-input')||'').trim():'';
+    coData._bestOther=bestOn?(val('co-best-other-input')||'').trim():'';
+    coData.competitorBrands=coData._comp.concat(coData._compOther?[coData._compOther]:[]).join(', ');
+    coData.bestSellingBrands=coData._best.concat(coData._bestOther?[coData._bestOther]:[]).join(', ');
+    coData.competitorPromo=val('co-comppromo')||'';
+  }
+  if(step===3&&document.getElementById('stock-list')){
+    coData.stockItems=JSON.stringify(stockItems||[]);
+    coData.stockNote=val('stock-note')||'';
+  }
+  if(step===4&&document.getElementById('co-findings')){
+    coData.keyFindings=val('co-findings')||'';
+    coData.actionPlan=val('co-action')||'';
+  }
 }
 
 function renderCoStep0(){
   const lastCust=getLastCustomerName(coData.shop)||'';
   return`<div class="field-group"><label class="field-label">ประเภทร้านค้า *</label><select class="field-select" id="co-stype">${mkOpts(masterData.shopTypes)}</select></div>
-<div class="field-group"><label class="field-label">รายละเอียดงาน *</label><div class="multi-select-group" id="co-task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}</div></div>
-<div class="field-group"><label class="field-label">ชื่อลูกค้า *</label><input class="field-input" id="co-custname" type="text" placeholder="ชื่อผู้ติดต่อ" value="${lastCust}"></div>
+<div class="field-group"><label class="field-label">รายละเอียดงาน *</label><div class="multi-select-group" id="co-task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${esc(t)}">${esc(t)}</div>`).join('')}</div></div>
+<div class="field-group"><label class="field-label">ชื่อลูกค้า *</label><input class="field-input" id="co-custname" type="text" placeholder="ชื่อผู้ติดต่อ" value="${esc(lastCust)}"></div>
 <div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="co-other" type="text" placeholder="ชื่อผู้มีอำนาจตัดสินใจ"></div>
 <div class="field-group"><label class="field-label">เบอร์โทรศัพท์</label><input class="field-input" id="co-phone" type="tel" placeholder="เช่น 081-234-5678"></div>
 <div class="field-group"><label class="field-label">ร้านหยุดวันไหน</label><div class="multi-select-group" id="co-closed-days">${['อา','จ','อ','พ','พฤ','ศ','ส'].map(d=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${d}</div>`).join('')}</div></div>
 <div class="field-group"><label class="field-label">เวลาที่ควรเข้าพบ</label><select class="field-select" id="co-visit-time"><option value="">— ไม่ระบุ —</option><option>09:00–11:00</option><option>11:00–13:00</option><option>13:00–15:00</option><option>15:00–17:00</option><option>17:00–19:00</option><option>ยืดหยุ่นได้</option></select></div>
 <div class="field-group"><label class="field-label">ต้องนัดล่วงหน้า</label><div class="multi-select-group" id="co-appt-chips"><div class="multi-chip" id="co-appt-yes" onclick="selectAppt('yes')">✅ ใช่</div><div class="multi-chip" id="co-appt-no" onclick="selectAppt('no')">❌ ไม่ใช่</div></div><div id="co-appt-detail-wrap" style="display:none;margin-top:8px"><input class="field-input" id="co-appt-detail" type="text" placeholder="รายละเอียดการนัด เช่น นัดล่วงหน้า 1 วัน..."></div></div>`;}
-function renderCoStep1(){return`<div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด *</label><select class="field-select" id="co-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div><div class="field-group"><label class="field-label">ระบุเดือน ปี *</label><input class="field-input" type="date" id="co-orderdate" value="${new Date().toISOString().slice(0,10)}"></div><div class="field-group"><label class="field-label">มูลค่า (บาท)</label><div class="number-input"><button class="number-btn" type="button" onclick="changeCoVal(-1000)">−</button><input class="field-input" type="number" id="co-orderval" value="0" min="0" oninput="coOrderValue=parseInt(this.value)||0"><button class="number-btn" type="button" onclick="changeCoVal(1000)">+</button></div></div><div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" id="co-noreason" type="text"></div><div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี *</label><textarea class="field-textarea" id="co-gracz" placeholder="ระบุรุ่น..."></textarea></div>`;}
+function renderCoStep1(){return`<div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด *</label><select class="field-select" id="co-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div><div class="field-group"><label class="field-label">ระบุเดือน ปี *</label><input class="field-input" type="date" id="co-orderdate" value="${localISODate()}"></div><div class="field-group"><label class="field-label">มูลค่า (บาท)</label><div class="number-input"><button class="number-btn" type="button" onclick="changeCoVal(-1000)">−</button><input class="field-input" type="number" id="co-orderval" value="0" min="0" inputmode="numeric" oninput="coOrderValue=Math.max(0,parseInt(this.value)||0)"><button class="number-btn" type="button" onclick="changeCoVal(1000)">+</button></div></div><div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" id="co-noreason" type="text"></div><div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี *</label><textarea class="field-textarea" id="co-gracz" placeholder="ระบุรุ่น..."></textarea></div>`;}
 function renderCoStep2(){return`<div class="field-group"><label class="field-label">แบรนด์คู่แข่งในร้าน *</label>
-  <div class="multi-select-group">${['Fest','Go Eco','Chan','Leev','Aoy Plus'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}<div class="multi-chip" id="co-comp-other-chip" onclick="toggleOtherInput('co-comp-other-chip','co-comp-other-wrap')">+ อื่นๆ</div></div>
+  <div class="multi-select-group" id="co-comp-chips">${['Fest','Go Eco','Chan','Leev','Aoy Plus'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}<div class="multi-chip" id="co-comp-other-chip" onclick="toggleOtherInput('co-comp-other-chip','co-comp-other-wrap')">+ อื่นๆ</div></div>
   <div id="co-comp-other-wrap" style="display:none;margin-top:8px"><input class="field-input" id="co-comp-other-input" type="text" placeholder="พิมพ์ชื่อแบรนด์เพิ่มเติม..."></div></div>
   <div class="field-group"><label class="field-label">แบรนด์สินค้าที่ขายดี *</label>
-  <div class="multi-select-group">${['Fest','Go Eco','Chan','Leev','Aoy Plus','Gracz'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}<div class="multi-chip" id="co-best-other-chip" onclick="toggleOtherInput('co-best-other-chip','co-best-other-wrap')">+ อื่นๆ</div></div>
+  <div class="multi-select-group" id="co-best-chips">${['Fest','Go Eco','Chan','Leev','Aoy Plus','Gracz'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}<div class="multi-chip" id="co-best-other-chip" onclick="toggleOtherInput('co-best-other-chip','co-best-other-wrap')">+ อื่นๆ</div></div>
   <div id="co-best-other-wrap" style="display:none;margin-top:8px"><input class="field-input" id="co-best-other-input" type="text" placeholder="พิมพ์ชื่อแบรนด์เพิ่มเติม..."></div></div>
   <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง *</label><textarea class="field-textarea" id="co-comppromo" placeholder="อธิบายโปรโมชั่น..."></textarea></div>`;}
-  
+
 // [NEW] renderCoStep3 — เพิ่ม GPS Warning Banner
 // ── Stock Step ──
 function renderCoStep4Stock(){
@@ -1772,7 +2135,8 @@ function renderCoStep4Stock(){
 let stockItems=[];
 
 function initStockStep(){
-  stockItems=coData.stockItems?JSON.parse(coData.stockItems||'[]'):[];
+  try{stockItems=coData.stockItems?JSON.parse(coData.stockItems||'[]'):[];}catch(e){stockItems=[];}
+  if(!Array.isArray(stockItems))stockItems=[];
   renderStockList();
 }
 
@@ -1786,11 +2150,13 @@ function addStockItem(){
   document.getElementById('stock-model-input').value='';
   document.getElementById('stock-qty-input').value='';
   renderStockList();
+  if(coData){coData.stockItems=JSON.stringify(stockItems);saveCoDraft();}
 }
 
 function removeStockItem(idx){
   stockItems.splice(idx,1);
   renderStockList();
+  if(coData){coData.stockItems=JSON.stringify(stockItems);saveCoDraft();}
 }
 
 function renderStockList(){
@@ -1803,8 +2169,8 @@ function renderStockList(){
   el.innerHTML=stockItems.map((s,i)=>`
     <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:8px 12px;margin-bottom:6px">
       <div>
-        <span style="font-size:13px;font-weight:700;color:var(--text)">${s.model}</span>
-        <span style="font-size:12px;color:var(--text3);margin-left:8px">${s.qty} ${s.unit}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${esc(s.model)}</span>
+        <span style="font-size:12px;color:var(--text3);margin-left:8px">${esc(s.qty)} ${esc(s.unit)}</span>
       </div>
       <button onclick="removeStockItem(${i})" style="background:#fff0f0;border:none;border-radius:50%;width:24px;height:24px;color:var(--accent);cursor:pointer;font-size:13px">✕</button>
     </div>`).join('');
@@ -1814,11 +2180,12 @@ function renderCoStep3(){return`<div class="field-group"><label class="field-lab
 <div id="co-gps-warning" style="display:none;background:#fff9db;border:1.5px solid #f3d076;border-radius:8px;padding:10px 13px;margin-top:8px;font-size:13px;color:#854f0b;font-weight:500"></div>
 </div>`;}
 
-  function selectAppt(val){
-  document.getElementById('co-appt-yes').classList.toggle('selected', val==='yes');
-  document.getElementById('co-appt-no').classList.toggle('selected', val==='no');
-  document.getElementById('co-appt-detail-wrap').style.display = val==='yes' ? 'block' : 'none';
-  window._coAppt = val;
+function selectAppt(val){
+  document.getElementById('co-appt-yes')?.classList.toggle('selected', val==='yes');
+  document.getElementById('co-appt-no')?.classList.toggle('selected', val==='no');
+  const wrap=document.getElementById('co-appt-detail-wrap');if(wrap)wrap.style.display = val==='yes' ? 'block' : 'none';
+  // [FIX] เดิมเก็บใน window._coAppt แล้วล้างทิ้งหลังขั้นแรก → ย้อนกลับ/ไปต่อแล้วค่าหาย
+  if(coData)coData._appt = val;
 }
   
 function changeCoVal(d){coOrderValue=Math.max(0,coOrderValue+d);const el=document.getElementById('co-orderval');if(el)el.value=coOrderValue;}
@@ -1920,102 +2287,208 @@ function getCoGPS() {
 }
 function calcDistanceJS(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 
+function validateCoStep(step){
+  if(step===0){
+    if(!coData.shopType)return 'กรุณาเลือกประเภทร้านค้า';
+    if(!coData.tasks)return 'กรุณาเลือกรายละเอียดงานอย่างน้อย 1 อย่าง';
+    if(!coData.customerName)return 'กรุณากรอกชื่อลูกค้า';
+  }
+  if(step===1){
+    if(!coData.lastOrder)return 'กรุณาเลือกการสั่งซื้อล่าสุด';
+    if(!String(coData.bestSellingGracz||'').trim())return 'กรุณากรอกสินค้า Gracz รุ่นที่ขายดี';
+  }
+  if(step===2){
+    if(!String(coData.competitorPromo||'').trim())return 'กรุณากรอกรายละเอียดโปรโมชั่นคู่แข่ง';
+  }
+  if(step===3){
+    if(!stockItems||!stockItems.length)return 'กรุณาเพิ่มสินค้าคงเหลืออย่างน้อย 1 รุ่น (กดปุ่ม + เพิ่ม)';
+  }
+  if(step===4){
+    if(!String(coData.keyFindings||'').trim()||!String(coData.actionPlan||'').trim())return 'กรุณากรอกประเด็นสำคัญและ Action Plan';
+  }
+  return '';
+}
+
 function coStepNext(){
-  if(coStep===0){
-    // [รูปถ่ายย้ายไป Check-in แล้ว ไม่ต้อง validate ที่นี่]
-  }
- if(coStep===0){
-    const stype=document.getElementById('co-stype')?.value;
-    if(!stype){showToast('กรุณาเลือกประเภทร้านค้า','error');return;}
-    const tasks=[...document.querySelectorAll('#co-task-chips .multi-chip.selected')].map(c=>c.dataset.val);
-    if(!tasks.length){showToast('กรุณาเลือกรายละเอียดงานอย่างน้อย 1 อย่าง','error');return;}
-    const cn=document.getElementById('co-custname')?.value;
-    if(!cn){showToast('กรุณากรอกชื่อลูกค้า','error');return;}
-    coData.customerGroup='';
-    coData.shopType=document.getElementById('co-stype')?.value;
-    coData.tasks=[...document.querySelectorAll('#co-task-chips .multi-chip.selected')].map(c=>c.dataset.val).join(', ');
-    coData.customerName=cn;
-    coData.otherNote=document.getElementById('co-other')?.value||'';
-    coData.phone=document.getElementById('co-phone')?.value||'';
-    coData.closedDays=[...document.querySelectorAll('#co-closed-days .multi-chip.selected')].map(c=>c.textContent).join(', ');
-    coData.visitTime=document.getElementById('co-visit-time')?.value||'';
-    coData.appointment=(window._coAppt||'')+(document.getElementById('co-appt-detail')?.value?' — '+document.getElementById('co-appt-detail').value:'');
-    window._coAppt='';
-  }
- if(coStep===1){
-    const lastOrder=document.getElementById('co-orderstatus')?.value;
-    if(!lastOrder){showToast('กรุณาเลือกการสั่งซื้อล่าสุด','error');return;}
-    const gracz=document.getElementById('co-gracz')?.value;
-    if(!gracz){showToast('กรุณากรอกสินค้า Gracz รุ่นที่ขายดี','error');return;}
-    coData.lastOrder=lastOrder;coData.orderMonth=document.getElementById('co-orderdate')?.value;coData.orderValue=coOrderValue;coData.noOrderReason=document.getElementById('co-noreason')?.value||'';coData.bestSellingGracz=document.getElementById('co-gracz')?.value||'';}
-  if(coStep===2){
-    const comppromo=document.getElementById('co-comppromo')?.value;
-    if(!comppromo){showToast('กรุณากรอกรายละเอียดโปรโมชั่นคู่แข่ง','error');return;}
-    const coGroups=document.querySelectorAll('#co-form-body .multi-select-group');
-const coCompGroup=coGroups[0];
-const coBestGroup=coGroups[1];
-coData.competitorBrands=[...(coCompGroup?.querySelectorAll('.multi-chip.selected')||[])].map(c=>c.textContent).concat(document.getElementById('co-comp-other-input')?.value?[document.getElementById('co-comp-other-input').value]:[]).join(', ');
-coData.bestSellingBrands=[...(coBestGroup?.querySelectorAll('.multi-chip.selected')||[])].map(c=>c.textContent).concat(document.getElementById('co-best-other-input')?.value?[document.getElementById('co-best-other-input').value]:[]).join(', ');
-    coData.competitorPromo=document.getElementById('co-comppromo')?.value||'';
-  }
   if(coStep===3){
-    // validate Stock — ต้องมีอย่างน้อย 1 รุ่น
-    if(!stockItems||!stockItems.length){showToast('กรุณาเพิ่มสินค้าคงเหลืออย่างน้อย 1 รุ่น','error');return;}
-    // บันทึก stockItems ลง coData
-    coData.stockItems=JSON.stringify(stockItems);
-    coData.stockNote=document.getElementById('stock-note')?.value||'';
+    // [UX] พิมพ์รุ่น+จำนวนไว้แต่ลืมกด "+ เพิ่ม" → เพิ่มให้อัตโนมัติ
+    const m=document.getElementById('stock-model-input')?.value?.trim();
+    const q=document.getElementById('stock-qty-input')?.value;
+    if(m&&q!==''&&q!==undefined&&Number(q)>=0)addStockItem();
   }
+  collectCoStep(coStep);
+  const err=validateCoStep(coStep);
+  if(err){showToast(err,'error');return;}
+  saveCoDraft();
   if(coStep<CO_STEPS-1){coStep++;renderCoStep();}
 }
-function coStepPrev(){if(coStep>0){coStep--;renderCoStep();}}
+function coStepPrev(){
+  // [FIX] เดิมย้อนกลับแล้วค่าที่กรอกในขั้นปัจจุบันหาย และต้องกรอกขั้นก่อนหน้าใหม่
+  collectCoStep(coStep);
+  saveCoDraft();
+  if(coStep>0){coStep--;renderCoStep();}
+}
 
-// [NEW] submitCheckout — ลบ confirm() ออก กด Check-out ได้เลย
+// ══ PENDING CHECK-OUT QUEUE ══
+// Check-out ที่ส่งไม่สำเร็จเพราะเน็ต จะถูกเก็บในเครื่องและส่งซ้ำอัตโนมัติ (server รองรับการส่งซ้ำแล้ว)
+const PENDING_CO_KEY='pendingCheckouts_v1';
+function getPendingCheckouts(){const l=lsGet(PENDING_CO_KEY,[]);return Array.isArray(l)?l.filter(x=>x&&x.ref):[];}
+function setPendingCheckouts(l){lsSet(PENDING_CO_KEY,l);}
+function addPendingCheckout(item){setPendingCheckouts(getPendingCheckouts().filter(x=>x.ref!==item.ref).concat([item]));}
+function removePendingCheckout(ref){setPendingCheckouts(getPendingCheckouts().filter(x=>x.ref!==ref));}
+
+async function sendCheckout(payload){
+  // 1) POST ที่อ่านผลลัพธ์ได้
+  let res=await apiPost(payload,{timeout:60000});
+  if(res&&res.busy){
+    await new Promise(r=>setTimeout(r,2000));
+    res=await apiPost(payload,{timeout:60000});
+    if(res&&res.busy)return null;
+  }
+  if(res)return res;
+  // 2) อ่านผลไม่ได้ (เน็ต/CORS) → ตรวจสถานะจริงจาก server
+  const stillActive=async()=>{
+    const chk=await apiGet({action:'active_visits',employee:payload.employee||currentUser||''},{timeout:30000,silent:true});
+    if(!chk||!Array.isArray(chk.visits))return null;
+    return chk.visits.some(v=>v.ref===payload.ref);
+  };
+  let active=await stillActive();
+  if(active===false)return {ok:true,verified:true};
+  if(active===null)return null;
+  // 3) ยังค้าง → ส่งแบบ no-cors (เผื่อเบราว์เซอร์บล็อกการอ่านผล) แล้วตรวจอีกครั้ง
+  try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});}
+  catch(e){return null;}
+  active=await stillActive();
+  return active===false?{ok:true,verified:true}:null;
+}
+
+// คืนค่า 'done' | 'failed' | 'pending'
+function handleCheckoutResult(item,res,interactive){
+  if(res&&res.ok){
+    removePendingCheckout(item.ref);
+    clearCoDraft(item.ref);
+    markRecentlyCheckedOut(item.ref);
+    if(coData&&coData.ref===item.ref)coData={};
+    markHomeMutation();
+    activeVisits=activeVisits.filter(v=>v.ref!==item.ref);
+    renderActiveVisits();
+    showToast(`✅ Check-out ${item.shop} สำเร็จ`+(res.warning?` (ห่างจุด Check-in ${res.dist} ม.)`:''));
+    refreshAfterWrite();
+    return 'done';
+  }
+  if(res&&res.ok===false){
+    // server ปฏิเสธ (ไม่ใช่ปัญหาเน็ต) → คืนการ์ดให้กดใหม่ ข้อมูลที่กรอกยังอยู่ใน draft
+    removePendingCheckout(item.ref);
+    markHomeMutation();
+    renderActiveVisits();
+    loadActiveVisits();
+    showToast('❌ Check-out ไม่สำเร็จ: '+(res.error||'ไม่ทราบสาเหตุ')+' — ข้อมูลที่กรอกยังอยู่ กดปุ่ม Check-out อีกครั้ง','error');
+    return 'failed';
+  }
+  renderActiveVisits();
+  if(interactive)showToast('📶 เน็ตไม่เสถียร — เก็บ Check-out ไว้ในเครื่องแล้ว ระบบจะส่งให้อัตโนมัติ','error');
+  schedulePendingFlush();
+  return 'pending';
+}
+
+let flushingCheckouts=null;
+function flushPendingCheckouts(interactive){
+  if(flushingCheckouts)return flushingCheckouts;
+  const list=getPendingCheckouts().filter(x=>!currentUser||!x.payload||!x.payload.employee||x.payload.employee===currentUser);
+  if(!list.length)return Promise.resolve();
+  flushingCheckouts=(async()=>{
+    if(interactive)showToast('⏳ กำลังส่ง Check-out ที่ค้างอยู่...');
+    for(const item of list){
+      const res=await sendCheckout(item.payload);
+      handleCheckoutResult(item,res,interactive);
+    }
+  })().finally(()=>{flushingCheckouts=null;});
+  return flushingCheckouts;
+}
+
+let pendingFlushTimer=null;
+function schedulePendingFlush(){
+  if(pendingFlushTimer)return;
+  pendingFlushTimer=setTimeout(()=>{
+    pendingFlushTimer=null;
+    if(getPendingCheckouts().length){
+      flushPendingCheckouts().then(()=>{if(getPendingCheckouts().length)schedulePendingFlush();});
+    }
+  },30000);
+}
+window.addEventListener('online',()=>{if(currentUser){flushPendingCheckouts();flushPendingUploads();}});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&currentUser){
+    flushPendingCheckouts();
+    flushPendingUploads();
+  }
+});
+
+// [FIX] submitCheckout — เดิม: ปิดฟอร์ม + โหลดรายการใหม่ทันที (ก่อน server บันทึก) → การ์ดเดิมโผล่กลับ
+// และส่งข้อมูลทั้งหมดผ่าน GET (URL ยาวเกิน → ล้มเหลว) → ผู้ใช้ต้องกรอกใหม่ทั้งหมด
 async function submitCheckout(){
-  const findings=document.getElementById('co-findings')?.value;const action=document.getElementById('co-action')?.value;
-  if(!findings||!action){showToast('กรุณากรอกประเด็นสำคัญและ Action Plan','error');return;}
-  // ดึง stockItems จาก coData ที่บันทึกไว้ใน step 4
+  const btn=document.getElementById('co-submit-btn');
+  if(btn&&btn.disabled)return;
+  collectCoStep(4);
+  const err=validateCoStep(4);
+  if(err){showToast(err,'error');return;}
+  if(!coData.ref){showToast('ไม่พบข้อมูลการ Check-in กรุณารีเฟรชแล้วลองใหม่','error');return;}
+  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';}
+
   let parsedStock=[];
   try{parsedStock=JSON.parse(coData.stockItems||'[]');}catch(e){parsedStock=[];}
-  const stockText=parsedStock.length>0?parsedStock.map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', '):(stockItems||[]).map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', ');
-  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.lat||'',lng:coGpsData.lng||'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:findings,actionPlan:action,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',stockItems:stockText,stockNote:coData.stockNote||''};
+  const stockText=parsedStock.map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', ');
+  const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.acquired?coGpsData.lat:'',lng:coGpsData.acquired?coGpsData.lng:'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:coData.keyFindings,actionPlan:coData.actionPlan,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',stockItems:stockText,stockNote:coData.stockNote||''};
+  const item={ref:coData.ref,shop:coData.shop,payload,t:Date.now()};
 
-  // [A] Optimistic UI — ปิด Modal + แจ้งสำเร็จทันที ไม่รอ GAS
-  closeCoModal();
-  showToast(`✅ Check-out ${coData.shop} สำเร็จ`);
-  loadActiveVisits();
-  loadDashboard();
+  saveCoDraft();
+  addPendingCheckout(item);
+  markHomeMutation();
+  activeVisits=activeVisits.filter(v=>v.ref!==item.ref);
+  document.getElementById('co-modal').classList.remove('show');
+  if(btn){btn.disabled=false;btn.textContent='🏁 Check-out';}
+  renderActiveVisits();
+  showToast(`⏳ กำลังบันทึก Check-out ${item.shop}...`);
 
-  // ส่งข้อมูลจริงใน background
-  apiGet(payload).then(result=>{
-    if(!result||!result.ok){
-      showToast('⚠️ Check-out อาจไม่สำเร็จ กรุณาตรวจสอบประวัติ','error');
-    }
-  });
+  const res=await sendCheckout(payload);
+  handleCheckoutResult(item,res,true);
 }
 
 // ══ AUTOCOMPLETE ══
 function createAutocomplete(inputId,listId,items,onSelect){
   const inp=document.getElementById(inputId);const list=document.getElementById(listId);if(!inp||!list)return;
+  items=Array.isArray(items)?items:[];
+  const nameOf=it=>String((it&&typeof it==='object')?(it.name||''):it);
   let activeIdx=-1;
-  inp.addEventListener('input',()=>{
-    const q=inp.value.trim().toLowerCase();const filtered=q?items.filter(it=>(it.name||it).toLowerCase().includes(q)):items;
-    list.innerHTML=!filtered.length?'<div class="ac-empty">ไม่พบร้านค้า</div>':filtered.slice(0,30).map(it=>{const n=it.note||'';const dot=levelDot(it.level||'');return`<div class="ac-item" data-val="${it.name||it}" style="display:flex;align-items:center">${dot}<span>${it.name||it}${n?` <span style="color:var(--text3);font-size:12px">(${n})</span>`:''}</span></div>`;}).join('')
+  const render=arr=>{
+    list.innerHTML=!arr.length?'<div class="ac-empty">ไม่พบร้านค้า</div>':arr.slice(0,30).map(it=>{
+      const n=(it&&it.note)||'';const name=nameOf(it);
+      return`<div class="ac-item" data-val="${esc(name)}" style="display:flex;align-items:center">${levelDot((it&&it.level)||'')}<span>${esc(name)}${n?` <span style="color:var(--text3);font-size:12px">(${esc(n)})</span>`:''}</span></div>`;
+    }).join('');
     list.classList.add('show');activeIdx=-1;
     list.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();selectAcItem(inp,list,el.dataset.val,items,onSelect);}));
-  });
-  inp.addEventListener('keydown',e=>{
+  };
+  // [PERF/FIX] เดิมใช้ addEventListener ทุกครั้งที่เปิด Modal → listener ซ้อนกันเรื่อยๆ (พิมพ์แล้วช้าลงเรื่อยๆ)
+  inp.oninput=()=>{
+    const q=inp.value.trim().toLowerCase();
+    const hid=inp.parentElement&&inp.parentElement.querySelector('input[type=hidden]');
+    if(hid&&hid.value!==inp.value)hid.value='';
+    render(q?items.filter(it=>nameOf(it).toLowerCase().includes(q)):items);
+  };
+  inp.onkeydown=e=>{
     const items2=list.querySelectorAll('.ac-item');
     if(e.key==='ArrowDown'){activeIdx=Math.min(activeIdx+1,items2.length-1);items2.forEach((el,i)=>el.classList.toggle('active',i===activeIdx));}
     else if(e.key==='ArrowUp'){activeIdx=Math.max(activeIdx-1,0);items2.forEach((el,i)=>el.classList.toggle('active',i===activeIdx));}
     else if(e.key==='Enter'&&activeIdx>=0){e.preventDefault();const val=items2[activeIdx]?.dataset.val;if(val)selectAcItem(inp,list,val,items,onSelect);}
     else if(e.key==='Escape')list.classList.remove('show');
-  });
-  inp.addEventListener('focus',()=>{
-    if(inp.value.trim()===''){list.innerHTML=items.slice(0,30).map(it=>{const note=it.note||'';return`<div class="ac-item" data-val="${it.name||it}">${it.name||it}${note?` <span style="color:var(--text3);font-size:12px">(${note})</span>`:''}</div>`;}).join('');list.classList.add('show');list.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();selectAcItem(inp,list,el.dataset.val,items,onSelect);}));}
-  });
-  document.addEventListener('click',e=>{if(!inp.contains(e.target)&&!list.contains(e.target))list.classList.remove('show');});
+  };
+  inp.onfocus=()=>{if(inp.value.trim()==='')render(items);};
+  if(!list.dataset.acBound){
+    list.dataset.acBound='1';
+    document.addEventListener('click',e=>{if(!inp.contains(e.target)&&!list.contains(e.target))list.classList.remove('show');});
+  }
 }
-function selectAcItem(inp,list,val,items,onSelect){inp.value=val;list.classList.remove('show');if(onSelect)onSelect(val,items.find(it=>(it.name||it)===val));}
+function selectAcItem(inp,list,val,items,onSelect){inp.value=val;list.classList.remove('show');if(onSelect)onSelect(val,items.find(it=>String((it&&typeof it==='object')?it.name:it)===val));}
 
 // ── helper: ดึงชื่อลูกค้าล่าสุดของร้านนั้นจาก History ──
 function getLastCustomerName(shopName){
@@ -2308,7 +2781,8 @@ async function submitEdit() {
   const payload = {
     action:           'edit_checkin',
     row:              editData.row,
-    employee:         currentUser || '',
+    ref:              editData.ref || '',
+    // [FIX] เดิมส่ง employee: currentUser → แก้ไขรายการของคนอื่นแล้วชื่อพนักงานในแถวถูกเปลี่ยนเป็นชื่อเรา
     shopType:         document.getElementById('ed-stype')?.value        || '',
     tasks,
     customerName:     document.getElementById('ed-custname')?.value     || '',
@@ -2329,7 +2803,7 @@ async function submitEdit() {
     actionPlan:       document.getElementById('ed-action')?.value       || '',
   };
 
-  const result = await apiGet(payload);
+  const result = await apiPost(payload);
 
   if (btn) { btn.disabled = false; btn.textContent = '💾 บันทึก'; }
 
@@ -2338,7 +2812,7 @@ async function submitEdit() {
     showToast('✅ บันทึกข้อมูลสำเร็จ');
     loadHistory(); // reload history
   } else {
-    showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+    showToast('เกิดข้อผิดพลาด' + (result && result.error ? ': ' + result.error : '') + ' กรุณาลองใหม่', 'error');
   }
 }
 
@@ -2507,8 +2981,12 @@ async function submitLineReport() {
   // (ถ้า GAS error หรือรูป Drive อัพโหลดไม่ผ่าน ผู้ใช้จะไม่มีทางรู้) ตอนนี้ใช้ postReliable ที่ retry
   // และ queue ไว้ส่งซ้ำอัตโนมัติถ้าเน็ตหลุดจริงๆ
   const ok = await postReliable(payload);
-  if(ok){
+  if(ok===true){
     showToast(`✅ ส่งรายงาน Line ${lineItems.length} ร้านสำเร็จ`);
+  } else if(ok==='rejected'){
+    showToast('❌ ส่งรายงาน Line ไม่สำเร็จ กรุณาลองใหม่','error');
+    if(btn){btn.textContent='📤 ส่งรายงาน Line';btn.disabled=false;}
+    return;
   } else {
     showToast('⚠️ เน็ตไม่เสถียร ระบบจะส่งรายงานซ้ำอัตโนมัติเมื่อเปิดแอพครั้งถัดไป');
   }
