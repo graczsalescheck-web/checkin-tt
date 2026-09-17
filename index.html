@@ -871,8 +871,16 @@ function syncHome(noCache){
 }
 
 // หลังบันทึกสำเร็จ: ดึงข้อมูลหน้าแรกใหม่ (server cache ถูกล้างอัตโนมัติเมื่อมีการเขียน)
+// [PERF] GAS ประมวลผล request ของเว็บแอพทีละตัว (วัดจริง: ยิง 4 ตัวพร้อมกัน เสร็จ 1.7/2.8/3.7/4.7 วิ)
+// → หน่วงการรีเฟรชไว้ และรวบหลายครั้งเป็นครั้งเดียว ไม่ให้ไปขวางคิว Check-in/Check-out/รูป
+let refreshTimer=null;
 function refreshAfterWrite(){
-  syncHome(false);
+  clearTimeout(refreshTimer);
+  refreshTimer=setTimeout(()=>{
+    refreshTimer=null;
+    if(flushingCheckouts||Object.keys(pendingCheckins).length){refreshAfterWrite();return;}
+    syncHome(false);
+  },5000);
 }
 
 // ══ [NEW] REFRESH HOME DATA ══
@@ -1653,7 +1661,7 @@ function renderActiveVisits(){
   const ciBtn=document.getElementById('ci-quick-btn');
 
   const pendingCo=getPendingCheckouts();
-  const pendingHtml=pendingCo.map(p=>`<div class="checkin-block-msg" style="justify-content:space-between"><span>📶 รอส่ง Check-out: <b>${esc(p.shop)}</b></span><button onclick="flushPendingCheckouts(true)" style="background:#fff;border:1px solid #f3d076;border-radius:6px;padding:4px 10px;font-size:12px;color:#854f0b;cursor:pointer;font-family:'Sarabun',sans-serif;flex-shrink:0">ส่งอีกครั้ง</button></div>`).join('');
+  const pendingHtml=pendingCo.map(p=>`<div class="checkin-block-msg" style="justify-content:space-between"><span>⏳ กำลังส่ง Check-out: <b>${esc(p.shop)}</b></span><button onclick="flushPendingCheckouts(true)" style="background:#fff;border:1px solid #f3d076;border-radius:6px;padding:4px 10px;font-size:12px;color:#854f0b;cursor:pointer;font-family:'Sarabun',sans-serif;flex-shrink:0">ส่งอีกครั้ง</button></div>`).join('');
 
   if(!activeVisits.length){
     el.innerHTML=pendingHtml+`<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in วันนี้</div>`;
@@ -1679,16 +1687,16 @@ function renderActiveVisits(){
   // [FIX] เวลาเดิมใช้ String(checkinTime).slice(0,5) → ได้ "2026-" แทนเวลา
   el.innerHTML=pendingHtml+activeVisits.map((v,i)=>{
     const draft=v.ref?getCoDraft(v.ref):null;
-    const btn=v._pending
-      ?`<button class="btn-checkout" disabled style="opacity:.6;cursor:wait">⏳ กำลังบันทึก Check-in...</button>`
-      :`<button class="btn-checkout" onclick="openCheckoutAt(${i})">🏁 ${draft?'Check-out (กรอกต่อจากเดิม)':'Check-out + กรอกข้อมูล'}</button>`;
-    return`<div class="visit-card active-ci"><div class="visit-shop">${esc(v.shop)}</div><div class="visit-time">⏰ Check-in ${esc(visitTimeText(v))} · ${esc(v.province||'')}</div>${draft?`<div style="font-size:11px;color:var(--brand);margin-top:4px">📝 มีข้อมูลที่กรอกค้างไว้ (ขั้นที่ ${(draft.coStep||0)+1}/${CO_STEPS})</div>`:''}<div class="visit-actions">${btn}</div></div>`;
+    // [PERF] ไม่ต้องรอ server บันทึก Check-in เสร็จ — กรอกข้อมูล Check-out ได้ทันที
+    const btn=`<button class="btn-checkout" onclick="openCheckoutAt(${i})">🏁 ${draft?'Check-out (กรอกต่อจากเดิม)':'Check-out + กรอกข้อมูล'}</button>`
+      +(v._pending?`<div style="font-size:11px;color:var(--text3);margin-top:6px;width:100%">⏳ กำลังบันทึก Check-in (กรอกข้อมูล Check-out รอได้เลย)</div>`:'');
+    return`<div class="visit-card active-ci"><div class="visit-shop">${esc(v.shop)}</div><div class="visit-time">⏰ Check-in ${esc(visitTimeText(v))} · ${esc(v.province||'')}</div>${draft?`<div style="font-size:11px;color:var(--brand);margin-top:4px">📝 มีข้อมูลที่กรอกค้างไว้ (ขั้นที่ ${(draft.coStep||0)+1}/${CO_STEPS})</div>`:''}<div class="visit-actions" style="flex-wrap:wrap">${btn}</div></div>`;
   }).join('');
 }
 
 function openCheckoutAt(i){
   const v=activeVisits[i];
-  if(!v||v._pending)return;
+  if(!v)return;
   openCheckout(v.ref,v.row,v.shop,Number(v.lat)||0,Number(v.lng)||0);
 }
 
@@ -1735,10 +1743,11 @@ function setCiPhotoBox(n,dataUrl){
 // restore = {shop, province, photos:[5], gps:{lat,lng}} — ใช้กู้ข้อมูลเมื่อส่งไม่สำเร็จ (ไม่ต้องถ่ายรูปใหม่)
 async function openCheckinModal(restore){
   restore=restore&&typeof restore==='object'&&!(restore instanceof Event)?restore:null;
+  window._ciRestoreLocalId=restore&&restore.localId?restore.localId:null;
   // [GUARD] ตรวจสอบว่ามี active visit อยู่แล้วไหม
   if(activeVisits&&activeVisits.length>0){
     const v=activeVisits[0];
-    showToast(v._pending?`กำลังบันทึก Check-in "${v.shop}" กรุณารอสักครู่`:`กรุณา Check-out "${v.shop}" ก่อน`,'error');
+    showToast(`กรุณา Check-out "${v.shop}" ก่อน`,'error');
     return;
   }
   // [GUARD] มี Check-out ค้างส่ง → ต้องส่งให้สำเร็จก่อน ไม่งั้น server จะปฏิเสธ Check-in ใหม่
@@ -1873,14 +1882,17 @@ async function submitCheckin(){
   const lat=ciGpsData.lat,lng=ciGpsData.lng;
   const photos=ciPhotoData.slice();
   const nowD=new Date();
-  const localId='local-'+nowD.getTime();
+  const localId=window._ciRestoreLocalId||('local-'+nowD.getTime());
+  window._ciRestoreLocalId=null;
+  let resolvePending;
+  pendingCheckins[localId]=new Promise(r=>{resolvePending=r;});
   const base={shop,province,lat,lng,employee:currentUser||'',checkinHHmm:hhmm(nowD),checkinDate:localISODate(nowD),status:'check-in'};
 
   // [A] Optimistic UI — ปิด Modal ทันที แสดงการ์ด "กำลังบันทึก" (ปุ่ม Check-out รอจนได้เลขแถวจริง)
   // [FIX] เดิมเรียก loadActiveVisits() ก่อน server บันทึกเสร็จ และไม่โหลดใหม่หลังบันทึกเสร็จ
   // → ไม่มีการ์ดให้กด Check-out และปุ่ม Check-in ยังกดซ้ำได้
   markHomeMutation();
-  activeVisits=activeVisits.concat([{...base,_pending:true,_localId:localId,ref:'',row:0}]);
+  activeVisits=activeVisits.concat([{...base,_pending:true,_localId:localId,ref:localId,row:0}]);
   renderActiveVisits();
   closeCiModal();
   resetBtn();
@@ -1898,7 +1910,12 @@ async function submitCheckin(){
   activeVisits=activeVisits.filter(v=>v._localId!==localId);
 
   if(data&&data.ok&&data.row){
-    activeVisits.push({...base,ref:data.ref,row:data.row});
+    // ถ้าผู้ใช้กรอก/ส่ง Check-out ระหว่างรอ → ย้ายข้อมูลไปผูกกับ REF จริง
+    migrateLocalRef(localId,data.ref,data.row);
+    const checkoutQueued=getPendingCheckouts().some(x=>x.ref===data.ref);
+    if(!checkoutQueued)activeVisits.push({...base,ref:data.ref,row:data.row});
+    delete pendingCheckins[localId];
+    resolvePending({ref:data.ref,row:data.row});
     renderActiveVisits();
     showToast(`✅ Check-in ${shop} สำเร็จ`);
     uploadCheckinPhotos(data.row,data.ref,photos);
@@ -1906,6 +1923,10 @@ async function submitCheckin(){
     return;
   }
 
+  delete pendingCheckins[localId];
+  resolvePending(null);
+  const queuedCo=getPendingCheckouts().find(x=>x.ref===localId);
+  if(queuedCo)removePendingCheckout(localId);
   renderActiveVisits();
 
   if(data&&data.reason==='already_checkin'){
@@ -1917,7 +1938,25 @@ async function submitCheckin(){
   // ล้มเหลว → เปิดฟอร์มพร้อมข้อมูลเดิม (รูป/GPS ไม่หาย) ให้กดส่งอีกครั้ง
   showToast('❌ Check-in ไม่สำเร็จ'+(data&&data.error?': '+data.error:' (เครือข่ายขัดข้อง)')+' — กรุณากดส่งอีกครั้ง','error');
   loadActiveVisits();
-  openCheckinModal({shop,province,photos,gps:{lat,lng}});
+  // ใช้ localId เดิม → ข้อมูล Check-out ที่กรอกไว้ระหว่างรอจะยังผูกอยู่
+  openCheckinModal({shop,province,photos,gps:{lat,lng},localId});
+}
+
+// ══ Check-in ที่กำลังบันทึก ══
+const pendingCheckins={}; // localId → Promise<{ref,row}|null>
+
+function migrateLocalRef(localId,ref,row){
+  const all=getCoDrafts();
+  if(all[localId]){
+    all[ref]={...all[localId],coData:{...all[localId].coData,ref,row}};
+    delete all[localId];
+    lsSet(CO_DRAFT_KEY,all);
+  }
+  if(coData&&coData.ref===localId){coData.ref=ref;coData.row=row;}
+  const list=getPendingCheckouts();
+  let changed=false;
+  list.forEach(x=>{if(x.ref===localId){x.ref=ref;x.payload.ref=ref;x.payload.row=row;changed=true;}});
+  if(changed)setPendingCheckouts(list);
 }
 
 // อัปโหลดรูปหลัง Check-in (อ่านผลลัพธ์ได้ + retry + เก็บคิวไว้ส่งซ้ำ)
@@ -2399,6 +2438,10 @@ function flushPendingCheckouts(interactive){
   flushingCheckouts=(async()=>{
     if(interactive)showToast('⏳ กำลังส่ง Check-out ที่ค้างอยู่...');
     for(const item of list){
+      if(isLocalRef(item.ref)){
+        if(pendingCheckins[item.ref])continue; // submitCheckout กำลังรออยู่แล้ว
+        if(!(await waitForLocalCheckin(item)))continue;
+      }
       const res=await sendCheckout(item.payload);
       handleCheckoutResult(item,res,interactive);
     }
@@ -2450,8 +2493,32 @@ async function submitCheckout(){
   renderActiveVisits();
   showToast(`⏳ กำลังบันทึก Check-out ${item.shop}...`);
 
-  const res=await sendCheckout(payload);
+  if(isLocalRef(item.ref)){
+    const real=await waitForLocalCheckin(item);
+    if(!real)return; // Check-in ไม่สำเร็จ — แจ้งแล้วใน submitCheckin, draft ยังอยู่
+  }
+  const res=await sendCheckout(item.payload);
   handleCheckoutResult(item,res,true);
+}
+
+function isLocalRef(ref){return String(ref||'').startsWith('local-');}
+
+// รอ Check-in ที่ยังบันทึกไม่เสร็จ แล้วอัปเดต item ให้ใช้ REF จริง
+async function waitForLocalCheckin(item){
+  const localId=item.ref;
+  let real=null;
+  if(pendingCheckins[localId]){
+    real=await pendingCheckins[localId];
+  }else{
+    // แอพถูกปิดระหว่างรอ → หา Check-in ของร้านนี้จาก server
+    const chk=await apiGet({action:'active_visits',employee:item.payload.employee||currentUser||''},{timeout:30000,silent:true});
+    const v=chk&&Array.isArray(chk.visits)?chk.visits.find(x=>x.shop===item.shop):null;
+    if(v){real={ref:v.ref,row:v.row};migrateLocalRef(localId,v.ref,v.row);}
+    else if(chk&&Date.now()-(item.t||0)>24*60*60*1000){removePendingCheckout(localId);}
+  }
+  if(!real)return null;
+  item.ref=real.ref;item.payload.ref=real.ref;item.payload.row=real.row;
+  return real;
 }
 
 // ══ AUTOCOMPLETE ══
