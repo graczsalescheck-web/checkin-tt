@@ -738,10 +738,30 @@ else setTimeout(init,0);
 let employeeChoices=[];
 async function loadEmployeesForSelect(){
   // [PERF] แสดงรายชื่อจากข้อมูลในเครื่องก่อน แล้วค่อยอัปเดตจาก server
-  if(loadMasterDataFromCache())renderEmployeeChoices();
-  await loadMasterData(undefined);
-  if(!(masterData.employees||[]).length)await loadMasterData(await apiGet({action:'masterdata'},{silent:true}));
-  if(!currentUser)renderEmployeeChoices();
+  if(loadMasterDataFromCache()){
+    renderEmployeeChoices();
+    // อัปเดตรายชื่อในพื้นหลัง
+    apiGet({action:'masterdata'},{silent:true}).then(d=>{if(d&&Array.isArray(d.employees)&&d.employees.length){loadMasterData(d);if(!currentUser)renderEmployeeChoices();}});
+    return;
+  }
+  // [FIX] Google ล่มชั่วคราว (ตอบ 404 หลัง 20-30 วิ) → เดิมหน้าเลือกชื่อค้าง "กำลังโหลด..." ตลอด
+  // ตอนนี้ลองใหม่อัตโนมัติ และมีปุ่มให้กดลองใหม่เอง
+  const grid=document.getElementById('name-grid');
+  for(let attempt=1;attempt<=4&&!currentUser;attempt++){
+    const data=await apiGet({action:'masterdata'},{silent:true,timeout:20000});
+    if(data&&Array.isArray(data.employees)&&data.employees.length){
+      await loadMasterData(data);
+      if(!currentUser)renderEmployeeChoices();
+      return;
+    }
+    if(currentUser)return;
+    if(grid)grid.innerHTML=`<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">ระบบ Google ตอบช้า กำลังลองใหม่ (${attempt}/4)...</div>`;
+    await new Promise(r=>setTimeout(r,2000*attempt));
+  }
+  if(currentUser)return;
+  if(grid)grid.innerHTML=`<div style="text-align:center;padding:12px;color:var(--accent);font-size:13px">เชื่อมต่อระบบไม่ได้ กรุณาลองใหม่</div>
+    <button class="btn btn-primary" type="button" onclick="loadEmployeesForSelect()">🔄 ลองใหม่</button>
+    <button class="name-btn name-btn-other" type="button" onclick="showCustomNameInput()"><div class="avatar">+</div><span>พิมพ์ชื่อเอง</span></button>`;
 }
 function renderEmployeeChoices(){
   const emps=(masterData.employees||[]).length?masterData.employees:['สมชาย ใจดี','วิชัย รักงาน','นภา มีสุข'];
