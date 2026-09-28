@@ -667,6 +667,30 @@ label.field-label .req{color:var(--accent)}
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzuBngQo56VHt4yFEAR_UGSyckk_0Ua6HqxgkFb2khlBL_mdjgzq9DyTda5Rq8PTcEw/exec';
 
+// ══ SUPABASE ══ ใส่ค่าจาก Supabase → Project Settings → API (ใช้ anon key เท่านั้น ห้ามใช้ service_role)
+// ถ้าเว้นว่าง แอพจะใช้ Google Apps Script ตามเดิม
+const SUPABASE_URL = '';
+const SUPABASE_ANON_KEY = '';
+// action ที่ต้องผ่าน Apps Script (บันทึกรูปลง Google Drive)
+const GAS_ONLY_ACTIONS = ['upload_photo','save_line_report'];
+function useSupabase(action){return !!(SUPABASE_URL&&SUPABASE_ANON_KEY)&&!GAS_ONLY_ACTIONS.includes(action);}
+async function sbApi(action,params,timeoutMs){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),timeoutMs||20000);
+  try{
+    const body={action,params:{}};
+    for(const [k,v] of Object.entries(params||{})){if(k!=='action')body.params[k]=v===null||v===undefined?'':v;}
+    const res=await fetch(SUPABASE_URL.replace(/\/+$/,'')+'/rest/v1/rpc/api',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY},
+      body:JSON.stringify(body),signal:controller.signal
+    });
+    const text=await res.text();
+    try{return JSON.parse(text);}catch(pe){console.warn('sbApi non-JSON',res.status,text.slice(0,200));return null;}
+  }catch(e){console.warn('sbApi error:',e);return null;}
+  finally{clearTimeout(timer);}
+}
+
 const stepDefs = [
   {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`,title:'ส่วนที่ 1: ข้อมูลร้านค้า'},
   {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>`,title:'อัปโหลดรูปถ่าย'},
@@ -919,6 +943,7 @@ async function refreshHomeData(){
 // GAS cold start + อ่านชีตใหญ่ใช้เวลาเกิน 20 วิได้ → ถูกยกเลิกทั้งที่ฝั่ง server บันทึกสำเร็จแล้ว
 async function apiGet(params,opts){
   opts=opts||{};
+  if(useSupabase(params.action))return sbApi(params.action,params,opts.timeout);
   const sp=new URLSearchParams();
   for(const [k,v] of Object.entries(params))sp.append(k,v===null||v===undefined?'':String(v));
   const controller=new AbortController();
@@ -938,6 +963,7 @@ async function apiGet(params,opts){
 // ใช้กับข้อมูลยาว (Check-out) แทน GET — URL ยาวเกินจะถูก Google ปฏิเสธ
 async function apiPost(payload,opts){
   opts=opts||{};
+  if(useSupabase(payload.action))return sbApi(payload.action,payload,opts.timeout);
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),opts.timeout||45000);
   try{
@@ -1568,7 +1594,9 @@ let adminYear=new Date().getFullYear();let adminMonth=new Date().getMonth();
 function openAdmin(){switchScreen('admin');renderAdminMonth();populateAdminDropdowns();}
 
 function populateAdminDropdowns(){
-  const myShops=salesShops.length>0?salesShops:masterData.shops;
+  // แผนการเข้าเยี่ยมเลือกได้จากร้านทั้งหมดใน Shops
+  // ไม่จำกัดตามการจับคู่ Sales–ร้านค้าใน SalesShops
+  const myShops=masterData.shops;
   const adminInp=document.getElementById('admin-shop-input');const adminHid=document.getElementById('admin-shop');
   if(adminInp)adminInp.value='';if(adminHid)adminHid.value='';
   setTimeout(()=>{createAutocomplete('admin-shop-input','admin-shop-list',myShops,(val)=>{const h=document.getElementById('admin-shop');if(h)h.value=val;});},100);
@@ -1724,7 +1752,8 @@ function openCheckoutAt(i){
 async function openCheckinModalWithShop(shopName){
   // ปิด day detail panel ก่อน
   document.getElementById('day-detail').style.display='none';
-  const allShops=salesShops.length>0?salesShops:masterData.shops;
+  // แผนเลือกได้จาก Shops ทั้งหมด จึงค้นจังหวัดจาก Shops โดยตรง
+  const allShops=masterData.shops||[];
   const found=allShops.find(s=>(s.name||s)===shopName);
   await openCheckinModal({shop:shopName,province:(found&&found.province)||''});
 }
@@ -2668,7 +2697,8 @@ function handleUploadFile(input){
 }
 
 function parseAndValidate(rows){
-  const allShops=( salesShops.length>0?salesShops:masterData.shops).map(s=>(s.name||s).trim());
+  // ไฟล์แผนตรวจชื่อร้านกับ Shops ทั้งหมด ไม่จำกัดตาม SalesShops
+  const allShops=masterData.shops.map(s=>(s.name||s).trim());
   const allEmps=masterData.employees.map(e=>String(e).trim());
   const seen=new Set();
   uploadRows=rows.map((r,i)=>{
