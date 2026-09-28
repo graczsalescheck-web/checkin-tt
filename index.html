@@ -136,7 +136,16 @@ label.field-label .req{color:var(--accent)}
 .btn-primary:active{background:var(--brand-mid)}
 .btn-success{background:var(--success);color:#fff}
 .btn:disabled{opacity:.6;cursor:not-allowed}
-.history-header{padding:14px 16px;background:#fff;border-bottom:1px solid var(--border);display:flex;gap:10px}
+.history-header{padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);display:flex;gap:10px}
+.history-date-panel{padding:12px 16px;background:#fff;border-bottom:1px solid var(--border)}
+.history-month-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:10px}
+.history-range-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+.history-date-field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.history-date-field label{font-size:10px;font-weight:700;color:var(--text3)}
+.history-date-input{width:100%;min-width:0;padding:8px 9px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:12px;color:var(--text);background:#fff;outline:none}
+.history-date-input:focus{border-color:var(--brand)}
+.history-search-btn{padding:9px 13px;border:none;border-radius:var(--radius-sm);background:var(--brand);color:#fff;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.history-result-info{font-size:11px;color:var(--text3);padding:8px 16px 0}
 .filter-chip{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;cursor:pointer;white-space:nowrap;background:#fff;color:var(--text2);font-family:'Sarabun',sans-serif;transition:all .15s;flex-shrink:0}
 .filter-chip.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
 .history-filter{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'Sarabun',sans-serif;color:var(--text);background:#fff;outline:none}
@@ -399,12 +408,30 @@ label.field-label .req{color:var(--accent)}
   </div>
   <!-- HISTORY -->
   <div class="screen" id="screen-history">
+    <div class="history-date-panel">
+      <div class="history-month-row">
+        <div class="history-date-field">
+          <label for="history-month">เลือกเดือน</label>
+          <input class="history-date-input" type="month" id="history-month" onchange="selectHistoryMonth()">
+        </div>
+        <button class="history-search-btn" type="button" onclick="selectHistoryMonth()">ดูเดือนนี้</button>
+      </div>
+      <div class="history-range-row">
+        <div class="history-date-field">
+          <label for="history-start">วันที่เริ่มต้น</label>
+          <input class="history-date-input" type="date" id="history-start">
+        </div>
+        <div class="history-date-field">
+          <label for="history-end">วันที่สิ้นสุด</label>
+          <input class="history-date-input" type="date" id="history-end">
+        </div>
+        <button class="history-search-btn" type="button" onclick="searchHistoryRange()">ค้นหา</button>
+      </div>
+    </div>
     <div class="history-header">
       <input class="history-filter" type="text" placeholder="🔍 ค้นหาร้านค้า..." id="search-input" oninput="filterHistory()">
-      <select class="history-filter" style="max-width:120px" id="filter-select" onchange="filterHistory()">
-        <option>ทั้งหมด</option><option>วันนี้</option><option>สัปดาห์นี้</option><option>เดือนนี้</option>
-      </select>
     </div>
+    <div class="history-result-info" id="history-result-info"></div>
     <!-- [NEW] Employee Tab Filter -->
     <div id="history-emp-tabs" style="display:flex;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch">
       <div class="filter-chip active" id="emp-tab-all" onclick="setEmpTab('all',this)" style="white-space:nowrap">ทั้งหมด</div>
@@ -1140,18 +1167,71 @@ function setPeriod(btn){
 }
 
 let historyEmpFilter = 'all'; // [NEW] employee filter state
+let historyFiltersReady = false;
+
+function initHistoryFilters(){
+  if(historyFiltersReady)return;
+  const now=new Date();
+  const month=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const start=new Date(now.getFullYear(),now.getMonth(),1);
+  const end=new Date(now.getFullYear(),now.getMonth()+1,0);
+  const monthEl=document.getElementById('history-month');
+  const startEl=document.getElementById('history-start');
+  const endEl=document.getElementById('history-end');
+  if(monthEl)monthEl.value=month;
+  if(startEl)startEl.value=localISODate(start);
+  if(endEl)endEl.value=localISODate(end);
+  historyFiltersReady=true;
+}
+
+function selectHistoryMonth(){
+  initHistoryFilters();
+  const value=document.getElementById('history-month')?.value||'';
+  const m=value.match(/^(\d{4})-(\d{2})$/);
+  if(!m){showToast('กรุณาเลือกเดือน','error');return;}
+  const year=Number(m[1]);
+  const month=Number(m[2])-1;
+  document.getElementById('history-start').value=localISODate(new Date(year,month,1));
+  document.getElementById('history-end').value=localISODate(new Date(year,month+1,0));
+  loadHistory();
+}
+
+function searchHistoryRange(){
+  initHistoryFilters();
+  const start=document.getElementById('history-start')?.value||'';
+  const end=document.getElementById('history-end')?.value||'';
+  if(!start||!end){showToast('กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด','error');return;}
+  if(start>end){showToast('วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด','error');return;}
+  const days=Math.floor((new Date(end)-new Date(start))/86400000)+1;
+  if(days>366){showToast('เลือกช่วงเวลาได้ไม่เกิน 1 ปี','error');return;}
+  document.getElementById('history-month').value='';
+  loadHistory();
+}
 
 async function loadHistory(){
+  initHistoryFilters();
   const listEl=document.getElementById('history-list');
+  const infoEl=document.getElementById('history-result-info');
   if(listEl)listEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">กำลังโหลด...</div>';
-  const data=await apiGet({action:'history'});
- if(data&&data.rows&&data.rows.length){
+  if(infoEl)infoEl.textContent='กำลังค้นหาประวัติ...';
+  const startDate=document.getElementById('history-start')?.value||'';
+  const endDate=document.getElementById('history-end')?.value||'';
+  const data=await apiGet({action:'history',startDate,endDate},{timeout:45000});
+ if(data&&Array.isArray(data.rows)){
     // map shopLevel จาก salesShops/masterData
     const shopLevelMap={};
     masterData.shops.forEach(s=>{if(s.level)shopLevelMap[s.name||s]=s.level;});
     allHistory=data.rows.map(r=>({...r, shopLevel: shopLevelMap[r.shop]||''}));
+    if(infoEl){
+      const range=`${startDate||'—'} ถึง ${endDate||'—'}`;
+      infoEl.textContent=`พบ ${allHistory.length} รายการ · ${range}`+(data.truncated?` · แสดงสูงสุด ${data.limit||1000} รายการ`:'');
+      infoEl.style.color=data.truncated?'var(--warning)':'var(--text3)';
+    }
   }
- else{allHistory=[];}
+ else{
+    allHistory=[];
+    if(infoEl){infoEl.textContent='โหลดประวัติไม่สำเร็จ กรุณาลองใหม่';infoEl.style.color='var(--accent)';}
+  }
   buildEmpTabs();
   filterHistory();
 }
@@ -1162,6 +1242,7 @@ function buildEmpTabs(){
   if(!tabsEl)return;
   // ดึงรายชื่อพนักงานจาก history
   const emps=[...new Set(allHistory.map(r=>r.employee||'').filter(Boolean))].sort();
+  if(historyEmpFilter!=='all'&&!emps.includes(historyEmpFilter))historyEmpFilter='all';
   let html=`<div class="filter-chip ${historyEmpFilter==='all'?'active':''}" onclick="setEmpTab('all',this)">ทั้งหมด</div>`;
   // ปุ่มชื่อตัวเองก่อน
   if(currentUser&&emps.includes(currentUser)){
@@ -1482,23 +1563,10 @@ function formatDate(val){
 
 function filterHistory(){
   const q=(document.getElementById('search-input')?.value||'').toLowerCase();
-  const period=document.getElementById('filter-select')?.value||'ทั้งหมด';
-  const now=new Date(); now.setHours(0,0,0,0);
   const norm=s=>String(s||'').replace(/\s+/g,' ').trim();
   const filtered=allHistory.filter(r=>{
     if(historyEmpFilter!=='all'&&norm(r.employee)!==norm(historyEmpFilter))return false;
     if(q&&!(r.shop||'').toLowerCase().includes(q))return false;
-    // กรองตามช่วงเวลา
-    if(period!=='ทั้งหมด'&&r.date){
-      // r.date มาในรูป dd/MM/yyyy หรือ yyyy-MM-dd
-      let d;
-      if(r.date.includes('/')){const p=r.date.split('/');d=new Date(p[2],p[1]-1,p[0]);}
-      else{d=new Date(r.date);}
-      d.setHours(0,0,0,0);
-      if(period==='วันนี้'&&d.getTime()!==now.getTime())return false;
-      if(period==='สัปดาห์นี้'){const w=new Date(now);w.setDate(now.getDate()-now.getDay());if(d<w)return false;}
-      if(period==='เดือนนี้'){if(d.getMonth()!==now.getMonth()||d.getFullYear()!==now.getFullYear())return false;}
-    }
     return true;
   });
   const list=document.getElementById('history-list');if(!list)return;
