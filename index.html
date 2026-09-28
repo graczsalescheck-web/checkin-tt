@@ -753,12 +753,27 @@ function init(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
 else setTimeout(init,0);
 let employeeChoices=[];
+let employeeLoadSeq=0;
 async function loadEmployeesForSelect(){
   // [PERF] แสดงรายชื่อจากข้อมูลในเครื่องก่อน แล้วค่อยอัปเดตจาก server
   if(loadMasterDataFromCache()){
+  const seq=++employeeLoadSeq;
+  const grid=document.getElementById('name-grid');
+  // รายชื่อพนักงานเปลี่ยนไม่บ่อย: ใช้ cache เดิมได้แม้เกิน TTL
+  // แล้วค่อยรีเฟรชจาก server เบื้องหลัง เพื่อไม่ให้หน้าเลือกชื่อค้าง
+  const cached=lsGet('md_cache_v2',null);
+  if(cached&&cached.data&&Array.isArray(cached.data.employees)&&cached.data.employees.length){
+    masterData=Object.assign({},masterData,cached.data);
     renderEmployeeChoices();
     // อัปเดตรายชื่อในพื้นหลัง
     apiGet({action:'masterdata'},{silent:true}).then(d=>{if(d&&Array.isArray(d.employees)&&d.employees.length){loadMasterData(d);if(!currentUser)renderEmployeeChoices();}});
+    apiGet({action:'masterdata'},{silent:true,timeout:15000}).then(d=>{
+      if(seq!==employeeLoadSeq||currentUser)return;
+      if(d&&Array.isArray(d.employees)&&d.employees.length){
+        loadMasterData(d);
+        renderEmployeeChoices();
+      }
+    });
     return;
   }
   // [FIX] Google ล่มชั่วคราว (ตอบ 404 หลัง 20-30 วิ) → เดิมหน้าเลือกชื่อค้าง "กำลังโหลด..." ตลอด
@@ -774,6 +789,15 @@ async function loadEmployeesForSelect(){
     if(currentUser)return;
     if(grid)grid.innerHTML=`<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">ระบบ Google ตอบช้า กำลังลองใหม่ (${attempt}/4)...</div>`;
     await new Promise(r=>setTimeout(r,2000*attempt));
+  // เครื่องใหม่ยังไม่มี cache: ให้พิมพ์ชื่อเองได้ระหว่างรอ
+  if(grid)grid.innerHTML=`<div style="text-align:center;padding:14px;color:var(--text3);font-size:13px">กำลังโหลดรายชื่อ Sales...</div>
+    <button class="name-btn name-btn-other" type="button" onclick="showCustomNameInput()"><div class="avatar">+</div><span>พิมพ์ชื่อเองระหว่างรอ</span></button>`;
+  const data=await apiGet({action:'masterdata'},{silent:true,timeout:15000});
+  if(seq!==employeeLoadSeq||currentUser)return;
+  if(data&&Array.isArray(data.employees)&&data.employees.length){
+    await loadMasterData(data);
+    renderEmployeeChoices();
+    return;
   }
   if(currentUser)return;
   if(grid)grid.innerHTML=`<div style="text-align:center;padding:12px;color:var(--accent);font-size:13px">เชื่อมต่อระบบไม่ได้ กรุณาลองใหม่</div>
