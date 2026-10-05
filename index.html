@@ -308,6 +308,7 @@ label.field-label .req{color:var(--accent)}
   เพื่อให้สามารถรับ GPS ได้
   <button onclick="document.getElementById('pwa-gps-warning').style.display='none'" style="margin-left:10px;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:4px;padding:3px 10px;cursor:pointer;font-family:'Sarabun',sans-serif">ปิด</button>
 </div>
+
 <div class="toast" id="toast">
   <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
   <span id="toast-text"></span>
@@ -545,6 +546,7 @@ label.field-label .req{color:var(--accent)}
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><line x1="19" y1="8" x2="21" y2="8"/><line x1="19" y1="11" x2="21" y2="11"/></svg><span>แผนงาน</span>
   </button>
 </nav>
+
 <!-- QUICK CHECK-IN MODAL -->
 <div class="ci-modal" id="ci-modal">
   <div class="ci-sheet">
@@ -691,6 +693,7 @@ label.field-label .req{color:var(--accent)}
 </div>
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzuBngQo56VHt4yFEAR_UGSyckk_0Ua6HqxgkFb2khlBL_mdjgzq9DyTda5Rq8PTcEw/exec';
+
 // ══ SUPABASE ══ ใส่ค่าจาก Supabase → Project Settings → API (ใช้ anon key เท่านั้น ห้ามใช้ service_role)
 // ถ้าเว้นว่าง แอพจะใช้ Google Apps Script ตามเดิม
 const SUPABASE_URL = '';
@@ -714,6 +717,7 @@ async function sbApi(action,params,timeoutMs){
   }catch(e){console.warn('sbApi error:',e);return null;}
   finally{clearTimeout(timer);}
 }
+
 const stepDefs = [
   {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`,title:'ส่วนที่ 1: ข้อมูลร้านค้า'},
   {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>`,title:'อัปโหลดรูปถ่าย'},
@@ -721,6 +725,7 @@ const stepDefs = [
   {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,title:'ส่วนที่ 3: ข้อมูลคู่แข่ง'},
   {icon:`<svg fill="none" stroke="#1a3a8f" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`,title:'ส่วนที่ 4: สรุปผลและ Action Plan'},
 ];
+
 // ══ STATE ══
 let currentUser  = localStorage.getItem('checkin_user') || null;
 let allHistory   = [];
@@ -741,6 +746,7 @@ let masterData   = {
   tasks:['ตรวจเยี่ยมลูกค้า','ติดตามงานขาย','เสนอสินค้า','อัพเดทโปรโมชั่น','จัดสินค้า'],
   orderStatuses:['สั่งซื้อปกติ','สั่งซื้อเพิ่มพิเศษ','ลดการสั่งซื้อ','ไม่สั่งซื้อ'],
 };
+
 // ══ INIT ══
 // ── [FIX iOS GPS] ตรวจ standalone mode ──
 (function checkStandalone(){
@@ -764,6 +770,7 @@ let masterData   = {
     }
   }
 })();
+
 // [FIX สำคัญ] เดิมเรียก init() ทันทีตรงนี้ ขณะที่ตัวแปร let ด้านล่าง (toastTimer, activeVisits, planData ฯลฯ)
 // ยังไม่ถูกประกาศ (Temporal Dead Zone) → showToast() ใน enterApp() โยน ReferenceError
 // → enterApp หยุดทำงานทันที: ไม่โหลดข้อมูลหน้าแรก, ไม่โหลดร้านค้า, ไม่แสดงรายการ Check-out
@@ -778,6 +785,7 @@ function init(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
 else setTimeout(init,0);
+
 let employeeChoices=[];
 async function loadEmployeesForSelect(){
   // [PERF] แสดงรายชื่อจากข้อมูลในเครื่องก่อน แล้วค่อยอัปเดตจาก server
@@ -820,7 +828,9 @@ function renderEmployeeChoices(){
     `<button class="name-btn name-btn-other" type="button" onclick="showCustomNameInput()"><div class="avatar">+</div><span>อื่นๆ — พิมพ์ชื่อเอง</span></button>`;
   hideCustomNameInput();
 }
+
 function selectName(name){currentUser=name;localStorage.setItem('checkin_user',name);enterApp();}
+
 function showCustomNameInput(){
   const grid=document.getElementById('name-grid');
   const wrap=document.getElementById('custom-name-wrap');
@@ -831,6 +841,7 @@ function showCustomNameInput(){
   if(error)error.textContent='';
   if(input){input.value='';setTimeout(()=>input.focus(),50);}
 }
+
 function hideCustomNameInput(){
   const grid=document.getElementById('name-grid');
   const wrap=document.getElementById('custom-name-wrap');
@@ -839,6 +850,7 @@ function hideCustomNameInput(){
   if(wrap)wrap.style.display='none';
   if(error)error.textContent='';
 }
+
 function selectCustomName(){
   const input=document.getElementById('custom-name-input');
   const error=document.getElementById('custom-name-error');
@@ -847,21 +859,24 @@ function selectCustomName(){
   if(/[<>]/.test(name)){if(error)error.textContent='ชื่อมีอักขระที่ไม่รองรับ';input?.focus();return;}
   selectName(name);
 }
+
 function customNameKeydown(event){
   if(event.key==='Enter'){event.preventDefault();selectCustomName();}
 }
+
 async function enterApp(){
   document.getElementById('name-screen').style.display='none';
   const first=(currentUser||'').split(' ')[0];
   document.getElementById('hero-name').textContent=first;
   document.getElementById('user-name-short').textContent=first;
+
   // ล้างสถานะของผู้ใช้ก่อนหน้า (กรณีกด "เปลี่ยน" ชื่อ)
   activeVisits=[];planData=[];salesShops=[];salesShopsLoaded=false;allHistory=[];
+
   // [PERF] ใช้ข้อมูลที่เก็บไว้ในเครื่องก่อน → หน้าจอพร้อมใช้ทันที ไม่ต้องรอ Google Sheet
   loadMasterDataFromCache();
   loadSalesShopsFromCache();
   const snap=loadHomeSnapshot();
-  homeHasUsableSnapshot=Boolean(snap);
   if(snap){
     applyHomeData(snap,{fromCache:true,seq:homeSeq});
     setSyncLabel('ข้อมูลเมื่อ '+hhmm(new Date(snap.t))+' · กำลังอัปเดต...');
@@ -869,6 +884,7 @@ async function enterApp(){
     renderActiveVisits();
     showToast('⏳ กำลังโหลดข้อมูล...');
   }
+
   // [PERF] เดิม: ถ้า init ช้าเกิน 8 วิ จะยิงอีก 6 request ซ้อน (ขณะที่ init ยังทำงานอยู่)
   // → GAS ต้องทำงานซ้ำ 2 เท่า ยิ่งช้า ตอนนี้ใช้ init ตัวเดียว (timeout 60 วิ) fallback เฉพาะเมื่อ init ล้มเหลว
   syncHome(false).finally(()=>{
@@ -876,16 +892,13 @@ async function enterApp(){
     flushPendingUploads();
   });
 }
+
 // ══ HOME SYNC / SNAPSHOT ══
 let homeSeq=0;                 // เพิ่มทุกครั้งที่มีการเปลี่ยนแปลงในเครื่อง (check-in/out)
-let homeHasUsableSnapshot=false;
-const HOME_INIT_MAX_ATTEMPTS=2;
-const HOME_INIT_TIMEOUT=20000;
 function markHomeMutation(){homeSeq++;}
 function homeCacheKey(){return 'home_cache_v2_'+(currentUser||'');}
 function saveHomeSnapshot(d){
   lsSet(homeCacheKey(),{t:Date.now(),activeVisits:d.activeVisits,dashboard:d.dashboard,visitplan:d.visitplan,notifications:d.notifications});
-  homeHasUsableSnapshot=true;
 }
 function loadHomeSnapshot(){
   const s=lsGet(homeCacheKey(),null);
@@ -898,28 +911,14 @@ function applyHomeData(d,opts){
   if(d.visitplan)loadVisitPlan(d.visitplan,opts.fromCache);
   if(d.notifications)loadNotifications(d.notifications);
 }
+
 let homeSyncPromise=null,homeSyncSeq=-1;
 function syncHome(noCache){
   // ใช้ request ที่กำลังวิ่งอยู่ซ้ำ ถ้าเริ่มหลังการเปลี่ยนแปลงล่าสุดแล้ว
-  // รวมถึงตอนผู้ใช้กดรีเฟรชระหว่างที่ request เดิมยังไม่จบ ป้องกัน GAS ทำงานซ้อน
   if(homeSyncPromise&&homeSyncSeq===homeSeq&&!noCache)return homeSyncPromise;
-  if(homeSyncPromise&&homeSyncSeq===homeSeq)return homeSyncPromise;
   const seq=homeSeq;
   const p=(async()=>{
     const initData=await apiGet({action:'init',employee:currentUser||'',period:currentPeriod,nocache:noCache?'1':''},{timeout:60000,silent:true});
-    let initData=null;
-    for(let attempt=1;attempt<=HOME_INIT_MAX_ATTEMPTS;attempt++){
-      if(attempt>1){
-        setSyncLabel(`Google ตอบช้า · กำลังลองใหม่ ${attempt}/${HOME_INIT_MAX_ATTEMPTS}`);
-        await new Promise(r=>setTimeout(r,1000*Math.pow(2,attempt-2)));
-      }
-      initData=await apiGet(
-        {action:'init',employee:currentUser||'',period:currentPeriod,nocache:noCache?'1':''},
-        {timeout:HOME_INIT_TIMEOUT,silent:true}
-      );
-      if(initData&&initData.ok)break;
-      if(navigator.onLine===false)break;
-    }
     if(initData&&initData.ok){
       if(initData.masterdata)loadMasterData(initData.masterdata);
       if(initData.salesshops)loadSalesShops(initData.salesshops);
@@ -935,33 +934,13 @@ function syncHome(noCache){
     // fallback: backend รุ่นเก่า/init ล้มเหลว → โหลดแยก
     await Promise.all([loadMasterData(),loadSalesShops(),loadActiveVisits(),loadDashboard(),loadVisitPlan(),loadNotifications()]);
     setSyncLabel(hhmm());
-    // ถ้ามี snapshot อยู่แล้ว ให้ใช้งานต่อไป ไม่ยิง API ย่อย 6 ตัวซ้อน
-    // ซึ่งเป็นสาเหตุให้ GAS ยิ่งช้าและอาจตอบ 404
-    if(homeHasUsableSnapshot){
-      setSyncLabel('ใช้ข้อมูลในเครื่อง · กดรีเฟรชเพื่อลองใหม่');
-      return false;
-    }
-    // ผู้ใช้ใหม่ที่ยังไม่มี snapshot: fallback แบบเรียกทีละรายการ
-    // ช้ากว่า request รวมเล็กน้อย แต่ไม่สร้างภาระพร้อมกันหลาย execution
-    setSyncLabel('กำลังโหลดข้อมูลสำรอง...');
-    const fallbackLoaders=[
-      ()=>loadMasterData(),
-      ()=>loadSalesShops(),
-      ()=>loadActiveVisits(),
-      ()=>loadDashboard(),
-      ()=>loadVisitPlan(),
-      ()=>loadNotifications()
-    ];
-    for(const load of fallbackLoaders){
-      try{await load();}catch(error){console.warn('Home fallback failed:',error);}
-    }
-    setSyncLabel('โหลดข้อมูลสำรองแล้ว · '+hhmm());
     return false;
   })();
   homeSyncPromise=p;homeSyncSeq=seq;
   p.finally(()=>{if(homeSyncPromise===p)homeSyncPromise=null;});
   return p;
 }
+
 // หลังบันทึกสำเร็จ: ดึงข้อมูลหน้าแรกใหม่ (server cache ถูกล้างอัตโนมัติเมื่อมีการเขียน)
 // [PERF] GAS ประมวลผล request ของเว็บแอพทีละตัว (วัดจริง: ยิง 4 ตัวพร้อมกัน เสร็จ 1.7/2.8/3.7/4.7 วิ)
 // → หน่วงการรีเฟรชไว้ และรวบหลายครั้งเป็นครั้งเดียว ไม่ให้ไปขวางคิว Check-in/Check-out/รูป
@@ -974,6 +953,7 @@ function refreshAfterWrite(){
     syncHome(false);
   },5000);
 }
+
 // ══ [NEW] REFRESH HOME DATA ══
 async function refreshHomeData(){
   const btn=document.getElementById('refresh-btn');
@@ -984,6 +964,7 @@ async function refreshHomeData(){
   showToast(ok?'✅ รีเฟรชข้อมูลสำเร็จ':'⚠️ รีเฟรชไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต',ok?'ok':'error');
   flushPendingCheckouts();
 }
+
 // ══ API ══
 // [FIX] timeout เดิม 20 วิ และ clearTimeout ก่อนอ่าน body (อ่าน body ค้างได้ไม่จำกัด)
 // GAS cold start + อ่านชีตใหญ่ใช้เวลาเกิน 20 วิได้ → ถูกยกเลิกทั้งที่ฝั่ง server บันทึกสำเร็จแล้ว
@@ -997,10 +978,6 @@ async function apiGet(params,opts){
   try{
     const res=await fetch(GAS_URL+'?'+sp.toString(),{redirect:'follow',signal:controller.signal});
     const text=await res.text();
-    if(!res.ok){
-      console.warn('apiGet HTTP error',res.status,params.action,text.slice(0,120));
-      return null;
-    }
     try{return JSON.parse(text);}
     catch(pe){console.warn('apiGet non-JSON response',res.status,text.slice(0,200));return null;}
   }catch(e){
@@ -1008,6 +985,7 @@ async function apiGet(params,opts){
     console.warn('apiGet error:',e);return null;
   }finally{clearTimeout(timer);}
 }
+
 // [FIX] POST ที่อ่านผลลัพธ์ได้ (text/plain = simple request ไม่มี preflight, GAS redirect → JSON + CORS)
 // ใช้กับข้อมูลยาว (Check-out) แทน GET — URL ยาวเกินจะถูก Google ปฏิเสธ
 async function apiPost(payload,opts){
@@ -1024,6 +1002,7 @@ async function apiPost(payload,opts){
     console.warn('apiPost error:',e);return null;
   }finally{clearTimeout(timer);}
 }
+
 // ── helpers ──
 function esc(v){return escapeOptionText(v);}
 function localISODate(d){d=d||new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -1031,12 +1010,14 @@ function hhmm(d){d=d||new Date();return `${String(d.getHours()).padStart(2,'0')}
 function setSyncLabel(text){const el=document.getElementById('last-sync');if(el)el.textContent=text;}
 function lsGet(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:JSON.parse(v);}catch(e){return fallback;}}
 function lsSet(key,val){try{localStorage.setItem(key,JSON.stringify(val));return true;}catch(e){return false;}}
+
 // ══ [FIX] RELIABLE BACKGROUND UPLOAD (รูปถ่าย / Line report) ══
 // ปัญหาเดิม: fetch(mode:'no-cors') แบบไม่ await + ไม่มี retry -> ถ้าเน็ตหลุด/แอพถูกพักระหว่างพิมพ์
 // (เช่น สลับแอพหลัง Check-in เสร็จ) รูปที่ถ่ายไว้จะหายไปเงียบๆ โดยไม่มีการแจ้งเตือนหรือกู้คืน
 // ทางแก้: await การส่งเสมอ, retry อัตโนมัติ, และถ้าสุดท้ายยังไม่สำเร็จให้เก็บลง localStorage
 // เพื่อลองส่งซ้ำอัตโนมัติในครั้งถัดไปที่เปิดแอพ (flushPendingUploads)
 const PENDING_UPLOAD_KEY='pendingUploads_v1';
+
 function getPendingUploads(){
   try{return JSON.parse(localStorage.getItem(PENDING_UPLOAD_KEY)||'[]');}catch(e){return [];}
 }
@@ -1048,6 +1029,7 @@ function queuePendingUpload(payload){
   list.push({payload,queuedAt:Date.now()});
   setPendingUploads(list);
 }
+
 // ส่ง POST ไปยัง GAS พร้อม retry
 // [FIX] เดิมใช้ mode:no-cors อย่างเดียว → อ่านผลไม่ได้ ถ้า GAS error (เช่น หาแถวไม่เจอ) ก็ถือว่าสำเร็จ
 // ตอนนี้อ่านผลลัพธ์ก่อน ถ้าเบราว์เซอร์อ่านไม่ได้ค่อยถอยไปใช้ no-cors แบบเดิม
@@ -1072,12 +1054,14 @@ async function postToGAS(payload,retries){
   }
   return false;
 }
+
 // ใช้แทน fetch(...).catch(...) แบบเดิมสำหรับ payload ที่ "ต้องไม่หาย" เช่น รูปถ่าย
 async function postReliable(payload){
   const ok=await postToGAS(payload,2);
   if(!ok) queuePendingUpload(payload);
   return ok;
 }
+
 // ลองส่งรายการที่ค้างซ้ำอีกครั้ง เรียกตอนเปิดแอพ/เข้าหน้าแรก
 let flushingUploads=false;
 async function flushPendingUploads(){
@@ -1102,11 +1086,13 @@ async function flushPendingUploads(){
   }
   }finally{flushingUploads=false;}
 }
+
 // [FIX] เดิม: ถ้าพนักงานไม่มีร้านใน SalesShops (ผลว่าง) จะไม่ถูก cache
 // → ทุกครั้งที่กด Check-in ต้องรอโหลดจาก Google Sheet ใหม่ (สาเหตุ Check-in ช้า)
 const SALES_SHOPS_TTL=3*60*60*1000;
 const MASTER_DATA_TTL=6*60*60*1000;
 let salesShopsLoaded=false;
+
 function loadSalesShopsFromCache(){
   const c=lsGet('ss_cache_v2_'+(currentUser||''),null);
   if(c&&Array.isArray(c.shops)&&Date.now()-c.t<SALES_SHOPS_TTL){
@@ -1114,6 +1100,7 @@ function loadSalesShopsFromCache(){
   }
   return false;
 }
+
 async function loadSalesShops(preData){
   if(preData===undefined&&loadSalesShopsFromCache())return;
   const data=preData!==undefined?preData:await apiGet({action:'salesshops',employee:currentUser||''},{silent:true});
@@ -1121,6 +1108,7 @@ async function loadSalesShops(preData){
   salesShops=data.shops;salesShopsLoaded=true;
   lsSet('ss_cache_v2_'+(currentUser||''),{t:Date.now(),shops:salesShops});
 }
+
 function loadMasterDataFromCache(){
   const c=lsGet('md_cache_v2',null);
   if(c&&c.data&&Array.isArray(c.data.employees)&&c.data.employees.length&&Date.now()-c.t<MASTER_DATA_TTL){
@@ -1128,6 +1116,7 @@ function loadMasterDataFromCache(){
   }
   return false;
 }
+
 async function loadMasterData(preData){
   if(preData===undefined&&loadMasterDataFromCache())return;
   const data=preData!==undefined?preData:await apiGet({action:'masterdata'},{silent:true});
@@ -1136,6 +1125,7 @@ async function loadMasterData(preData){
     lsSet('md_cache_v2',{t:Date.now(),data});
   }
 }
+
 // ══ [NEW] DASHBOARD รองรับ period ══
 async function loadDashboard(preData){
   let data=preData;
@@ -1150,6 +1140,7 @@ async function loadDashboard(preData){
     buildBarChart(data.daily);
   }
 }
+
 function renderDashKPI(total,value,shops,rate,today,monthCount){
   const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   s('kpi-total',total||'—');
@@ -1162,6 +1153,7 @@ function renderDashKPI(total,value,shops,rate,today,monthCount){
   else if(currentPeriod==='month')s('stat-month',total||'—');
   s('stat-rate',rate?rate+'%':'—');
 }
+
 // ══ [NEW] SET PERIOD ══
 function setPeriod(btn){
   document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
@@ -1173,8 +1165,10 @@ function setPeriod(btn){
   const ct=document.getElementById('bar-chart-title');if(ct)ct.textContent=chartTitles[currentPeriod]||'';
   loadDashboard();
 }
+
 let historyEmpFilter = 'all'; // [NEW] employee filter state
 let historyFiltersReady = false;
+
 function initHistoryFilters(){
   if(historyFiltersReady)return;
   const now=new Date();
@@ -1189,6 +1183,7 @@ function initHistoryFilters(){
   if(endEl)endEl.value=localISODate(end);
   historyFiltersReady=true;
 }
+
 function selectHistoryMonth(){
   initHistoryFilters();
   const value=document.getElementById('history-month')?.value||'';
@@ -1200,6 +1195,7 @@ function selectHistoryMonth(){
   document.getElementById('history-end').value=localISODate(new Date(year,month+1,0));
   loadHistory();
 }
+
 function searchHistoryRange(){
   initHistoryFilters();
   const start=document.getElementById('history-start')?.value||'';
@@ -1211,6 +1207,7 @@ function searchHistoryRange(){
   document.getElementById('history-month').value='';
   loadHistory();
 }
+
 async function loadHistory(){
   initHistoryFilters();
   const listEl=document.getElementById('history-list');
@@ -1238,6 +1235,7 @@ async function loadHistory(){
   buildEmpTabs();
   filterHistory();
 }
+
 // [NEW] สร้าง Tab พนักงาน
 function buildEmpTabs(){
   const tabsEl=document.getElementById('history-emp-tabs');
@@ -1257,6 +1255,7 @@ function buildEmpTabs(){
   });
   tabsEl.innerHTML=html;
 }
+
 // [NEW] กด Tab เลือกพนักงาน
 function setEmpTab(emp, el){
   historyEmpFilter=emp;
@@ -1276,10 +1275,12 @@ function setEmpTab(emp, el){
   }
   filterHistory();
 }
+
 // ══ CALENDAR ══
 let calYear=new Date().getFullYear();
 let calMonth=new Date().getMonth();
 let planData=[];
+
 async function loadVisitPlan(preData,quiet){
   const data=preData!==undefined?preData:await apiGet({action:'visitplan',employee:currentUser||''},{silent:true});
   if(data&&Array.isArray(data.plans)){planData=data.plans;}
@@ -1288,12 +1289,14 @@ async function loadVisitPlan(preData,quiet){
   // [NEW] แจ้งเตือนแผนวันนี้หลังโหลด plan เสร็จ
   if(!quiet)checkTodayPlan();
 }
+
 function changeCalMonth(dir){
   if(dir===0){calYear=new Date().getFullYear();calMonth=new Date().getMonth();}
   else{calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}}
   document.getElementById('day-detail').style.display='none';
   renderCalendar();
 }
+
 function renderCalendar(){
   const thMonths=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   document.getElementById('cal-month-title').textContent=`${thMonths[calMonth]} ${calYear+543}`;
@@ -1339,6 +1342,7 @@ function renderCalendar(){
   for(let d=1;d<=remain;d++)cells+=`<div class="cal-cell other-month"><div class="cal-date">${d}</div></div>`;
   document.getElementById('cal-grid').innerHTML=cells;
 }
+
 function showDayDetail(dateKey,dayNum){
   const thMonths=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   const plans=planData.filter(p=>p.date===dateKey);
@@ -1364,23 +1368,27 @@ function showDayDetail(dateKey,dayNum){
   }
   const panel=document.getElementById('day-detail');panel.style.display='block';panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
+
 function changeName(){
   localStorage.removeItem('checkin_user');currentUser=null;
   activeVisits=[];planData=[];salesShops=[];salesShopsLoaded=false;allHistory=[];coData={};
   markHomeMutation();
   document.getElementById('name-screen').style.display='flex';loadEmployeesForSelect();
 }
+
 function switchScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('screen-'+name)?.classList.add('active');
   document.getElementById('nav-'+name)?.classList.add('active');
 }
+
 function goToForm(){
   currentStep=0;photoStates=[false,false,false];photoData=[null,null,null];
   gpsData={lat:null,lng:null,acquired:false};formData={};orderValue=0;
   switchScreen('form');renderStep();document.querySelector('.main').scrollTo(0,0);
 }
+
 function renderStep(){
   document.querySelectorAll('.progress-step').forEach((s,i)=>{
     s.classList.remove('active','done');if(i<currentStep)s.classList.add('done');if(i===currentStep)s.classList.add('active');
@@ -1393,6 +1401,7 @@ function renderStep(){
   html+=`<div class="form-nav">${currentStep>0?`<button class="btn btn-secondary" onclick="prevStep()">← ก่อนหน้า</button>`:`<button class="btn btn-secondary" onclick="switchScreen('home')">ยกเลิก</button>`}${currentStep<4?`<button class="btn btn-primary" onclick="nextStep()">ถัดไป →</button>`:`<button class="btn btn-success" id="submit-btn" onclick="submitForm()">✓ บันทึก Check-in</button>`}</div>`;
   document.getElementById('form-body').innerHTML=html;window.scrollTo(0,56);if(currentStep===0)initStep0();
 }
+
 function mkOpts(arr,ph='— เลือก —'){return`<option value="">${ph}</option>`+arr.map(v=>`<option>${v}</option>`).join('')}
 function isRegisteredEmployee(name){
   const target=String(name||'').trim().toLocaleLowerCase('th');
@@ -1413,6 +1422,7 @@ function mkShopOpts(){
   const list=salesShops.length>0?salesShops:masterData.shops;
   return`<option value="">— เลือกร้านค้า —</option>`+list.map(s=>`<option value="${s.name}" data-prov="${s.province||''}" data-type="${s.type||''}">${s.name}</option>`).join('');
 }
+
 function renderStep0(){
   const now=new Date();
   const ts=`${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()+543}  ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
@@ -1424,6 +1434,7 @@ function renderStep0(){
   <div class="field-group"><label class="field-label">รายละเอียดงาน <span class="req">*</span></label><div class="multi-select-group" id="task-chips">${masterData.tasks.map(t=>`<div class="multi-chip" data-val="${t}">${t}</div>`).join('')}</div></div>
   <div class="field-group"><label class="field-label">ชื่อลูกค้า <span class="req">*</span></label><input class="field-input" id="f-custname" type="text" placeholder="ชื่อผู้ติดต่อ" value="${getLastCustomerName(formData.shopName)||''}"></div>
   <div class="field-group"><label class="field-label">คนตัดสินใจ</label><input class="field-input" id="f-other" type="text" placeholder="ชื่อผู้มีอำนาจตัดสินใจ"></div>`;}
+
 function initStep0(){
   document.querySelectorAll('#task-chips .multi-chip').forEach(c=>{c.addEventListener('click',()=>c.classList.toggle('selected'));});
   if(currentUser&&!isRegisteredEmployee(currentUser)){
@@ -1432,6 +1443,7 @@ function initStep0(){
   }
 }
 function onShopChange(sel){const o=sel.options[sel.selectedIndex];if(o.dataset.prov){const p=document.getElementById('f-province');if(p)p.value=o.dataset.prov;}if(o.dataset.type){const t=document.getElementById('f-stype');if(t)t.value=o.dataset.type;}}
+
 function renderStep1(){
   const p=photoStates;
   return`<p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">ถ่ายรูปหน้าร้านและสินค้า รูปถ่าย 1-2 จำเป็นต้องมี</p>
@@ -1440,12 +1452,14 @@ function renderStep1(){
     <div class="photo-upload ${p[1]?'has-photo':''}" id="photo1" onclick="takePhoto(1)"><div class="photo-check">✓</div><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg><span>${p[1]?'อัปโหลดแล้ว':'รูปถ่าย 2 *'}</span></div>
   </div>
   <div style="margin-top:10px"><div class="photo-upload ${p[2]?'has-photo':''}" id="photo2" onclick="takePhoto(2)" style="aspect-ratio:2.5/1;flex-direction:row;gap:12px;padding:16px"><div class="photo-check">✓</div><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="13" r="4"/><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg><span>${p[2]?'อัปโหลดแล้ว':'รูปถ่ายเพิ่มเติม (ไม่บังคับ)'}</span></div></div>`;}
+
 function renderStep2(){
   return`<div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด <span class="req">*</span></label><select class="field-select" id="f-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div>
   <div class="field-group"><label class="field-label">ระบุเดือน ปี <span class="req">*</span></label><input class="field-input" type="date" id="f-orderdate" value="${localISODate()}"></div>
   <div class="field-group"><label class="field-label">มูลค่า (บาท)</label><div class="number-input"><button class="number-btn" type="button" onclick="changeVal(-1000)">−</button><input class="field-input" type="number" id="order-val" value="0" min="0" oninput="orderValue=parseInt(this.value)||0"><button class="number-btn" type="button" onclick="changeVal(1000)">+</button></div></div>
   <div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" type="text" id="f-noreason" placeholder="กรณีไม่สั่งซื้อ"></div>
   <div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี <span class="req">*</span></label><textarea class="field-textarea" id="f-gracz" placeholder="ระบุรุ่นที่ขายดีในร้านนี้..."></textarea></div>`;}
+
 function renderStep3(){
   return`<div class="field-group"><label class="field-label">แบรนด์คู่แข่งในร้าน <span class="req">*</span></label>
   <div class="multi-select-group" id="f-compbrands">${['Fest','Go Eco','Chan','Leev','Aoy Plus'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}<div class="multi-chip" id="f-comp-other-chip" onclick="toggleOtherInput('f-comp-other-chip','f-comp-other-wrap')">+ อื่นๆ</div></div>
@@ -1454,6 +1468,7 @@ function renderStep3(){
   <div class="multi-select-group" id="f-bestbrands">${['Fest','Go Eco','Chan','Leev','Aoy Plus','Gracz'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}<div class="multi-chip" id="f-best-other-chip" onclick="toggleOtherInput('f-best-other-chip','f-best-other-wrap')">+ อื่นๆ</div></div>
   <div id="f-best-other-wrap" style="display:none;margin-top:8px"><input class="field-input" id="f-best-other-input" type="text" placeholder="พิมพ์ชื่อแบรนด์เพิ่มเติม..."></div></div>
   <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง <span class="req">*</span></label><textarea class="field-textarea" id="f-comppromo" placeholder="อธิบายโปรโมชั่นของคู่แข่งที่พบ..."></textarea></div>`;}
+
 function renderStep4(){
   return`<div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ <span class="req">*</span></label><textarea class="field-textarea" id="f-findings" placeholder="สรุปสิ่งที่พบระหว่างการเยี่ยม..."></textarea></div>
   <div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ <span class="req">*</span></label><textarea class="field-textarea" id="f-action" placeholder="Action Plan..."></textarea></div>
@@ -1461,6 +1476,7 @@ function renderStep4(){
     <div class="gps-field"><div class="gps-bar"><span class="gps-coords" id="gps-coords">${gpsData.acquired?`${gpsData.lat.toFixed(6)}, ${gpsData.lng.toFixed(6)}`:'กดปุ่มเพื่อรับตำแหน่ง GPS'}</span>
     <button class="gps-btn" onclick="getGPS()" type="button"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>${gpsData.acquired?'รีเฟรช':'รับตำแหน่ง'}</button></div>
     <div class="map-preview" id="map-preview"><div class="map-grid"></div>${gpsData.acquired?'<div class="map-dot"></div>':'<span style="font-size:12px;color:var(--text3);position:relative;z-index:1">กด รับตำแหน่ง เพื่อแสดงแผนที่</span>'}</div></div></div>`;}
+
 function nextStep(){
   if(currentStep===0){
     const shop=document.getElementById('f-shop')?.value;const custname=document.getElementById('f-custname')?.value;
@@ -1474,6 +1490,7 @@ function nextStep(){
   if(currentStep<4){currentStep++;renderStep();}
 }
 function prevStep(){if(currentStep>0){currentStep--;renderStep();}}
+
 function takePhoto(idx){
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.capture='environment';input.style.display='none';
   document.body.appendChild(input);
@@ -1489,7 +1506,9 @@ function takePhoto(idx){
     reader.readAsDataURL(input.files[0]);document.body.removeChild(input);
   };input.click();
 }
+
 function changeVal(d){orderValue=Math.max(0,orderValue+d);const el=document.getElementById('order-val');if(el)el.value=orderValue;}
+
 function getGPS() {
   const btn = document.querySelector('.gps-btn');
   if (btn) { btn.textContent='⏳ กำลังระบุ...'; btn.disabled=true; }
@@ -1518,6 +1537,7 @@ function getGPS() {
     { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
   );
 }
+
 async function submitForm(){
   const findings=document.getElementById('f-findings')?.value;const action=document.getElementById('f-action')?.value;
   if(!findings||!action){showToast('กรุณากรอกประเด็นสำคัญและ Action Plan','error');return;}
@@ -1527,16 +1547,20 @@ async function submitForm(){
   const ref=await sendCheckin(payload);
   document.getElementById('modal-ref').textContent='REF: '+ref;document.getElementById('modal').classList.add('show');
 }
+
 async function sendCheckin(data){
   const now=new Date();const ref='CHK-'+now.getFullYear()+(now.getMonth()+1).toString().padStart(2,'0')+now.getDate().toString().padStart(2,'0')+'-'+Math.floor(Math.random()*9000+1000);
   try{const url=GAS_URL+'?action=checkin&data='+encodeURIComponent(JSON.stringify(data));const res=await fetch(url,{redirect:'follow'});const json=await res.json();return json.ref||ref;}catch(e){return ref;}
 }
+
 function closeModal(){document.getElementById('modal').classList.remove('show');switchScreen('home');loadDashboard();}
+
 function formatDate(val){
   try{if(!val)return'—';const d=new Date(val);if(isNaN(d))return String(val);
   return`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()+543} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;}
   catch(e){return String(val);}
 }
+
 function filterHistory(){
   const q=(document.getElementById('search-input')?.value||'').toLowerCase();
   const norm=s=>String(s||'').replace(/\s+/g,' ').trim();
@@ -1547,6 +1571,7 @@ function filterHistory(){
   });
   const list=document.getElementById('history-list');if(!list)return;
   if(!filtered.length){list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">ไม่พบข้อมูล</div>';return;}
+
 list.innerHTML=filtered.map(r=>{
     const isCiOnly=r.status==='check-in';
     const empBadge=historyEmpFilter==='all'&&r.employee
@@ -1557,6 +1582,7 @@ list.innerHTML=filtered.map(r=>{
     <div class="history-tags">${empBadge}<span class="htag">${r.province||'—'}</span><span class="htag">${r.tasks||'—'}</span>${r.orderValue?`<span class="htag">฿${Number(r.orderValue).toLocaleString()}</span>`:''}<span class="htag" style="color:var(--text3);font-size:10px">${r.ref}</span>${photoBtn}${editBtn}</div></div>`;
   }).join('');
 }
+
 // ══ [NEW] buildBarChart — ไม่ใช้ random data ══
 function buildBarChart(daily){
   const now=new Date();const days=['อา','จ','อ','พ','พฤ','ศ','ส'];const data=[];
@@ -1565,9 +1591,11 @@ function buildBarChart(daily){
   const c=document.getElementById('bar-chart');if(!c)return;
   c.innerHTML=data.map(({d,v})=>{const h=Math.round((v/max)*80);const today=d===days[now.getDay()];return`<div class="bar-wrap"><div class="bar-val">${v||''}</div><div class="bar" style="height:${Math.max(h,v?4:2)}px;background:${today?'var(--brand)':'var(--brand-light)'};border:${today?'none':'1px solid var(--border)'}"></div><div class="bar-lbl">${d}</div></div>`;}).join('');
 }
+
 // เก็บ dismissed notifications ใน localStorage
 function getDismissed(){try{return JSON.parse(localStorage.getItem('dismissed_notifs')||'[]');}catch(e){return[];}}
 function saveDismissed(arr){localStorage.setItem('dismissed_notifs',JSON.stringify(arr));}
+
 function dismissNotif(key){
   const arr=getDismissed();
   if(!arr.includes(key)){arr.push(key);saveDismissed(arr);}
@@ -1575,6 +1603,7 @@ function dismissNotif(key){
   console.log('dismissed notif:',key, new Date().toISOString());
   loadNotifications();
 }
+
 // [NEW] แจ้งเตือนแผนวันนี้ — เรียกหลัง loadVisitPlan โหลดเสร็จ
 function checkTodayPlan(){
   const now=new Date();
@@ -1591,13 +1620,16 @@ function checkTodayPlan(){
   // แสดง toast แจ้งเตือน
   showToast(`📅 วันนี้มีแผน ${undone.length} ร้านที่ยังไม่ได้ Check-in`);
 }
+
 async function loadNotifications(preData){
   const data=preData!==undefined?preData:await apiGet({action:'notifications',employee:currentUser||''});
   const notifEl=document.getElementById('notif-list');if(!notifEl)return;
   const dismissed=getDismissed();
+
   // กรองเฉพาะเดือนปัจจุบัน
   const now=new Date();
   const thisYM=`${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}`;
+
   if(data&&data.notifications&&data.notifications.length){
     const filtered=data.notifications.filter(n=>{
       // กรองเฉพาะเดือนนี้
@@ -1624,8 +1656,11 @@ async function loadNotifications(preData){
     notifEl.innerHTML=`<div class="notif-item"><div class="notif-dot" style="background:var(--success)"></div><div><div class="notif-text">✅ ไม่มีการแจ้งเตือน</div></div></div>`;
   }
 }
+
 let adminYear=new Date().getFullYear();let adminMonth=new Date().getMonth();
+
 function openAdmin(){switchScreen('admin');renderAdminMonth();populateAdminDropdowns();}
+
 function populateAdminDropdowns(){
   // แผนการเข้าเยี่ยมเลือกได้จากร้านทั้งหมดใน Shops
   // ไม่จำกัดตามการจับคู่ Sales–ร้านค้าใน SalesShops
@@ -1636,11 +1671,13 @@ function populateAdminDropdowns(){
   const empSel=document.getElementById('admin-employee');if(empSel)empSel.value=currentUser||'';
   const di=document.getElementById('admin-date');if(di&&!di.value)di.value=localISODate();
 }
+
 function changeAdminMonth(dir){
   if(dir===0){adminYear=new Date().getFullYear();adminMonth=new Date().getMonth();}
   else{adminMonth+=dir;if(adminMonth>11){adminMonth=0;adminYear++;}if(adminMonth<0){adminMonth=11;adminYear--;}}
   renderAdminMonth();
 }
+
 async function renderAdminMonth(){
   const thMonths=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   const lbl=document.getElementById('admin-month-lbl');if(lbl)lbl.textContent=`${thMonths[adminMonth]} ${adminYear+543}`;
@@ -1659,6 +1696,7 @@ async function renderAdminMonth(){
     return`<div class="plan-list-item"><div><div class="plan-list-shop" style="display:flex;align-items:center">${levelDot(shopLevelMap3[p.shopName]||'')}${esc(p.shopName)}</div><div class="plan-list-meta">${esc(p.employee||'—')} ${p.note?'· '+esc(p.note):''}</div></div><div style="display:flex;align-items:center;gap:4px"><div class="plan-list-date">${days[d.getDay()]} ${day}</div><button class="plan-del-btn" onclick="deletePlanAt(${i})" title="ลบ">✕</button></div></div>`;
   }).join('');
 }
+
 async function addAdminPlan(){
   const date=document.getElementById('admin-date')?.value;const shop=document.getElementById('admin-shop')?.value||document.getElementById('admin-shop-input')?.value;
   const emp=document.getElementById('admin-employee')?.value;const note=document.getElementById('admin-note')?.value||'';
@@ -1677,6 +1715,7 @@ async function addAdminPlan(){
   }
   else showToast('เกิดข้อผิดพลาด กรุณาลองใหม่','error');
 }
+
 let adminPlans=[];
 function deletePlanAt(i){
   const p=adminPlans[i];if(!p)return;
@@ -1689,15 +1728,18 @@ async function deletePlanItem(row,shopName,dateStr,plan){
   if(data&&data.ok){showToast('✓ ลบแผนแล้ว');renderAdminMonth();loadVisitPlan();}
   else showToast('เกิดข้อผิดพลาด','error');
 }
+
 // ══ CHECK-IN / CHECK-OUT ══
 let ciPhotoData=[null,null,null,null,null]; // 5 รูป index 0-4
 let ciGpsData={lat:null,lng:null,acquired:false};
 let activeVisits=[];let coData={};let coStep=0;let coOrderValue=0;let coGpsData={lat:null,lng:null,acquired:false};let coPhotoData=[null,null,null,null,null];let coPhotoStates=[false,false,false,false,false];
 const CO_STEPS=5;
+
 // ref ที่เพิ่ง Check-out สำเร็จ — กันข้อมูลเก่าที่ตอบกลับช้าทำให้การ์ดโผล่กลับมา
 const recentlyCheckedOut={};
 function markRecentlyCheckedOut(ref){recentlyCheckedOut[ref]=Date.now();}
 function isRecentlyCheckedOut(ref){const t=recentlyCheckedOut[ref];return !!t&&Date.now()-t<5*60*1000;}
+
 // [FIX] เดิม: เรียก loadActiveVisits() ทันทีหลังกด Check-out (ก่อน server บันทึกเสร็จ)
 // → ได้ข้อมูลเก่ากลับมา การ์ดร้านเดิมโผล่กลับ → ผู้ใช้กดใหม่แล้วต้องกรอกข้อมูลใหม่ทั้งหมด
 // ตอนนี้: ตัดรายการที่กำลังส่ง Check-out / เพิ่ง Check-out ออก และไม่ใช้ผลลัพธ์ที่เริ่มก่อนการเปลี่ยนแปลงล่าสุด
@@ -1716,6 +1758,7 @@ async function loadActiveVisits(preData,seqAtStart){
   activeVisits=server.concat(localPending);
   renderActiveVisits();
 }
+
 function visitTimeText(v){
   let t=v.checkinHHmm||'';
   let dStr=v.checkinDate||'';
@@ -1728,17 +1771,21 @@ function visitTimeText(v){
   if(dStr&&dStr!==localISODate()){const p=dStr.split('-');return `${Number(p[2])}/${Number(p[1])} ${t} น.`;}
   return t+' น.';
 }
+
 function renderActiveVisits(){
   const el=document.getElementById('active-visits-list');if(!el)return;
   const ciBtn=document.getElementById('ci-quick-btn');
+
   const pendingCo=getPendingCheckouts();
   const pendingHtml=pendingCo.map(p=>`<div class="checkin-block-msg" style="justify-content:space-between"><span>⏳ กำลังส่ง Check-out: <b>${esc(p.shop)}</b></span><button onclick="flushPendingCheckouts(true)" style="background:#fff;border:1px solid #f3d076;border-radius:6px;padding:4px 10px;font-size:12px;color:#854f0b;cursor:pointer;font-family:'Sarabun',sans-serif;flex-shrink:0">ส่งอีกครั้ง</button></div>`).join('');
+
   if(!activeVisits.length){
     el.innerHTML=pendingHtml+`<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm)">ยังไม่มีการ Check-in วันนี้</div>`;
     if(ciBtn){ciBtn.disabled=false;ciBtn.innerHTML='<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="18" height="18"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg> Check-in ร้านใหม่';}
     const msgEl=document.getElementById('checkin-block-msg');if(msgEl)msgEl.remove();
     return;
   }
+
   // มี active visit — ปิดปุ่ม Check-in + แสดงข้อความ
   if(ciBtn){
     ciBtn.disabled=true;
@@ -1751,6 +1798,7 @@ function renderActiveVisits(){
     msg.innerHTML=`⚠️ กรุณา Check-out ร้านที่กำลังเยี่ยมอยู่ให้เรียบร้อยก่อน จึงจะ Check-in ร้านถัดไปได้`;
     ciBtn?ciBtn.insertAdjacentElement('afterend',msg):el.insertAdjacentElement('beforebegin',msg);
   }
+
   // [FIX] เดิมใส่ชื่อร้านลงใน onclick ตรงๆ → ร้านที่มีเครื่องหมาย ' ทำให้ปุ่ม Check-out กดไม่ได้เลย
   // [FIX] เวลาเดิมใช้ String(checkinTime).slice(0,5) → ได้ "2026-" แทนเวลา
   el.innerHTML=pendingHtml+activeVisits.map((v,i)=>{
@@ -1761,11 +1809,13 @@ function renderActiveVisits(){
     return`<div class="visit-card active-ci"><div class="visit-shop">${esc(v.shop)}</div><div class="visit-time">⏰ Check-in ${esc(visitTimeText(v))} · ${esc(v.province||'')}</div>${draft?`<div style="font-size:11px;color:var(--brand);margin-top:4px">📝 มีข้อมูลที่กรอกค้างไว้ (ขั้นที่ ${(draft.coStep||0)+1}/${CO_STEPS})</div>`:''}<div class="visit-actions" style="flex-wrap:wrap">${btn}</div></div>`;
   }).join('');
 }
+
 function openCheckoutAt(i){
   const v=activeVisits[i];
   if(!v)return;
   openCheckout(v.ref,v.row,v.shop,Number(v.lat)||0,Number(v.lng)||0);
 }
+
 // เปิด Modal Check-in พร้อมกรอกชื่อร้านล่วงหน้า
 async function openCheckinModalWithShop(shopName){
   // ปิด day detail panel ก่อน
@@ -1775,9 +1825,11 @@ async function openCheckinModalWithShop(shopName){
   const found=allShops.find(s=>(s.name||s)===shopName);
   await openCheckinModal({shop:shopName,province:(found&&found.province)||''});
 }
+
 function ciShopItems(){
   return salesShops.length>0?salesShops:(masterData.shops||[]);
 }
+
 function populateCiProvinces(selected){
   const provSel=document.getElementById('ci-province');
   if(!provSel)return;
@@ -1787,6 +1839,7 @@ function populateCiProvinces(selected){
   provSel.innerHTML='<option value="">— เลือกจังหวัด —</option>'+list.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
   provSel.value=current||'';
 }
+
 function setCiPhotoBox(n,dataUrl){
   const box=document.getElementById('ci-photo-box-'+n);
   if(!box)return;
@@ -1803,6 +1856,7 @@ function setCiPhotoBox(n,dataUrl){
   img.src=dataUrl;
   if(sp)sp.style.display='none';if(sv)sv.style.display='none';
 }
+
 // restore = {shop, province, photos:[5], gps:{lat,lng}} — ใช้กู้ข้อมูลเมื่อส่งไม่สำเร็จ (ไม่ต้องถ่ายรูปใหม่)
 async function openCheckinModal(restore){
   restore=restore&&typeof restore==='object'&&!(restore instanceof Event)?restore:null;
@@ -1831,16 +1885,20 @@ async function openCheckinModal(restore){
     if(!(masterData.provinces||[]).length)loadMasterData().then(()=>populateCiProvinces());
     if(!salesShopsLoaded)loadSalesShops().then(()=>bindCiAutocomplete());
   }
+
   ciPhotoData=restore&&restore.photos?restore.photos.slice():[null,null,null,null,null];
   ciGpsData=restore&&restore.gps&&restore.gps.lat!=null?{lat:restore.gps.lat,lng:restore.gps.lng,acquired:true}:{lat:null,lng:null,acquired:false};
   window._ciProvince=restore?restore.province||'':'';
+
   const ciShopInp=document.getElementById('ci-shop-input');const ciShopHid=document.getElementById('ci-shop');
   if(ciShopInp)ciShopInp.value=restore?restore.shop||'':'';
   if(ciShopHid)ciShopHid.value=restore?restore.shop||'':'';
   populateCiProvinces(restore?restore.province||'':'');
   bindCiAutocomplete();
+
   // reset / restore รูปทั้ง 5 ช่อง
   for(let i=1;i<=5;i++)setCiPhotoBox(i,ciPhotoData[i-1]);
+
   const btn=document.getElementById('ci-submit-btn');
   if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}
   document.getElementById('ci-modal').classList.add('show');
@@ -1852,6 +1910,7 @@ async function openCheckinModal(restore){
     getCiGPS();
   }
 }
+
 function bindCiAutocomplete(){
   // รวม note จาก planData วันนี้เข้ากับ salesShops
   const today=localISODate();
@@ -1867,10 +1926,13 @@ function bindCiAutocomplete(){
     }
   });
 }
+
 function closeCiModal(){document.getElementById('ci-modal').classList.remove('show');}
+
 function compressImage(dataUrl,maxWidth,quality,callback){
   try{const img=new Image();img.onerror=()=>callback(dataUrl);img.onload=()=>{try{const canvas=document.createElement('canvas');let w=img.width,h=img.height;if(w>maxWidth){h=Math.round(h*maxWidth/w);w=maxWidth;}canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,w,h);const result=canvas.toDataURL('image/jpeg',quality);callback(result&&result.length>100?result:dataUrl);}catch(e){callback(dataUrl);}};img.src=dataUrl;}catch(e){callback(dataUrl);}
 }
+
 function takeCiPhotoN(n){
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.capture='environment';input.style.display='none';
   document.body.appendChild(input);
@@ -1887,6 +1949,7 @@ function takeCiPhotoN(n){
   };input.click();
 }
 function takeCiPhoto(){takeCiPhotoN(1);}
+
 function getCiGPS() {
   const btn = document.getElementById('ci-gps-btn');
   const txt = document.getElementById('ci-gps-text');
@@ -1914,11 +1977,13 @@ function getCiGPS() {
     { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
   );
 }
+
 async function submitCheckin(){
   const btn=document.getElementById('ci-submit-btn');
   if(btn&&btn.disabled)return;
   const resetBtn=()=>{if(btn){btn.disabled=false;btn.textContent='✓ Check-in เลย';}};
   if(btn){btn.disabled=true;btn.textContent='⏳ กำลัง Check-in...';}
+
   // [FIX] ใช้ค่าที่อยู่ในช่องค้นหาเป็นหลัก — hidden field อาจค้างค่าร้านที่เลือกไว้ก่อนแก้ข้อความ
   const shop=(document.getElementById('ci-shop-input')?.value||document.getElementById('ci-shop')?.value||'').trim();
   if(!shop){showToast('กรุณาเลือกร้านค้า','error');resetBtn();return;}
@@ -1930,6 +1995,7 @@ async function submitCheckin(){
   if(!ciPhotoData[2]){showToast('กรุณาถ่ายรูปเชลฟ์คู่แข่งก่อน','error');resetBtn();return;}
   if(!ciGpsData.acquired){showToast('กรุณารับตำแหน่ง GPS ก่อน','error');resetBtn();return;}
   if(activeVisits.length){showToast(`กรุณา Check-out "${activeVisits[0].shop}" ก่อน`,'error');resetBtn();return;}
+
   const lat=ciGpsData.lat,lng=ciGpsData.lng;
   const photos=ciPhotoData.slice();
   const nowD=new Date();
@@ -1938,6 +2004,7 @@ async function submitCheckin(){
   let resolvePending;
   pendingCheckins[localId]=new Promise(r=>{resolvePending=r;});
   const base={shop,province,lat,lng,employee:currentUser||'',checkinHHmm:hhmm(nowD),checkinDate:localISODate(nowD),status:'check-in'};
+
   // [A] Optimistic UI — ปิด Modal ทันที แสดงการ์ด "กำลังบันทึก" (ปุ่ม Check-out รอจนได้เลขแถวจริง)
   // [FIX] เดิมเรียก loadActiveVisits() ก่อน server บันทึกเสร็จ และไม่โหลดใหม่หลังบันทึกเสร็จ
   // → ไม่มีการ์ดให้กด Check-out และปุ่ม Check-in ยังกดซ้ำได้
@@ -1947,6 +2014,7 @@ async function submitCheckin(){
   closeCiModal();
   resetBtn();
   showToast(`⏳ กำลังบันทึก Check-in ${shop}...`);
+
   const req={action:'checkin_only',employee:currentUser||'',shop,province,lat,lng};
   let data=await apiGet(req,{timeout:45000,silent:true});
   if(!data||data.busy){
@@ -1954,8 +2022,10 @@ async function submitCheckin(){
     await new Promise(r=>setTimeout(r,1500));
     data=await apiGet(req,{timeout:45000,silent:true});
   }
+
   markHomeMutation();
   activeVisits=activeVisits.filter(v=>v._localId!==localId);
+
   if(data&&data.ok&&data.row){
     // ถ้าผู้ใช้กรอก/ส่ง Check-out ระหว่างรอ → ย้ายข้อมูลไปผูกกับ REF จริง
     migrateLocalRef(localId,data.ref,data.row);
@@ -1969,24 +2039,29 @@ async function submitCheckin(){
     refreshAfterWrite();
     return;
   }
+
   delete pendingCheckins[localId];
   resolvePending(null);
   const queuedCo=getPendingCheckouts().find(x=>x.ref===localId);
   if(queuedCo)removePendingCheckout(localId);
   renderActiveVisits();
+
   if(data&&data.reason==='already_checkin'){
     showToast(`⚠️ มีการ Check-in "${data.shop||shop}" ค้างอยู่ กรุณา Check-out ก่อน`,'error');
     loadActiveVisits();
     return;
   }
+
   // ล้มเหลว → เปิดฟอร์มพร้อมข้อมูลเดิม (รูป/GPS ไม่หาย) ให้กดส่งอีกครั้ง
   showToast('❌ Check-in ไม่สำเร็จ'+(data&&data.error?': '+data.error:' (เครือข่ายขัดข้อง)')+' — กรุณากดส่งอีกครั้ง','error');
   loadActiveVisits();
   // ใช้ localId เดิม → ข้อมูล Check-out ที่กรอกไว้ระหว่างรอจะยังผูกอยู่
   openCheckinModal({shop,province,photos,gps:{lat,lng},localId});
 }
+
 // ══ Check-in ที่กำลังบันทึก ══
 const pendingCheckins={}; // localId → Promise<{ref,row}|null>
+
 function migrateLocalRef(localId,ref,row){
   const all=getCoDrafts();
   if(all[localId]){
@@ -2000,6 +2075,7 @@ function migrateLocalRef(localId,ref,row){
   list.forEach(x=>{if(x.ref===localId){x.ref=ref;x.payload.ref=ref;x.payload.row=row;changed=true;}});
   if(changed)setPendingCheckouts(list);
 }
+
 // อัปโหลดรูปหลัง Check-in (อ่านผลลัพธ์ได้ + retry + เก็บคิวไว้ส่งซ้ำ)
 async function uploadCheckinPhotos(row,ref,photos){
   const payload={action:'upload_photo',row,ref,
@@ -2008,6 +2084,7 @@ async function uploadCheckinPhotos(row,ref,photos){
   if(ok==='rejected')showToast('⚠️ บันทึกรูปไม่สำเร็จ (ไม่พบรายการ Check-in) กรุณาแจ้งผู้ดูแล','error');
   else if(!ok)showToast('⚠️ รูปยังส่งไม่สำเร็จ ระบบจะส่งให้อัตโนมัติเมื่อเน็ตกลับมา','error');
 }
+
 // ══ CHECK-OUT DRAFT ══
 // [FIX] เดิม: ปิดฟอร์ม / กด "ก่อนหน้า" / Check-out ไม่สำเร็จ → ข้อมูลที่กรอกหายหมด ต้องกรอกใหม่ทั้ง 5 ขั้น
 // ตอนนี้เก็บข้อมูลที่กรอกไว้ในเครื่อง (ต่อ REF) และเติมกลับให้อัตโนมัติ
@@ -2023,6 +2100,7 @@ function saveCoDraft(){
   lsSet(CO_DRAFT_KEY,all);
 }
 function clearCoDraft(ref){const all=getCoDrafts();if(all[ref]){delete all[ref];lsSet(CO_DRAFT_KEY,all);}}
+
 function openCheckout(ref,row,shop,checkinLat,checkinLng){
   const draft=ref?getCoDraft(ref):null;
   if(coData&&coData.ref&&coData.ref===ref){
@@ -2052,7 +2130,9 @@ function closeCoModal(){
   modal.classList.remove('show');
   renderActiveVisits();
 }
+
 const coStepDefs=['ข้อมูลร้านค้า','ข้อมูลการซื้อและการจำหน่าย','ข้อมูลคู่แข่ง','Stock คงเหลือที่ร้าน','สรุปผลและ Action Plan + GPS Check-out'];
+
 function renderCoStep(){
   const body=document.getElementById('co-form-body');if(!body)return;
   let prog=`<div style="display:flex;gap:4px;margin-bottom:16px">`;
@@ -2075,6 +2155,7 @@ function renderCoStep(){
   }
   const sheet=body.closest('.ci-sheet');if(sheet)sheet.scrollTop=0;
 }
+
 function setVal(id,v){const el=document.getElementById(id);if(el&&v!==undefined&&v!==null)el.value=v;}
 function splitList(v){return String(v||'').split(',').map(x=>x.trim()).filter(Boolean);}
 function selectChips(selector,values,attr){
@@ -2084,6 +2165,7 @@ function selectChips(selector,values,attr){
     c.classList.toggle('selected',set.has(key));
   });
 }
+
 // เติมค่าที่เคยกรอกกลับเข้าฟอร์ม
 function fillCoStep(step){
   const d=coData||{};
@@ -2120,6 +2202,7 @@ function fillCoStep(step){
     setVal('co-action',d.actionPlan);
   }
 }
+
 // อ่านค่าจากฟอร์มของขั้นปัจจุบันเก็บลง coData (ไม่ตรวจความถูกต้อง)
 function collectCoStep(step){
   if(!coData)return;
@@ -2166,6 +2249,7 @@ function collectCoStep(step){
     coData.actionPlan=val('co-action')||'';
   }
 }
+
 function renderCoStep0(){
   const lastCust=getLastCustomerName(coData.shop)||'';
   return`<div class="field-group"><label class="field-label">ประเภทร้านค้า *</label><select class="field-select" id="co-stype">${mkOpts(masterData.shopTypes)}</select></div>
@@ -2184,6 +2268,7 @@ function renderCoStep2(){return`<div class="field-group"><label class="field-lab
   <div class="multi-select-group" id="co-best-chips">${['Fest','Go Eco','Chan','Leev','Aoy Plus','Gracz'].map(b=>`<div class="multi-chip" onclick="this.classList.toggle('selected')">${b}</div>`).join('')}<div class="multi-chip" id="co-best-other-chip" onclick="toggleOtherInput('co-best-other-chip','co-best-other-wrap')">+ อื่นๆ</div></div>
   <div id="co-best-other-wrap" style="display:none;margin-top:8px"><input class="field-input" id="co-best-other-input" type="text" placeholder="พิมพ์ชื่อแบรนด์เพิ่มเติม..."></div></div>
   <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง *</label><textarea class="field-textarea" id="co-comppromo" placeholder="อธิบายโปรโมชั่น..."></textarea></div>`;}
+
 // [NEW] renderCoStep3 — เพิ่ม GPS Warning Banner
 // ── Stock Step ──
 function renderCoStep4Stock(){
@@ -2202,12 +2287,15 @@ function renderCoStep4Stock(){
   </div>
   <div class="field-group"><label class="field-label">หมายเหตุ</label><textarea class="field-textarea" id="stock-note" placeholder="หมายเหตุเพิ่มเติม..."></textarea></div>`;
 }
+
 let stockItems=[];
+
 function initStockStep(){
   try{stockItems=coData.stockItems?JSON.parse(coData.stockItems||'[]'):[];}catch(e){stockItems=[];}
   if(!Array.isArray(stockItems))stockItems=[];
   renderStockList();
 }
+
 function addStockItem(){
   const model=document.getElementById('stock-model-input')?.value?.trim();
   const qty=document.getElementById('stock-qty-input')?.value;
@@ -2220,11 +2308,13 @@ function addStockItem(){
   renderStockList();
   if(coData){coData.stockItems=JSON.stringify(stockItems);saveCoDraft();}
 }
+
 function removeStockItem(idx){
   stockItems.splice(idx,1);
   renderStockList();
   if(coData){coData.stockItems=JSON.stringify(stockItems);saveCoDraft();}
 }
+
 function renderStockList(){
   const el=document.getElementById('stock-list');
   if(!el)return;
@@ -2241,9 +2331,11 @@ function renderStockList(){
       <button onclick="removeStockItem(${i})" style="background:#fff0f0;border:none;border-radius:50%;width:24px;height:24px;color:var(--accent);cursor:pointer;font-size:13px">✕</button>
     </div>`).join('');
 }
+
 function renderCoStep3(){return`<div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ *</label><textarea class="field-textarea" id="co-findings" placeholder="สรุปสิ่งที่พบ..."></textarea></div><div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ *</label><textarea class="field-textarea" id="co-action" placeholder="Action Plan..."></textarea></div><div class="field-group"><label class="field-label">GPS Check-out</label><div class="gps-field"><div class="gps-bar"><span class="gps-coords" id="co-gps-text">กำลังระบุตำแหน่ง...</span><button class="gps-btn" onclick="getCoGPS()" type="button" id="co-gps-btn">รีเฟรช</button></div></div>
 <div id="co-gps-warning" style="display:none;background:#fff9db;border:1.5px solid #f3d076;border-radius:8px;padding:10px 13px;margin-top:8px;font-size:13px;color:#854f0b;font-weight:500"></div>
 </div>`;}
+
 function selectAppt(val){
   document.getElementById('co-appt-yes')?.classList.toggle('selected', val==='yes');
   document.getElementById('co-appt-no')?.classList.toggle('selected', val==='no');
@@ -2253,6 +2345,8 @@ function selectAppt(val){
 }
   
 function changeCoVal(d){coOrderValue=Math.max(0,coOrderValue+d);const el=document.getElementById('co-orderval');if(el)el.value=coOrderValue;}
+
+
 // ── [DEAD CODE - ไม่ได้ถูกเรียกใช้แล้ว] เดิมเป็น CHECKOUT STEP ถ่ายรูป 5 รูป ──
 // [หมายเหตุ] ฟังก์ชันนี้ (และ takeCoPhotoIdx / coPhotoData / coPhotoStates ด้านล่าง)
 // ไม่ได้ถูกเรียกใน renderCoStep() อีกต่อไป เพราะ backend ย้ายการบันทึกรูปไปที่ Check-in
@@ -2280,6 +2374,7 @@ function renderCoStepPhoto(){
     <span id="co-photo-lbl-${i}">${coPhotoStates[i]?'อัปโหลดแล้ว':'รูปถ่ายเพิ่มเติม '+(i+1)+' (ไม่บังคับ)'}</span>
   </div>`).join('')}`;
 }
+
 function takeCoPhotoIdx(idx){
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.capture='environment';input.style.display='none';
   document.body.appendChild(input);
@@ -2304,10 +2399,12 @@ function takeCoPhotoIdx(idx){
     reader.readAsDataURL(input.files[0]);document.body.removeChild(input);
   };input.click();
 }
+
 function takeCoPhoto(){
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.capture='environment';input.style.display='none';
   document.body.appendChild(input);input.onchange=()=>{if(!input.files||!input.files[0]){document.body.removeChild(input);return;}const reader=new FileReader();reader.onload=e=>{coPhotoData=e.target.result;const box=document.getElementById('co-photo-box');if(box){box.classList.add('has-photo');const sp=box.querySelector('span');if(sp)sp.textContent='อัปโหลดแล้ว';}showToast('✓ ถ่ายรูปสำเร็จ');};reader.readAsDataURL(input.files[0]);document.body.removeChild(input);};input.click();
 }
+
 // [NEW] getCoGPS — แสดง Banner แทน confirm()
 function getCoGPS() {
   const btn = document.getElementById('co-gps-btn');
@@ -2345,6 +2442,7 @@ function getCoGPS() {
   );
 }
 function calcDistanceJS(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+
 function validateCoStep(step){
   if(step===0){
     if(!coData.shopType)return 'กรุณาเลือกประเภทร้านค้า';
@@ -2366,6 +2464,7 @@ function validateCoStep(step){
   }
   return '';
 }
+
 function coStepNext(){
   if(coStep===3){
     // [UX] พิมพ์รุ่น+จำนวนไว้แต่ลืมกด "+ เพิ่ม" → เพิ่มให้อัตโนมัติ
@@ -2385,6 +2484,7 @@ function coStepPrev(){
   saveCoDraft();
   if(coStep>0){coStep--;renderCoStep();}
 }
+
 // ══ PENDING CHECK-OUT QUEUE ══
 // Check-out ที่ส่งไม่สำเร็จเพราะเน็ต จะถูกเก็บในเครื่องและส่งซ้ำอัตโนมัติ (server รองรับการส่งซ้ำแล้ว)
 const PENDING_CO_KEY='pendingCheckouts_v1';
@@ -2392,6 +2492,7 @@ function getPendingCheckouts(){const l=lsGet(PENDING_CO_KEY,[]);return Array.isA
 function setPendingCheckouts(l){lsSet(PENDING_CO_KEY,l);}
 function addPendingCheckout(item){setPendingCheckouts(getPendingCheckouts().filter(x=>x.ref!==item.ref).concat([item]));}
 function removePendingCheckout(ref){setPendingCheckouts(getPendingCheckouts().filter(x=>x.ref!==ref));}
+
 async function sendCheckout(payload){
   // 1) POST ที่อ่านผลลัพธ์ได้
   let res=await apiPost(payload,{timeout:60000});
@@ -2416,6 +2517,7 @@ async function sendCheckout(payload){
   active=await stillActive();
   return active===false?{ok:true,verified:true}:null;
 }
+
 // คืนค่า 'done' | 'failed' | 'pending'
 function handleCheckoutResult(item,res,interactive){
   if(res&&res.ok){
@@ -2444,6 +2546,7 @@ function handleCheckoutResult(item,res,interactive){
   schedulePendingFlush();
   return 'pending';
 }
+
 let flushingCheckouts=null;
 function flushPendingCheckouts(interactive){
   if(flushingCheckouts)return flushingCheckouts;
@@ -2462,6 +2565,7 @@ function flushPendingCheckouts(interactive){
   })().finally(()=>{flushingCheckouts=null;});
   return flushingCheckouts;
 }
+
 let pendingFlushTimer=null;
 function schedulePendingFlush(){
   if(pendingFlushTimer)return;
@@ -2479,6 +2583,7 @@ document.addEventListener('visibilitychange',()=>{
     flushPendingUploads();
   }
 });
+
 // [FIX] submitCheckout — เดิม: ปิดฟอร์ม + โหลดรายการใหม่ทันที (ก่อน server บันทึก) → การ์ดเดิมโผล่กลับ
 // และส่งข้อมูลทั้งหมดผ่าน GET (URL ยาวเกิน → ล้มเหลว) → ผู้ใช้ต้องกรอกใหม่ทั้งหมด
 async function submitCheckout(){
@@ -2489,11 +2594,13 @@ async function submitCheckout(){
   if(err){showToast(err,'error');return;}
   if(!coData.ref){showToast('ไม่พบข้อมูลการ Check-in กรุณารีเฟรชแล้วลองใหม่','error');return;}
   if(btn){btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';}
+
   let parsedStock=[];
   try{parsedStock=JSON.parse(coData.stockItems||'[]');}catch(e){parsedStock=[];}
   const stockText=parsedStock.map(s=>`${s.model}: ${s.qty} ${s.unit}`).join(', ');
   const payload={action:'checkout',row:coData.row,ref:coData.ref,employee:currentUser||'',shop:coData.shop,checkinLat:coData.checkinLat,checkinLng:coData.checkinLng,lat:coGpsData.acquired?coGpsData.lat:'',lng:coGpsData.acquired?coGpsData.lng:'',customerGroup:coData.customerGroup||'',shopType:coData.shopType||'',tasks:coData.tasks||'',customerName:coData.customerName||'',otherNote:coData.otherNote||'',lastOrder:coData.lastOrder||'',orderMonth:coData.orderMonth||'',orderValue:coData.orderValue||0,noOrderReason:coData.noOrderReason||'',bestSellingGracz:coData.bestSellingGracz||'',competitorBrands:coData.competitorBrands||'',bestSellingBrands:coData.bestSellingBrands||'',competitorPromo:coData.competitorPromo||'',keyFindings:coData.keyFindings,actionPlan:coData.actionPlan,phone:coData.phone||'',closedDays:coData.closedDays||'',visitTime:coData.visitTime||'',appointment:coData.appointment||'',stockItems:stockText,stockNote:coData.stockNote||''};
   const item={ref:coData.ref,shop:coData.shop,payload,t:Date.now()};
+
   saveCoDraft();
   addPendingCheckout(item);
   markHomeMutation();
@@ -2502,6 +2609,7 @@ async function submitCheckout(){
   if(btn){btn.disabled=false;btn.textContent='🏁 Check-out';}
   renderActiveVisits();
   showToast(`⏳ กำลังบันทึก Check-out ${item.shop}...`);
+
   if(isLocalRef(item.ref)){
     const real=await waitForLocalCheckin(item);
     if(!real)return; // Check-in ไม่สำเร็จ — แจ้งแล้วใน submitCheckin, draft ยังอยู่
@@ -2509,7 +2617,9 @@ async function submitCheckout(){
   const res=await sendCheckout(item.payload);
   handleCheckoutResult(item,res,true);
 }
+
 function isLocalRef(ref){return String(ref||'').startsWith('local-');}
+
 // รอ Check-in ที่ยังบันทึกไม่เสร็จ แล้วอัปเดต item ให้ใช้ REF จริง
 async function waitForLocalCheckin(item){
   const localId=item.ref;
@@ -2527,6 +2637,7 @@ async function waitForLocalCheckin(item){
   item.ref=real.ref;item.payload.ref=real.ref;item.payload.row=real.row;
   return real;
 }
+
 // ══ AUTOCOMPLETE ══
 function createAutocomplete(inputId,listId,items,onSelect){
   const inp=document.getElementById(inputId);const list=document.getElementById(listId);if(!inp||!list)return;
@@ -2562,6 +2673,7 @@ function createAutocomplete(inputId,listId,items,onSelect){
   }
 }
 function selectAcItem(inp,list,val,items,onSelect){inp.value=val;list.classList.remove('show');if(onSelect)onSelect(val,items.find(it=>String((it&&typeof it==='object')?it.name:it)===val));}
+
 // ── helper: ดึงชื่อลูกค้าล่าสุดของร้านนั้นจาก History ──
 function getLastCustomerName(shopName){
   if(!shopName||!allHistory||!allHistory.length)return'';
@@ -2569,6 +2681,7 @@ function getLastCustomerName(shopName){
   const match=allHistory.find(r=>norm(r.shop)===norm(shopName)&&r.customerName);
   return match?match.customerName:'';
 }
+
 // ── TOGGLE OTHER INPUT ──
 function toggleOtherInput(chipId, wrapId){
   const chip=document.getElementById(chipId);
@@ -2579,6 +2692,7 @@ function toggleOtherInput(chipId, wrapId){
   chip.classList.toggle('selected',!isOpen);
   if(!isOpen)wrap.querySelector('input')?.focus();
 }
+
 // ── helper: รวบรวมแบรนด์ที่เลือก + อื่นๆ ที่พิมพ์ ──
 function getBrands(groupSelector, otherInputId){
   const selected=[...document.querySelectorAll(groupSelector+' .multi-chip.selected')]
@@ -2588,16 +2702,20 @@ function getBrands(groupSelector, otherInputId){
   if(other)selected.push(other);
   return selected;
 }
+
 // ══ UPLOAD PLAN ══
 let uploadRows = []; // เก็บข้อมูลที่อ่านจาก xlsx
+
 function openUploadModal(){
   resetUpload();
   document.getElementById('upload-modal').classList.add('show');
 }
+
 function closeUploadModal(){
   document.getElementById('upload-modal').classList.remove('show');
   resetUpload();
 }
+
 function resetUpload(){
   uploadRows=[];
   document.getElementById('upload-step1').style.display='block';
@@ -2605,6 +2723,7 @@ function resetUpload(){
   document.getElementById('upload-step3').style.display='none';
   const inp=document.getElementById('upload-file-input');if(inp)inp.value='';
 }
+
 function handleUploadFile(input){
   if(!input.files||!input.files[0])return;
   const file=input.files[0];
@@ -2644,6 +2763,7 @@ function handleUploadFile(input){
     reader.readAsText(file,'UTF-8');
   }
 }
+
 function parseAndValidate(rows){
   // ไฟล์แผนตรวจชื่อร้านกับ Shops ทั้งหมด ไม่จำกัดตาม SalesShops
   const allShops=masterData.shops.map(s=>(s.name||s).trim());
@@ -2655,6 +2775,7 @@ function parseAndValidate(rows){
     const emp    =String(r[2]||'').trim();
     const note   =String(r[3]||'').trim();
     const errors=[];
+
     // ตรวจวันที่
     let dateISO='';
     if(!dateRaw){errors.push('วันที่ว่าง');}
@@ -2676,27 +2797,34 @@ function parseAndValidate(rows){
       if(!d||isNaN(d)){errors.push('รูปแบบวันที่ไม่ถูกต้อง');}
       else{dateISO=d.toISOString().slice(0,10);}
     }
+
     // ตรวจร้านค้า
     if(!shop){errors.push('ชื่อร้านค้าว่าง');}
     else if(!allShops.includes(shop)){errors.push(`ไม่พบร้าน "${shop}" ในระบบ`);}
+
     // ตรวจพนักงาน
     if(!emp){errors.push('ชื่อพนักงานว่าง');}
     else if(!allEmps.includes(emp)){errors.push(`ไม่พบพนักงาน "${emp}" ในระบบ`);}
+
     // ตรวจซ้ำในไฟล์
     const key=`${dateISO}|${shop}|${emp}`;
     if(dateISO&&shop&&emp){
       if(seen.has(key)){errors.push('ซ้ำกับแถวก่อนหน้าในไฟล์');}
       else seen.add(key);
     }
+
     return{row:i+2,dateRaw,dateISO,shop,emp,note,errors,valid:errors.length===0};
   });
+
   renderPreview();
 }
+
 function renderPreview(){
   const valid=uploadRows.filter(r=>r.valid).length;
   const invalid=uploadRows.filter(r=>!r.valid).length;
   const sumEl=document.getElementById('upload-summary');
   if(sumEl)sumEl.innerHTML=`พบ <b>${uploadRows.length}</b> รายการ — <span style="color:var(--success)">✅ ${valid} รายการถูกต้อง</span>${invalid?` <span style="color:var(--accent)">❌ ${invalid} รายการมีปัญหา</span>`:''}`;
+
   const tbody=document.getElementById('upload-preview-body');
   tbody.innerHTML=uploadRows.map(r=>`
     <tr style="background:${r.valid?'#f0fdf4':'#fff5f5'};border-bottom:1px solid var(--surface3)">
@@ -2710,32 +2838,39 @@ function renderPreview(){
           :`<span style="color:var(--accent);font-size:11px">❌ ${r.errors.join(', ')}</span>`}
       </td>
     </tr>`).join('');
+
   const confirmBtn=document.getElementById('upload-confirm-btn');
   if(confirmBtn){
     confirmBtn.disabled=valid===0;
     confirmBtn.textContent=valid===0?'ไม่มีรายการที่ถูกต้อง':`✅ นำเข้าเฉพาะรายการที่ถูกต้อง (${valid} รายการ)`;
   }
+
   document.getElementById('upload-step1').style.display='none';
   document.getElementById('upload-step2').style.display='block';
 }
+
 async function confirmUpload(){
   const validRows=uploadRows.filter(r=>r.valid);
   if(!validRows.length)return;
   const btn=document.getElementById('upload-confirm-btn');
   if(btn){btn.disabled=true;btn.textContent='⏳ กำลังนำเข้า...';}
+
   let success=0,fail=0;
   for(const r of validRows){
     const res=await apiGet({action:'add_plan',date:r.dateISO,shop:r.shop,employee:r.emp,note:r.note});
     if(res&&res.ok)success++;else fail++;
   }
+
   // แสดงผล
   document.getElementById('upload-step2').style.display='none';
   document.getElementById('upload-step3').style.display='block';
   document.getElementById('upload-result-icon').textContent=fail===0?'✅':'⚠️';
   document.getElementById('upload-result-title').textContent=fail===0?'นำเข้าสำเร็จ':'นำเข้าบางส่วน';
   document.getElementById('upload-result-msg').textContent=`นำเข้าสำเร็จ ${success} รายการ${fail?` · ล้มเหลว ${fail} รายการ`:''}`;
+
   if(success>0){renderAdminMonth();loadVisitPlan();}
 }
+
 // ── Download Template ──
 function downloadTemplate(){
   try{
@@ -2754,9 +2889,12 @@ function downloadTemplate(){
     showToast('✓ ดาวน์โหลด Template สำเร็จ');
   }catch(e){showToast('ไม่สามารถดาวน์โหลด Template ได้','error');}
 }
+
 let toastTimer;
+
   // ══ EDIT CHECKIN ══
 let editData = {};
+
 async function openEditModal(row) {
   // โหลดข้อมูลเดิมจาก history ที่มีอยู่แล้ว
   const r = allHistory.find(h => h.row === row);
@@ -2765,16 +2903,19 @@ async function openEditModal(row) {
   renderEditForm();
   document.getElementById('edit-modal').classList.add('show');
 }
+
 function closeEditModal() {
   document.getElementById('edit-modal').classList.remove('show');
   editData = {};
 }
+
 function renderEditForm() {
   const d = editData;
   document.getElementById('edit-form-body').innerHTML = `
     <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:14px;font-size:12px;color:var(--text3)">
       🔒 REF: ${d.ref||'—'} · ร้าน: ${d.shop||'—'} · พนักงาน: ${d.employee||'—'}
     </div>
+
     <div style="font-size:12px;font-weight:700;color:var(--brand);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">📋 ข้อมูลร้านค้า</div>
     <div class="field-group"><label class="field-label">ประเภทร้านค้า</label><select class="field-select" id="ed-stype">${mkOpts(masterData.shopTypes)}</select></div>
     <div class="field-group"><label class="field-label">รายละเอียดงาน</label><div class="multi-select-group" id="ed-task-chips">${masterData.tasks.map(t=>`<div class="multi-chip ${(d.tasks||'').includes(t)?'selected':''}" onclick="this.classList.toggle('selected')">${t}</div>`).join('')}</div></div>
@@ -2784,23 +2925,28 @@ function renderEditForm() {
     <div class="field-group"><label class="field-label">ร้านหยุดวันไหน</label><div class="multi-select-group" id="ed-closed-days">${['อา','จ','อ','พ','พฤ','ศ','ส'].map(day=>`<div class="multi-chip ${(d.closedDays||'').includes(day)?'selected':''}" onclick="this.classList.toggle('selected')">${day}</div>`).join('')}</div></div>
     <div class="field-group"><label class="field-label">เวลาที่ควรเข้าพบ</label><select class="field-select" id="ed-visit-time"><option value="">— ไม่ระบุ —</option>${['09:00–11:00','11:00–13:00','13:00–15:00','15:00–17:00','17:00–19:00','ยืดหยุ่นได้'].map(t=>`<option ${(d.visitTime||'')=== t?'selected':''}>${t}</option>`).join('')}</select></div>
     <div class="field-group"><label class="field-label">ต้องนัดล่วงหน้า</label><input class="field-input" id="ed-appointment" type="text" value="${d.appointment||''}" placeholder="เช่น ใช่ — นัดล่วงหน้า 1 วัน"></div>
+
     <div style="font-size:12px;font-weight:700;color:var(--brand);margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">🛒 ข้อมูลการซื้อ</div>
     <div class="field-group"><label class="field-label">การสั่งซื้อล่าสุด</label><select class="field-select" id="ed-orderstatus">${mkOpts(masterData.orderStatuses)}</select></div>
     <div class="field-group"><label class="field-label">ระบุเดือน ปี</label><input class="field-input" type="date" id="ed-orderdate" value="${d.orderMonth||''}"></div>
     <div class="field-group"><label class="field-label">มูลค่า (บาท)</label><input class="field-input" type="number" id="ed-orderval" value="${d.orderValue||0}" min="0"></div>
     <div class="field-group"><label class="field-label">ไม่สั่งซื้อ เหตุผล</label><input class="field-input" id="ed-noreason" type="text" value="${d.noOrderReason||''}"></div>
     <div class="field-group"><label class="field-label">สินค้า Gracz รุ่นที่ขายดี</label><textarea class="field-textarea" id="ed-gracz">${d.bestSellingGracz||''}</textarea></div>
+
     <div style="font-size:12px;font-weight:700;color:var(--brand);margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">🏪 ข้อมูลคู่แข่ง</div>
     <div class="field-group"><label class="field-label">แบรนด์คู่แข่งในร้าน</label><input class="field-input" id="ed-compbrands" type="text" value="${d.competitorBrands||''}" placeholder="เช่น Fest, Go Eco"></div>
     <div class="field-group"><label class="field-label">แบรนด์สินค้าที่ขายดี</label><input class="field-input" id="ed-bestbrands" type="text" value="${d.bestSellingBrands||''}" placeholder="เช่น Gracz, Fest"></div>
     <div class="field-group"><label class="field-label">รายละเอียดโปรโมชันคู่แข่ง</label><textarea class="field-textarea" id="ed-comppromo">${d.competitorPromo||''}</textarea></div>
+
     <div style="font-size:12px;font-weight:700;color:var(--brand);margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">📝 สรุปผล</div>
     <div class="field-group"><label class="field-label">ประเด็นสำคัญที่พบ</label><textarea class="field-textarea" id="ed-findings">${d.keyFindings||''}</textarea></div>
     <div class="field-group"><label class="field-label">สิ่งที่ต้องดำเนินการต่อ</label><textarea class="field-textarea" id="ed-action">${d.actionPlan||''}</textarea></div>
+
     <div class="form-nav" style="margin-top:16px">
       <button class="btn btn-secondary" onclick="closeEditModal()">ยกเลิก</button>
       <button class="btn btn-primary" id="ed-submit-btn" onclick="submitEdit()">💾 บันทึก</button>
     </div>`;
+
   // set select values หลัง render
   setTimeout(() => {
     const st = document.getElementById('ed-stype');
@@ -2809,11 +2955,14 @@ function renderEditForm() {
     if (os && d.lastOrder) os.value = d.lastOrder;
   }, 50);
 }
+
 async function submitEdit() {
   const btn = document.getElementById('ed-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+
   const tasks = [...document.querySelectorAll('#ed-task-chips .multi-chip.selected')].map(c => c.textContent).join(', ');
   const closedDays = [...document.querySelectorAll('#ed-closed-days .multi-chip.selected')].map(c => c.textContent).join(', ');
+
   const payload = {
     action:           'edit_checkin',
     row:              editData.row,
@@ -2838,8 +2987,11 @@ async function submitEdit() {
     keyFindings:      document.getElementById('ed-findings')?.value     || '',
     actionPlan:       document.getElementById('ed-action')?.value       || '',
   };
+
   const result = await apiPost(payload);
+
   if (btn) { btn.disabled = false; btn.textContent = '💾 บันทึก'; }
+
   if (result && result.ok) {
     closeEditModal();
     showToast('✅ บันทึกข้อมูลสำเร็จ');
@@ -2848,6 +3000,7 @@ async function submitEdit() {
     showToast('เกิดข้อผิดพลาด' + (result && result.error ? ': ' + result.error : '') + ' กรุณาลองใหม่', 'error');
   }
 }
+
 // ── SHOP HISTORY ──
 function openShopHist(shopName) {
   const rows = allHistory.filter(r => r.shop === shopName);
@@ -2882,8 +3035,10 @@ function closeShopHist() {
   document.getElementById('shop-hist-modal').classList.remove('show');
   document.body.style.overflow='';
 }
+
 // ── LINE REPORT ──
 let lineItems = []; // [{shop:'', detail:'', photo:null}]
+
 function initLineReport() {
   const now = new Date();
   const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
@@ -2894,14 +3049,17 @@ function initLineReport() {
   renderLineItems();
   loadLineHistory();
 }
+
 function addLineItem() {
   lineItems.push({shop:'',detail:'',photo:null});
   renderLineItems();
 }
+
 function removeLineItem(idx) {
   lineItems.splice(idx,1);
   renderLineItems();
 }
+
 function renderLineItems() {
   const list = document.getElementById('line-items-list');
   const submitBtn = document.getElementById('line-submit-btn');
@@ -2940,6 +3098,7 @@ function renderLineItems() {
       </div>
     </div>`).join('');
   if(submitBtn) submitBtn.style.display='block';
+
   // setup autocomplete สำหรับแต่ละร้าน
   lineItems.forEach((_,i)=>{
     const shopList = salesShops.length>0 ? salesShops.map(s=>s.name||s) : masterData.shops.map(s=>s.name||s);
@@ -2957,6 +3116,7 @@ function renderLineItems() {
     });
   });
 }
+
 function takeLinePhoto(idx) {
   const input = document.createElement('input');
   input.type='file'; input.accept='image/*'; input.style.display='none';
@@ -2976,6 +3136,7 @@ function takeLinePhoto(idx) {
   };
   input.click();
 }
+
 async function submitLineReport() {
   // sync ค่าจาก DOM ก่อน submit
   lineItems.forEach((item,i)=>{
@@ -2984,19 +3145,23 @@ async function submitLineReport() {
     if(shopEl) item.shop=shopEl.value;
     if(detailEl) item.detail=detailEl.value;
   });
+
   // validate
   for(let i=0;i<lineItems.length;i++){
     if(!lineItems[i].shop){showToast(`กรุณาเลือกร้านค้า ร้านที่ ${i+1}`,'error');return;}
     if(!lineItems[i].photo){showToast(`กรุณาอัพโหลดรูป Line ร้านที่ ${i+1}`,'error');return;}
   }
   if(!lineItems.length){showToast('กรุณาเพิ่มรายการร้านอย่างน้อย 1 ร้าน','error');return;}
+
   const btn=document.getElementById('line-submit-btn');
   if(btn){btn.textContent='⏳ กำลังส่ง...';btn.disabled=true;}
+
   const payload={
     action:'save_line_report',
     employee:currentUser||'',
     items:JSON.stringify(lineItems.map(item=>({shop:item.shop,detail:item.detail,photo:item.photo||''})))
   };
+
   // [FIX] เดิม await fetch ครั้งเดียวแล้วขึ้น "สำเร็จ" ทันที ทั้งที่ mode:no-cors อ่าน response ไม่ได้เลย
   // (ถ้า GAS error หรือรูป Drive อัพโหลดไม่ผ่าน ผู้ใช้จะไม่มีทางรู้) ตอนนี้ใช้ postReliable ที่ retry
   // และ queue ไว้ส่งซ้ำอัตโนมัติถ้าเน็ตหลุดจริงๆ
@@ -3015,6 +3180,7 @@ async function submitLineReport() {
   loadLineHistory();
   if(btn){btn.textContent='📤 ส่งรายงาน Line';btn.disabled=false;}
 }
+
 async function loadLineHistory() {
   const histEl=document.getElementById('line-history-list');
   if(!histEl) return;
@@ -3039,6 +3205,7 @@ async function loadLineHistory() {
       </div>
     </div>`).join('');
 }
+
 function levelDot(level){
 if(level==='red')    return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e03131;margin-right:6px;flex-shrink:0"></span>';
 if(level==='yellow') return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f08c00;margin-right:6px;flex-shrink:0"></span>';
